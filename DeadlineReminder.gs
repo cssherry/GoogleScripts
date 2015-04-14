@@ -1,4 +1,4 @@
-function main() {
+function deadlineReminder() {
   if (nowIsBusinessHours) {
     var jobberator = new Jobberator();
     jobberator.iterateAndApply();
@@ -76,7 +76,7 @@ Jobberator.prototype.getFolderGUID = function() {
     folderCell.setValue(newFolderID);
     return newFolderID;
   }
-}
+};
 
 Jobberator.prototype.recordEmailSent = function(companyIndex) {
   var rowIdx = companyIndex + 1,
@@ -84,7 +84,7 @@ Jobberator.prototype.recordEmailSent = function(companyIndex) {
     cell = SpreadsheetApp.getActiveSheet().getRange(emailWasSentColumn + rowIdx);
 
   cell.setValue(true);
-}
+};
 
 createPrettyDate = function() {
   var today = new Date();
@@ -102,10 +102,10 @@ createPrettyDate = function() {
 
   prettyDate = mm + '/' + dd + '/' + yyyy;
   return prettyDate;
-}
+};
 
 nowIsBusinessHours = function() {
   var hour = new Date().getHours();
 
   return hour > 7 && hour < 22;
-}
+};

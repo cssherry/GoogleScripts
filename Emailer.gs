@@ -17,14 +17,14 @@ ApplicationEmail.prototype.initCoverLetter = function (jobberator) {
   coverLetterFile.removeFromFolder(DocsList.getRootFolder());
   // Memo-ize as Document for use in email body.
   this.coverLetter = DocumentApp.openById(coverLetterFile.getId());
-}
+};
 
 ApplicationEmail.prototype.populateCoverLetter = function() {
   this.coverLetter.getBody()
                     .replaceText('{ date }', createPrettyDate())
                     .replaceText('{ companyName }', this.companyName)
                     .replaceText('{ companyBlurb }', this.companyBlurb);
-}
+};
 
 ApplicationEmail.prototype.send = function (jobberator) {
   var resume = DriveApp.getFileById(jobberator.resumeGUID);
@@ -35,4 +35,4 @@ ApplicationEmail.prototype.send = function (jobberator) {
       body: this.coverLetter.getBody().getText(),
       attachments: [resume.getAs(MimeType.PDF)]
     });
-}
+};
