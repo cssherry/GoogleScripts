@@ -1,4 +1,4 @@
-function deadlineReminder() {
+function DeadlineReminder() {
   if (nowIsBusinessHours) {
     var jobberator = new Jobberator();
     jobberator.iterateAndApply();
@@ -84,28 +84,4 @@ Jobberator.prototype.recordEmailSent = function(companyIndex) {
     cell = SpreadsheetApp.getActiveSheet().getRange(emailWasSentColumn + rowIdx);
 
   cell.setValue(true);
-};
-
-createPrettyDate = function() {
-  var today = new Date();
-  var dd = today.getDate();
-  var mm = today.getMonth() + 1; //January is 0!
-  var yyyy = today.getFullYear();
-
-  if (dd < 10) {
-    dd = '0' + dd;
-  }
-
-  if (mm < 10) {
-    mm = '0' + mm;
-  }
-
-  prettyDate = mm + '/' + dd + '/' + yyyy;
-  return prettyDate;
-};
-
-nowIsBusinessHours = function() {
-  var hour = new Date().getHours();
-
-  return hour > 7 && hour < 22;
 };

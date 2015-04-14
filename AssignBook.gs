@@ -1,11 +1,16 @@
 // Instantiate and run constructor
 function runAssignBook() {
-  var assign = AssignBook();
+  // Change this template to change text in automated email
+  var mailInfo = "Hi {{ firstName }},\n\nPlease send your book to {{ sendToPerson }}. Their address is below:\n{{ sendAddress }}\n\nHappy reading!",
+      nextBookInfo = "Hi {{ sendToPerson }},\n\nExpect to get {{ newBook }} soon from {{ firstName }}\n\nHappy reading!",
+
+      assign = AssignBook(mailInfo, nextBookInfo);
+
   assign.run();
 }
 
 // Constructor for assigning book
-function AssignBook() {
+function AssignBook(mailInfo, nextBookInfo) {
   var scheduleSheet = SpreadsheetApp.getActiveSpreadsheet()
                                      .getSheetByName("Schedule");
   this.scheduleSheetData = scheduleSheet.getDataRange().getValues();
@@ -15,12 +20,15 @@ function AssignBook() {
                                  .getSheetByName("Form Responses 1");
   this.formSheetData = formSheet.getDataRange().getValues();
   this.formSheetIndex = this.indexSheet(this.formSheet);
+  this.formLastEntryIdx = this.formSheetIndex.length - 1;
 
   var addressesSheet = SpreadsheetApp.getActiveSpreadsheet()
                                       .getSheetByName("Addresses");
   this.addressesSheetData = addressesSheet.getDataRange().getValues();
   this.addressesSheetIndex = this.indexSheet(this.addressesSheetData);
 
+  this.mailInfo = mailInfo;
+  this.mailInfo = mailInfo;
 }
 
 AssignBook.prototype.indexSheet = function(sheetData) {
@@ -46,6 +54,7 @@ AssignBook.prototype.run = function() {
   // if no match, then add note saying 'waitingForMatch', with note that has id of form submission (https://developers.google.com/apps-script/reference/spreadsheet/)
   // if match, find entry and note new book on the way, and send another email letting people know
   // Check to see if people with notes saying "waitingForMatch" can send to person. If not, add Pending with note on formid
+  // send to original sender if length of schedule column === 7
 
   for (i = 1; i < length; i++) {
 
@@ -64,6 +73,14 @@ AssignBook.prototype.run = function() {
     }
 
   }
+};
+
+AssignBook.prototype.findWhoWillReadNext = function() {
+
+};
+
+AssignBook.prototype.checkForMatches = function() {
+
 };
 
 AssignBook.prototype.recordEmailSent = function(companyIndex) {
