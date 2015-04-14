@@ -1,38 +1,51 @@
-function assignBook() {
-  if (nowIsBusinessHours) {
-    var jobberator = new Jobberator();
-    jobberator.iterateAndApply();
-  }
+// Instantiate and run constructor
+function runAssignBook() {
+  var assign = AssignBook();
+  assign.run();
 }
 
-// Column values for every parameter.
+// Constructor for assigning book
+function AssignBook() {
+  var scheduleSheet = SpreadsheetApp.getActiveSpreadsheet()
+                                     .getSheetByName("Schedule");
+  this.scheduleSheetData = scheduleSheet.getDataRange().getValues();
+  this.scheduleSheetIndex = this.indexSheet(this.scheduleSheet);
 
-var COLUMNMAP = {
-  'companyName': 0,
-  'contactEmail': 1,
-  'jobTitle': 2,
-  'companyCity': 3,
-  'companyBlurb': 4,
-  'applyByEmail': 5,
-  'emailWasSent': 6
+  var formSheet = SpreadsheetApp.getActiveSpreadsheet()
+                                 .getSheetByName("Form Responses 1");
+  this.formSheetData = formSheet.getDataRange().getValues();
+  this.formSheetIndex = this.indexSheet(this.formSheet);
+
+  var addressesSheet = SpreadsheetApp.getActiveSpreadsheet()
+                                      .getSheetByName("Addresses");
+  this.addressesSheetData = addressesSheet.getDataRange().getValues();
+  this.addressesSheetIndex = this.indexSheet(this.addressesSheetData);
+
+}
+
+AssignBook.prototype.indexSheet = function(sheetData) {
+  var result = {},
+      length = sheetData[0].length;
+
+  for (var i = 0; i < length; i++) {
+    result[i] = sheetData[0][i];
+  }
+
+  return result;
 };
 
-var COLUMNLETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+AssignBook.prototype.run = function() {
+  // PSEUDOCODE
 
-function Jobberator() {
-  // GUIDs are saved in the Config sheet.
-  this.configSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Config");
-  this.resumeGUID = this.configSheet.getRange(2, 2).getValue(),
-  this.coverTemplateGUID = this.configSheet.getRange(2, 3).getValue(),
-  this.folderCellCoords = [2, 1];
-}
-
-Jobberator.prototype.iterateAndApply = function() {
-  var sheet = SpreadsheetApp.getActiveSheet(),
-      data = sheet.getDataRange().getValues(),
-      currentDate = new Date(),
-      length = data.length,
-      i;
+  // Get last entry in form response
+  // find what book the person last read
+  // go to schedule and create a hash for each person of books read
+  // Find "pending" in schedule
+  // check to make sure pending has not already read book from previous person
+  // if so, check all pendings
+  // if no match, then add note saying 'waitingForMatch', with note that has id of form submission (https://developers.google.com/apps-script/reference/spreadsheet/)
+  // if match, find entry and note new book on the way, and send another email letting people know
+  // Check to see if people with notes saying "waitingForMatch" can send to person. If not, add Pending with note on formid
 
   for (i = 1; i < length; i++) {
 
@@ -53,59 +66,10 @@ Jobberator.prototype.iterateAndApply = function() {
   }
 };
 
-Jobberator.prototype.getFolderGUID = function() {
-  var folderCell = this.configSheet.getRange(
-                    this.folderCellCoords[0],
-                    this.folderCellCoords[1]
-                    ),
-      maybeGUID = folderCell.getValue();
-
-  /*
-    If a folder GUID is present, use that.
-    Otherwise, create a new folder in the
-    current directory, save its ID and use it.
-  */
-  if (maybeGUID) {
-    return maybeGUID;
-  } else {
-    var currentSpreadsheet = SpreadsheetApp.getActive(),
-        spreadsheetFolder = DriveApp.getFileById(currentSpreadsheet.getId()).getParents().next(),
-        newFolder = spreadsheetFolder.createFolder("Cover Letters"),
-        newFolderID = newFolder.getId();
-
-    folderCell.setValue(newFolderID);
-    return newFolderID;
-  }
-};
-
-Jobberator.prototype.recordEmailSent = function(companyIndex) {
+AssignBook.prototype.recordEmailSent = function(companyIndex) {
   var rowIdx = companyIndex + 1,
     emailWasSentColumn = COLUMNLETTERS[COLUMNMAP['emailWasSent']],
     cell = SpreadsheetApp.getActiveSheet().getRange(emailWasSentColumn + rowIdx);
 
   cell.setValue(true);
-};
-
-createPrettyDate = function() {
-  var today = new Date();
-  var dd = today.getDate();
-  var mm = today.getMonth() + 1; //January is 0!
-  var yyyy = today.getFullYear();
-
-  if (dd < 10) {
-    dd = '0' + dd;
-  }
-
-  if (mm < 10) {
-    mm = '0' + mm;
-  }
-
-  prettyDate = mm + '/' + dd + '/' + yyyy;
-  return prettyDate;
-};
-
-nowIsBusinessHours = function() {
-  var hour = new Date().getHours();
-
-  return hour > 7 && hour < 22;
 };
