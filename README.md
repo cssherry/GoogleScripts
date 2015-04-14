@@ -1,7 +1,7 @@
 # Google Sheet Layout
 The sheet has the following format:
 
-## Form Responses 1 (tab)
+## Form Responses 1 (tab1)
 * Timestamp	(column from form)
 * Name	(column from form)
 * Did you finish the expected book?	(column from form)
@@ -10,7 +10,7 @@ The sheet has the following format:
 * WhoWillReadNext	(column from script)
 * WaitingForNewBook?	(column from script)
 
-## Schedule (tab)
+## Schedule (tab2)
 * NewCycle (column)
   * 5/1/2015
   * 7/1/2015
@@ -22,7 +22,7 @@ The sheet has the following format:
   * 7/1/2016
 * List of participants (column)
 
-## Addresses (tab)
+## Addresses (tab3)
 * Name	(column from participant)
 * Address	(column from participant)
 * Email	(column from participant)
