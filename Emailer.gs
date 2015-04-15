@@ -68,3 +68,10 @@ Email.prototype.findInArray = function(array, string) {
   }
   return -1;
 };
+
+Email.prototype.recordEmailSent = function(sheetName, cellCode, message) {
+  SpreadsheetApp.getActiveSpreadsheet()
+                .getSheetByName(sheetName)
+                .getRange(cellCode)
+                .setValue(message);
+};
