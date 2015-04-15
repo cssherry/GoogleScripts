@@ -1,24 +1,27 @@
-function Email(options) {
-  this.contactEmail = options.contactEmail;
-  this.subject = options.subject;
-  this.sendDate = options.sendDate;
-  this.sendToPerson = options.sendToPerson;
-  this.sendAddress = options.sendAddress;
-  this.deadline = options.deadline;
-  this.firstName = options.firstName;
-  this.template = options.template;
+// Define the Email constructor
+function Email(contactEmail, subject, template, options) {
+  this.contactEmail = contactEmail;
+  this.template = template;
+  this.subject = subject;
+  this.options = options;
 }
 
+// Replaces all keywords in email template with their actual values
 Email.prototype.populateEmail = function() {
-  this.template
-      .replaceText('{ sendDate }', createPrettyDate(this.sendDate))
-      .replaceText('{ sendToPerson }', this.sendToPerson)
-      .replaceText('{ sendAddress }', this.sendAddress)
-      .replaceText('{ deadline }', createPrettyDate(this.deadline))
-      .replaceText('{ firstName }', this.firstName);
+  // dateColumn should be edited to include titles of all columns that contain dates
+  var dateColumns = ['Timestamp', 'NewCycle'];
+
+  for (var keyword in this.options) {
+    if (this.findInArray(dateColumns, keyword)) {
+      this.template.replaceText('{ ' + keyword + ' }', createPrettyDate(this.options[keyword]));
+    } else {
+      this.template.replaceText('{ ' + keyword + ' }', this.options[keyword]);
+    }
+  }
 };
 
-Email.prototype.send = function (jobberator) {
+// Calls MailApp to send email
+Email.prototype.send = function () {
     MailApp.sendEmail({
       to: this.contactEmail,
       subject: this.subject,
@@ -57,4 +60,11 @@ Email.prototype.createPrettyDate = function(date) {
 
   prettyDate = daysOfWeekIndex.dayOfWeek + ', ' + monthIndex.mm + ' ' + dd;
   return '*' + prettyDate + '*';
+};
+
+Email.prototype.findInArray = function(array, string) {
+  for (var j=0; j < array.length; j++) {
+      if (array[j].match(string)) return j;
+  }
+  return -1;
 };
