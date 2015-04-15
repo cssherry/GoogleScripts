@@ -12,7 +12,7 @@ Email.prototype.populateEmail = function() {
   var dateColumns = ['Timestamp', 'NewCycle'];
 
   for (var keyword in this.options) {
-    if (this.findInArray(dateColumns, keyword)) {
+    if (this.findInArray(dateColumns, keyword) > -1) {
       this.template.replaceText('{ ' + keyword + ' }', createPrettyDate(this.options[keyword]));
     } else {
       this.template.replaceText('{ ' + keyword + ' }', this.options[keyword]);
@@ -21,12 +21,14 @@ Email.prototype.populateEmail = function() {
 };
 
 // Calls MailApp to send email
-Email.prototype.send = function () {
+Email.prototype.send = function (sheetName, cellCode, message) {
     MailApp.sendEmail({
       to: this.contactEmail,
       subject: this.subject,
       body: this.populateEmail(),
     });
+
+    this.updateCell(sheetName, cellCode, message);
 };
 
 Email.prototype.createPrettyDate = function(date) {
@@ -62,6 +64,7 @@ Email.prototype.createPrettyDate = function(date) {
   return '*' + prettyDate + '*';
 };
 
+// Helper function to find string in an array
 Email.prototype.findInArray = function(array, string) {
   for (var j=0; j < array.length; j++) {
       if (array[j].match(string)) return j;
@@ -69,7 +72,8 @@ Email.prototype.findInArray = function(array, string) {
   return -1;
 };
 
-Email.prototype.recordEmailSent = function(sheetName, cellCode, message) {
+// Function that records when an email is successfully sent
+Email.prototype.updateCell = function(sheetName, cellCode, message) {
   SpreadsheetApp.getActiveSpreadsheet()
                 .getSheetByName(sheetName)
                 .getRange(cellCode)
