@@ -21,14 +21,14 @@ Email.prototype.populateEmail = function() {
 };
 
 // Calls MailApp to send email
-Email.prototype.send = function (sheetName, cellCode, message) {
+Email.prototype.send = function (sheetName, cellCode, options) {
     MailApp.sendEmail({
       to: this.contactEmail,
       subject: this.subject,
       body: this.populateEmail(),
     });
 
-    this.updateCell(sheetName, cellCode, message);
+    this.updateCell(sheetName, cellCode, options);
 };
 
 Email.prototype.createPrettyDate = function(date) {
@@ -73,9 +73,10 @@ Email.prototype.findInArray = function(array, string) {
 };
 
 // Function that records when an email is successfully sent
-Email.prototype.updateCell = function(sheetName, cellCode, message) {
+Email.prototype.updateCell = function(sheetName, cellCode, options) {
   SpreadsheetApp.getActiveSpreadsheet()
                 .getSheetByName(sheetName)
                 .getRange(cellCode)
-                .setValue(message);
+                .setNote(options.note)
+                .setValue(options.message);
 };
