@@ -1,87 +1,90 @@
-function DeadlineReminder() {
-  if (nowIsBusinessHours) {
-    var jobberator = new Jobberator();
-    jobberator.iterateAndApply();
-  }
+// Instantiate and run constructor
+function runDeadlineReminder() {
+  // Change this template to change text in automated email
+  var reminderEmail = "Hi { firstName },\n\nPlease remember to complete  { bookName } by { NewCycle }.\n\nHappy reading!",
+      subject = '[BOOKCLUB] Reminder For Upcoming Cycle';
+
+  new DeadlineReminder(reminderEmail, subject).run();
 }
 
-// Column values for every parameter.
+// Constructor for assigning book
+function DeadlineReminder(reminderEmail, subject) {
+  var scheduleSheet = SpreadsheetApp.getActiveSpreadsheet()
+                                     .getSheetByName("Schedule");
+  this.scheduleSheetData = scheduleSheet.getDataRange().getValues();
+  this.scheduleSheetIndex = this.indexSheet(this.scheduleSheet);
 
-var COLUMNMAP = {
-  'companyName': 0,
-  'contactEmail': 1,
-  'jobTitle': 2,
-  'companyCity': 3,
-  'companyBlurb': 4,
-  'applyByEmail': 5,
-  'emailWasSent': 6
+  var addressesSheet = SpreadsheetApp.getActiveSpreadsheet()
+                                      .getSheetByName("Addresses");
+  this.addressesSheetData = addressesSheet.getDataRange().getValues();
+  this.addressesSheetIndex = this.indexSheet(this.addressesSheetData);
+
+  this.reminderEmail = reminderEmail;
+  this.subject = subject;
+
+  this.numberToLetters = {
+    0: 'A',
+    1: 'B',
+    2: 'C',
+    3: 'D',
+    4: 'E',
+    5: 'F',
+    6: 'G',
+    7: 'H',
+    8: 'I',
+    9: 'J',
+    10: 'K',
+    11: 'L',
+    12: 'M',
+  };
+}
+
+AssignBook.prototype.indexSheet = function(sheetData) {
+  var result = {},
+      length = sheetData[0].length;
+
+  for (var i = 0; i < length; i++) {
+    resultsheetData[0][i] = i;
+  }
+
+  return result;
 };
 
-var COLUMNLETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+// Main script for running function
+AssignBook.prototype.run = function() {
+  // Get today's date
+  var today = new Date(),
+      newCycle = this.findNextCycle().
+      newCycleDate = newCycle[1],
+      newCycleRowIdx = this.findNextCycle()[0];
 
-function Jobberator() {
-  // GUIDs are saved in the Config sheet.
-  this.configSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Config");
-  this.resumeGUID = this.configSheet.getRange(2, 2).getValue(),
-  this.coverTemplateGUID = this.configSheet.getRange(2, 3).getValue(),
-  this.folderCellCoords = [2, 1];
-}
+  // Go through every column in Schedule tab, send email if the person has not finished book yet -- add note when successfully sent email
+  for (var i = 1; i < this.scheduleSheetData.length; i++) {
+    if (this.scheduleSheetData[i][newCycleRowIdx] === "") {
+      var emailIdx = this.addressesSheetIndex.Email,
+          contactEmail = this.addressesSheetData[i][emailIdx],
+          sheetName = 'Schedule',
+          cellCode = this.numberToLetters[i] + newCycleRowIdx,
+          nameIdx = this.scheduleSheetData.Name,
+          options = {note: "Reminder sent: " + today,
+                     NewCycle: newCycleDate,
+                     bookName: this.scheduleSheetData[i][newCycleRowIdx - 1],
+                     firstName: this.addressesSheetData[i][nameIdx]};
 
-Jobberator.prototype.iterateAndApply = function() {
-  var sheet = SpreadsheetApp.getActiveSheet(),
-      data = sheet.getDataRange().getValues(),
-      currentDate = new Date(),
-      length = data.length,
-      i;
+      new Email(contactEmail, this.subject, this.reminderEmail, sheetName, cellCode, options);
+    }
+  }
+};
+
+// Find first row that is not before today's date -- remember date
+AssignBook.prototype.findNextCycle = function() {
+  var newCycleColumnIdx = this.scheduleSheetIndex.NewCycle;
 
   for (i = 1; i < length; i++) {
+    var newCycle = this.scheduleSheetData[i][newCycleColumnIdx];
 
-    var emailWasSent = data[i][COLUMNMAP['emailWasSent']];
-    if (!emailWasSent) {
-
-      var jobApplication = new JobApplication(this, data[i]);
-
-      if (jobApplication['applyByEmail']) {
-        jobApplication.createEmail();
-        jobApplication.fire();
-        this.recordEmailSent(i);
-      }
-
-      break; // Only send one email when the script is run.
+    if (newCycle > today) {
+      return [i, newCycle];
     }
-
   }
-}
-
-Jobberator.prototype.getFolderGUID = function() {
-  var folderCell = this.configSheet.getRange(
-                    this.folderCellCoords[0],
-                    this.folderCellCoords[1]
-                    ),
-      maybeGUID = folderCell.getValue();
-
-  /*
-    If a folder GUID is present, use that.
-    Otherwise, create a new folder in the
-    current directory, save its ID and use it.
-  */
-  if (maybeGUID) {
-    return maybeGUID;
-  } else {
-    var currentSpreadsheet = SpreadsheetApp.getActive(),
-        spreadsheetFolder = DriveApp.getFileById(currentSpreadsheet.getId()).getParents().next(),
-        newFolder = spreadsheetFolder.createFolder("Cover Letters"),
-        newFolderID = newFolder.getId();
-
-    folderCell.setValue(newFolderID);
-    return newFolderID;
-  }
-};
-
-Jobberator.prototype.recordEmailSent = function(companyIndex) {
-  var rowIdx = companyIndex + 1,
-    emailWasSentColumn = COLUMNLETTERS[COLUMNMAP['emailWasSent']],
-    cell = SpreadsheetApp.getActiveSheet().getRange(emailWasSentColumn + rowIdx);
-
-  cell.setValue(true);
 };
