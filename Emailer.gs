@@ -6,6 +6,9 @@ function Email(contactEmail, subject, template, sheetName, cellCode, options) {
   this.sheetName = sheetName;
   this.cellCode = cellCode;
   this.options = options;
+
+  this.populateEmail();
+  this.send();
 }
 
 // Replaces all keywords in email template with their actual values
