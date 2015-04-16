@@ -1,8 +1,10 @@
 // Define the Email constructor
-function Email(contactEmail, subject, template, options) {
+function Email(contactEmail, subject, template, sheetName, cellCode, options) {
   this.contactEmail = contactEmail;
   this.template = template;
   this.subject = subject;
+  this.sheetName = sheetName;
+  this.cellCode = cellCode;
   this.options = options;
 }
 
@@ -21,14 +23,14 @@ Email.prototype.populateEmail = function() {
 };
 
 // Calls MailApp to send email
-Email.prototype.send = function (sheetName, cellCode, options) {
+Email.prototype.send = function () {
     MailApp.sendEmail({
       to: this.contactEmail,
       subject: this.subject,
       body: this.populateEmail(),
     });
 
-    this.updateCell(sheetName, cellCode, options);
+    this.updateCell();
 };
 
 Email.prototype.createPrettyDate = function(date) {
@@ -73,10 +75,10 @@ Email.prototype.findInArray = function(array, string) {
 };
 
 // Function that records when an email is successfully sent
-Email.prototype.updateCell = function(sheetName, cellCode, options) {
+Email.prototype.updateCell = function() {
   SpreadsheetApp.getActiveSpreadsheet()
-                .getSheetByName(sheetName)
-                .getRange(cellCode)
-                .setNote(options.note)
-                .setValue(options.message);
+                .getSheetByName(this.sheetName)
+                .getRange(this.cellCode)
+                .setNote(this.options.note)
+                .setValue(this.options.message);
 };
