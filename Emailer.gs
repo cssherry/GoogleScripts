@@ -81,16 +81,33 @@ Email.prototype.findInArray = function(array, string) {
 };
 
 // Function that records when an email is successfully sent
-Email.prototype.updateCell = function() {
-  var cell = SpreadsheetApp.getActiveSpreadsheet()
-                           .getSheetByName(this.sheetName)
-                           .getRange(this.cellCode);
+Email.prototype.updateCell = function(_) {
+  var sheetName,
+      cellCode,
+      note,
+      message;
 
-  if (this.options.note) {
-    cell.setNote(this.options.note);
+  if (_) {
+    sheetName = _.sheetName;
+    cellCode = _.cellCode;
+    note = _.note;
+    message = _.message;
+  } else {
+    sheetName = this.sheetName;
+    cellCode = this.cellCode;
+    note = this.options.note;
+    message = this.options.message;
   }
 
-  if (this.options.message) {
-    cell.setValue(this.options.message);
+  var cell = SpreadsheetApp.getActiveSpreadsheet()
+                           .getSheetByName(sheetName)
+                           .getRange(cellCode);
+
+  if (note) {
+    cell.setNote(note);
+  }
+
+  if (message) {
+    cell.setValue(message);
   }
 };
