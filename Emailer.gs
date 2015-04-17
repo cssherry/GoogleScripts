@@ -15,17 +15,15 @@ Email.prototype.populateEmail = function() {
   // dateColumn should be edited to include titles of all columns that contain dates
   var dateColumns = ['Timestamp', 'NewCycle'];
 
-  var populatedTemplate = this.template;
-
   for (var keyword in this.options) {
     if (this.findInArray(dateColumns, keyword) > -1) {
-      populatedTemplate.replace('{ ' + keyword + ' }', this.createPrettyDate(this.options[keyword]));
+      this.template = this.template.replace('{ ' + keyword + ' }', this.createPrettyDate(this.options[keyword]));
     } else {
-      populatedTemplate.replace('{ ' + keyword + ' }', this.options[keyword]);
+      this.template = this.template.replace('{ ' + keyword + ' }', this.options[keyword]);
     }
   }
 
-  return populatedTemplate;
+  return this.template;
 };
 
 // Calls MailApp to send email
@@ -84,9 +82,15 @@ Email.prototype.findInArray = function(array, string) {
 
 // Function that records when an email is successfully sent
 Email.prototype.updateCell = function() {
-  SpreadsheetApp.getActiveSpreadsheet()
-                .getSheetByName(this.sheetName)
-                .getRange(this.cellCode)
-                .setNote(this.options.note)
-                .setValue(this.options.message);
+  var cell = SpreadsheetApp.getActiveSpreadsheet()
+                           .getSheetByName(this.sheetName)
+                           .getRange(this.cellCode);
+
+  if (this.options.note) {
+    cell.setNote(this.options.note);
+  }
+
+  if (this.options.message) {
+    cell.setValue(this.options.message);
+  }
 };
