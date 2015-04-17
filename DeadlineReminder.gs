@@ -1,7 +1,7 @@
 // Instantiate and run constructor
 function runDeadlineReminder() {
   // Change this template to change text in automated email
-  var reminderEmail = "Hi { firstName },\n\nPlease remember to complete  { bookName } by { NewCycle }.\n\nHappy reading!",
+  var reminderEmail = "Hi { firstName },\n\nPlease remember to complete  { bookName } by { NewCycle }.\n\nHappy reading!\n\nSchedule here: https://docs.google.com/spreadsheets/d/1wv54jAwqRxPyWAd8a-m_yLNJo2vHYmjEkfp8TCKRWWY/edit?usp=sharing",
       subject = '[BOOKCLUB] Reminder For Upcoming Cycle';
 
   new DeadlineReminder(reminderEmail, subject).run();
@@ -12,7 +12,7 @@ function DeadlineReminder(reminderEmail, subject) {
   var scheduleSheet = SpreadsheetApp.getActiveSpreadsheet()
                                      .getSheetByName("Schedule");
   this.scheduleSheetData = scheduleSheet.getDataRange().getValues();
-  this.scheduleSheetIndex = this.indexSheet(this.scheduleSheet);
+  this.scheduleSheetIndex = this.indexSheet(this.scheduleSheetData);
 
   var addressesSheet = SpreadsheetApp.getActiveSpreadsheet()
                                       .getSheetByName("Addresses");
@@ -37,6 +37,8 @@ function DeadlineReminder(reminderEmail, subject) {
     11: 'L',
     12: 'M',
   };
+
+  this.today = new Date();
 }
 
 DeadlineReminder.prototype.indexSheet = function(sheetData) {
@@ -44,7 +46,7 @@ DeadlineReminder.prototype.indexSheet = function(sheetData) {
       length = sheetData[0].length;
 
   for (var i = 0; i < length; i++) {
-    resultsheetData[0][i] = i;
+    result[sheetData[0][i]] = i;
   }
 
   return result;
@@ -53,10 +55,9 @@ DeadlineReminder.prototype.indexSheet = function(sheetData) {
 // Main script for running function
 DeadlineReminder.prototype.run = function() {
   // Get today's date
-  var today = new Date(),
-      newCycle = this.findNextCycle().
+  var newCycle = this.findNextCycle(),
       newCycleDate = newCycle[1],
-      newCycleRowIdx = this.findNextCycle()[0];
+      newCycleRowIdx = newCycle[0];
 
   // Go through every column in Schedule tab, send email if the person has not finished book yet -- add note when successfully sent email
   for (var i = 1; i < this.scheduleSheetData.length; i++) {
@@ -65,10 +66,10 @@ DeadlineReminder.prototype.run = function() {
           contactEmail = this.addressesSheetData[i][emailIdx],
           sheetName = 'Schedule',
           cellCode = this.numberToLetters[i] + newCycleRowIdx,
-          nameIdx = this.scheduleSheetData.Name,
-          options = {note: "Reminder sent: " + today,
+          nameIdx = this.addressesSheetIndex.Name,
+          options = {note: "Reminder sent: " + this.today,
                      NewCycle: newCycleDate,
-                     bookName: this.scheduleSheetData[i][newCycleRowIdx - 1],
+                     bookName: this.scheduleSheetData[newCycleRowIdx - 1][i],
                      firstName: this.addressesSheetData[i][nameIdx]};
 
       new Email(contactEmail, this.subject, this.reminderEmail, sheetName, cellCode, options);
@@ -80,10 +81,10 @@ DeadlineReminder.prototype.run = function() {
 DeadlineReminder.prototype.findNextCycle = function() {
   var newCycleColumnIdx = this.scheduleSheetIndex.NewCycle;
 
-  for (i = 1; i < length; i++) {
+  for (i = 1; i < this.scheduleSheetData.length; i++) {
     var newCycle = this.scheduleSheetData[i][newCycleColumnIdx];
 
-    if (newCycle > today) {
+    if (newCycle > this.today) {
       return [i, newCycle];
     }
   }
