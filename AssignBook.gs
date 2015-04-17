@@ -2,7 +2,7 @@
 function runAssignBook() {
   // Change this template to change text in automated email
   var mailInfo = "Hi {{ firstName }},\n\nPlease send your book to {{ sendToPerson }}. Their address is below:\n{{ sendAddress }}\n\nHappy reading!\n\nSchedule here: https://docs.google.com/spreadsheets/d/1wv54jAwqRxPyWAd8a-m_yLNJo2vHYmjEkfp8TCKRWWY/edit?usp=sharing",
-      mailInfoSubject = "[BOOKCLUB] Mailing Instructions (Deadline 7 days)",
+      mailInfoSubject = "[BOOKCLUB] Mailing Instructions (Due in 7 days)",
       nextBookInfo = "Hi {{ sendToPerson }},\n\nExpect to get {{ newBook }} soon from {{ firstName }}\n\nHappy reading!\n\n\n\nSchedule here: https://docs.google.com/spreadsheets/d/1wv54jAwqRxPyWAd8a-m_yLNJo2vHYmjEkfp8TCKRWWY/edit?usp=sharing",
       nextBookInfoSubject = "[BOOKCLUB] You're Next Book's in the Mail",
 
@@ -82,7 +82,7 @@ AssignBook.prototype.run = function() {
 
 AssignBook.prototype.firstWeekRandomAssignment = function() {
   var people = this.peopleInfo(),
-      peopleArray = this.peopleArray().shuffle();
+      peopleArray = shuffle(this.peopleArray());
 
   for (var i = 0; i < peopleArray.length; i++) {
     var sender = peopleArray[i];
@@ -186,7 +186,7 @@ var indexSheet = function(sheetData) {
   return result;
 };
 
-Array.prototype.shuffle = function () {
+var shuffle = function (array) {
   var l = this.length + 1;
   while (l--) {
     var r = ~~(Math.random() * l),
