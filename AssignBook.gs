@@ -1,9 +1,9 @@
 // Instantiate and run constructor
 function runAssignBook() {
   // Change this template to change text in automated email
-  var mailInfo = "Hi {{ firstName }},\n\nPlease send your book to {{ sendToPerson }}. Their address is below:\n{{ sendAddress }}\n\nHappy reading!\n\nSchedule here: https://docs.google.com/spreadsheets/d/1wv54jAwqRxPyWAd8a-m_yLNJo2vHYmjEkfp8TCKRWWY/edit?usp=sharing",
+  var mailInfo = "Hi { firstName },\n\nPlease send your book to { sendToPerson }. Their address is below:\n{ sendAddress }\n\nHappy reading!\n\nSchedule here: https://docs.google.com/spreadsheets/d/1wv54jAwqRxPyWAd8a-m_yLNJo2vHYmjEkfp8TCKRWWY/edit?usp=sharing",
       mailInfoSubject = "[BOOKCLUB] Mailing Instructions (Due in 7 days)",
-      nextBookInfo = "Hi {{ sendToPerson }},\n\nExpect to get {{ newBook }} soon from {{ firstName }}\n\nHappy reading!\n\n\n\nSchedule here: https://docs.google.com/spreadsheets/d/1wv54jAwqRxPyWAd8a-m_yLNJo2vHYmjEkfp8TCKRWWY/edit?usp=sharing",
+      nextBookInfo = "Hi { sendToPerson },\n\nExpect to get { newBook } soon from { firstName }\n\nHappy reading!\n\n\n\nSchedule here: https://docs.google.com/spreadsheets/d/1wv54jAwqRxPyWAd8a-m_yLNJo2vHYmjEkfp8TCKRWWY/edit?usp=sharing",
       nextBookInfoSubject = "[BOOKCLUB] You're Next Book's in the Mail",
 
       assign = new AssignBook(mailInfo, mailInfoSubject, nextBookInfo, nextBookInfoSubject);
@@ -101,6 +101,8 @@ AssignBook.prototype.firstWeekRandomAssignment = function() {
                     firstName: sender,
                     sendToPerson: receivingPerson,
                     sendAddress: people[receivingPerson].address,
+                    note: "Assigned: " + new Date(),
+                    message: book,
                   };
 
     new Email(contactEmail, subject, emailTemplate, sheetName, cellCode, options);
