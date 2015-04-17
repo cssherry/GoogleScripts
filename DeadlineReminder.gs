@@ -55,7 +55,7 @@ DeadlineReminder.prototype.indexSheet = function(sheetData) {
 // Main script for running function
 DeadlineReminder.prototype.run = function() {
   // Get today's date
-  var newCycle = this.findNextCycle(),
+  var newCycle = findNextCycle(),
       newCycleDate = newCycle[1],
       newCycleRowIdx = newCycle[0];
 
@@ -78,7 +78,7 @@ DeadlineReminder.prototype.run = function() {
 };
 
 // Find first row that is not before today's date -- remember date
-DeadlineReminder.prototype.findNextCycle = function() {
+var findNextCycle = function() {
   var newCycleColumnIdx = this.scheduleSheetIndex.NewCycle;
 
   for (i = 1; i < this.scheduleSheetData.length; i++) {
