@@ -102,7 +102,7 @@ AssignBook.prototype.firstWeekRandomAssignment = function() {
                     sendToPerson: receivingPerson,
                     sendAddress: people[receivingPerson].address,
                     note: "Assigned: " + new Date(),
-                    message: book,
+                    message: people[sender].book,
                   };
 
     new Email(contactEmail, subject, emailTemplate, sheetName, cellCode, options);
@@ -137,8 +137,8 @@ AssignBook.prototype.peopleArray = function() {
       nameIdx = this.addressesSheetIndex.Name;
 
   for (var i = 1; i < this.addressesSheetData.length; i++) {
-    var name = this.addressesSheetData[i][nameIdx];
-    result.push(name);
+    var firstName = this.addressesSheetData[i][nameIdx];
+    result.push(firstName);
   }
 
   return result;
@@ -189,14 +189,14 @@ var indexSheet = function(sheetData) {
 };
 
 var shuffle = function (array) {
-  var l = this.length + 1;
+  var l = array.length + 1;
   while (l--) {
     var r = ~~(Math.random() * l),
-        o = this[r];
+        o = array[r];
 
-    this[r] = this[0];
-    this[0] = o;
+    array[r] = array[0];
+    array[0] = o;
   }
 
-  return this;
+  return array;
 };
