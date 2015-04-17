@@ -39,7 +39,7 @@ function DeadlineReminder(reminderEmail, subject) {
   };
 }
 
-AssignBook.prototype.indexSheet = function(sheetData) {
+DeadlineReminder.prototype.indexSheet = function(sheetData) {
   var result = {},
       length = sheetData[0].length;
 
@@ -51,7 +51,7 @@ AssignBook.prototype.indexSheet = function(sheetData) {
 };
 
 // Main script for running function
-AssignBook.prototype.run = function() {
+DeadlineReminder.prototype.run = function() {
   // Get today's date
   var today = new Date(),
       newCycle = this.findNextCycle().
@@ -77,7 +77,7 @@ AssignBook.prototype.run = function() {
 };
 
 // Find first row that is not before today's date -- remember date
-AssignBook.prototype.findNextCycle = function() {
+DeadlineReminder.prototype.findNextCycle = function() {
   var newCycleColumnIdx = this.scheduleSheetIndex.NewCycle;
 
   for (i = 1; i < length; i++) {
