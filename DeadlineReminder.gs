@@ -55,12 +55,12 @@ DeadlineReminder.prototype.indexSheet = function(sheetData) {
 // Main script for running function
 DeadlineReminder.prototype.run = function() {
   // Get today's date
-  var newCycle = findNextCycle(),
+  var newCycle = findNextCycle(this.scheduleSheetData, this.scheduleSheetIndex),
       newCycleDate = newCycle[1],
       newCycleRowIdx = newCycle[0];
 
   // Go through every column in Schedule tab, send email if the person has not finished book yet -- add note when successfully sent email
-  for (var i = 1; i < this.scheduleSheetData.length; i++) {
+  for (var i = 1; i < this.scheduleSheetData[0].length; i++) {
     if (this.scheduleSheetData[i][newCycleRowIdx] === "") {
       var emailIdx = this.addressesSheetIndex.Email,
           contactEmail = this.addressesSheetData[i][emailIdx],
@@ -78,13 +78,14 @@ DeadlineReminder.prototype.run = function() {
 };
 
 // Find first row that is not before today's date -- remember date
-var findNextCycle = function() {
-  var newCycleColumnIdx = this.scheduleSheetIndex.NewCycle;
+var findNextCycle = function(scheduleSheetData, scheduleSheetIndex) {
+  var newCycleColumnIdx = scheduleSheetIndex.NewCycle,
+      today = new Date();
 
-  for (i = 1; i < this.scheduleSheetData.length; i++) {
-    var newCycle = this.scheduleSheetData[i][newCycleColumnIdx];
+  for (i = 1; i < scheduleSheetData.length; i++) {
+    var newCycle = scheduleSheetData[i][newCycleColumnIdx];
 
-    if (newCycle > this.today) {
+    if (newCycle > today) {
       return [i, newCycle];
     }
   }
