@@ -7,7 +7,6 @@ function Email(contactEmail, subject, template, sheetName, cellCode, options) {
   this.cellCode = cellCode;
   this.options = options;
 
-  this.populateEmail();
   this.send();
 }
 
@@ -16,13 +15,17 @@ Email.prototype.populateEmail = function() {
   // dateColumn should be edited to include titles of all columns that contain dates
   var dateColumns = ['Timestamp', 'NewCycle'];
 
+  var populatedTemplate = this.template;
+
   for (var keyword in this.options) {
     if (this.findInArray(dateColumns, keyword) > -1) {
-      this.template.replaceText('{ ' + keyword + ' }', createPrettyDate(this.options[keyword]));
+      populatedTemplate.replace('{ ' + keyword + ' }', this.createPrettyDate(this.options[keyword]));
     } else {
-      this.template.replaceText('{ ' + keyword + ' }', this.options[keyword]);
+      populatedTemplate.replace('{ ' + keyword + ' }', this.options[keyword]);
     }
   }
+
+  return populatedTemplate;
 };
 
 // Calls MailApp to send email
@@ -65,14 +68,16 @@ Email.prototype.createPrettyDate = function(date) {
   var mm = dateObject.getMonth();
   var dayOfWeek = dateObject.getDay(); // starts at Sunday
 
-  prettyDate = daysOfWeekIndex.dayOfWeek + ', ' + monthIndex.mm + ' ' + dd;
+  var prettyDate = daysOfWeekIndex[dayOfWeek] + ', ' + monthIndex[mm] + ' ' + dd;
   return '*' + prettyDate + '*';
 };
 
 // Helper function to find string in an array
 Email.prototype.findInArray = function(array, string) {
   for (var j=0; j < array.length; j++) {
-      if (array[j].match(string)) return j;
+      if (array[j].match(string)) {
+        return j;
+      }
   }
   return -1;
 };
