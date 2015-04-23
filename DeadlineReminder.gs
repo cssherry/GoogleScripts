@@ -22,22 +22,6 @@ function DeadlineReminder(reminderEmail, subject) {
   this.reminderEmail = reminderEmail;
   this.subject = subject;
 
-  this.numberToLetters = {
-    0: 'A',
-    1: 'B',
-    2: 'C',
-    3: 'D',
-    4: 'E',
-    5: 'F',
-    6: 'G',
-    7: 'H',
-    8: 'I',
-    9: 'J',
-    10: 'K',
-    11: 'L',
-    12: 'M',
-  };
-
   this.today = new Date();
 }
 
@@ -54,7 +38,7 @@ DeadlineReminder.prototype.run = function() {
       var emailIdx = this.addressesSheetIndex.Email,
           contactEmail = this.addressesSheetData[i][emailIdx],
           sheetName = 'Schedule',
-          cellCode = this.numberToLetters[i] + newCycleRowIdx,
+          cellCode = NumberToLetters[i] + newCycleRowIdx,
           nameIdx = this.addressesSheetIndex.Name,
           options = {note: "Reminder sent: " + this.today,
                      NewCycle: newCycleDate,
