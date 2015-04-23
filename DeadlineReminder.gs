@@ -12,12 +12,12 @@ function DeadlineReminder(reminderEmail, subject) {
   var scheduleSheet = SpreadsheetApp.getActiveSpreadsheet()
                                      .getSheetByName("Schedule");
   this.scheduleSheetData = scheduleSheet.getDataRange().getValues();
-  this.scheduleSheetIndex = this.indexSheet(this.scheduleSheetData);
+  this.scheduleSheetIndex = indexSheet(this.scheduleSheetData);
 
   var addressesSheet = SpreadsheetApp.getActiveSpreadsheet()
                                       .getSheetByName("Addresses");
   this.addressesSheetData = addressesSheet.getDataRange().getValues();
-  this.addressesSheetIndex = this.indexSheet(this.addressesSheetData);
+  this.addressesSheetIndex = indexSheet(this.addressesSheetData);
 
   this.reminderEmail = reminderEmail;
   this.subject = subject;
@@ -40,17 +40,6 @@ function DeadlineReminder(reminderEmail, subject) {
 
   this.today = new Date();
 }
-
-DeadlineReminder.prototype.indexSheet = function(sheetData) {
-  var result = {},
-      length = sheetData[0].length;
-
-  for (var i = 0; i < length; i++) {
-    result[sheetData[0][i]] = i;
-  }
-
-  return result;
-};
 
 // Main script for running function
 DeadlineReminder.prototype.run = function() {
