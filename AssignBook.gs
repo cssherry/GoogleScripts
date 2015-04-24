@@ -1,10 +1,10 @@
 // Instantiate and run constructor
 function runAssignBook() {
   // Change this template to change text in automated email
-  var mailInfo = "Hi { firstName },\n\nPlease send your book to { sendToPerson }. Their address is below:\n{ sendAddress }\n\nHappy reading!",
-      mailInfoSubject = "[BOOKCLUB] Mailing Instructions (Due in 7 days)",
+  var mailInfo = "Hi { firstName },\n\nPlease send your book to { sendToPerson }; address below:\n{ sendAddress }\n\nHappy reading!",
+      mailInfoSubject = "[BOOKCLUB] Due Soon: Mailing Instructions",
       nextBookInfo = "Hi { sendToPerson },\n\nExpect to get { newBook } soon from { firstName }. Don't forget to fill out the Google Form once you're done reading the book (https://docs.google.com/forms/d/1j6oYWu4QcadddV2VD0hBQ7XUVbYnwUrAkgowP_jXSaQ/viewform).\n\nHappy reading!\n\n",
-      nextBookInfoSubject = "[BOOKCLUB] You're Next Book's in the Mail",
+      nextBookInfoSubject = "[BOOKCLUB] Your Next Book",
 
       assign = new AssignBook(mailInfo, mailInfoSubject, nextBookInfo, nextBookInfoSubject);
 
@@ -32,13 +32,12 @@ function AssignBook(mailInfo, mailInfoSubject, nextBookInfo, nextBookInfoSubject
   this.mailInfoSubject = mailInfoSubject;
   this.nextBookInfo = nextBookInfo;
   this.nextBookInfoSubject = nextBookInfoSubject;
-
-  this.nextCycle = findNextCycle(this.scheduleSheetData, this.scheduleSheetIndex);
 }
 
 AssignBook.prototype.run = function() {
-  // If this is the first week, randomly assign books and send out emails
-  if (this.nextCycle[0] === 1) {
+  // If this is the first month, randomly assign books and send out emails
+  var cycleNumber = numberOfRows(this.scheduleSheetData, this.scheduleSheetIndex.Sherry);
+  if (cycleNumber === 1) {
     this.firstWeekRandomAssignment();
   } else {
     // Create an object with needNewBook, needSendBook, and readingHistory properties
@@ -61,9 +60,9 @@ AssignBook.prototype.firstWeekRandomAssignment = function() {
     var sender = people[i];
 
     if (i === people.length - 1) {
-      receivingPerson = people[0];
+      receiver = people[0];
     } else {
-      receivingPerson = people[i + 1];
+      receiver = people[i + 1];
     }
 
     // Create info for email
@@ -71,11 +70,11 @@ AssignBook.prototype.firstWeekRandomAssignment = function() {
         subject = this.mailInfoSubject,
         emailTemplate = this.mailInfo,
         sheetName = 'Schedule',
-        cellCode = NumberToLetters[receivingPerson.idx] + 2,
+        cellCode = NumberToLetters[receiver.idx] + 2,
         options = {
                     firstName: sender.name,
-                    sendToPerson: receivingPerson.name,
-                    sendAddress: receivingPerson.address,
+                    sendToPerson: receiver.name,
+                    sendAddress: receiver.address,
                     note: "Assigned: " + new Date(),
                     message: sender.book,
                   };
@@ -118,21 +117,23 @@ AssignBook.prototype.reviewFormResponseSheet = function() {
         hasNewBookIndex = this.formSheetIndex.HasNewBook,
         bookIndex = this.formSheetIndex['Which book did you just finish reading?'],
         nameIndex = this.formSheetIndex.Name,
-        book = formSheetData[i][bookIndex],
-        name = formSheetData[i][nameIndex],
         result = {needNewBook: [], needSendBook: [], readingHistory: {}},
-        cell;
+        cell,
+        numberEntries = numberOfRows(this.formSheetData) - 1;
 
-    for (var i = 0; i < numberOfRows(formSheetData) ; i++) {
+    for (var i = 1; i < numberEntries; i++) {
+      var book = this.formSheetData[i][bookIndex],
+          name = this.formSheetData[i][nameIndex];
+
       // add name/book/cell to needNewBook object if WhoWillReadNext empty
-      if (!formSheetData[i][whoWillReadNextIndex]) {
-        cell = NumberToLetters[whoWillReadNextIndex] + i;
+      if (!this.formSheetData[i][whoWillReadNextIndex]) {
+        cell = NumberToLetters[whoWillReadNextIndex] + (i + 1);
         result.needNewBook.push({name: name, book: book, cell: cell});
       }
 
       // add name/book/cell to needSendBook object if HasNewBook empty
-      if (!formSheetData[i][hasNewBookIndex]) {
-        cell = NumberToLetters[hasNewBookIndex] + i;
+      if (!this.formSheetData[i][hasNewBookIndex]) {
+        cell = NumberToLetters[hasNewBookIndex] + (i + 1);
         result.needSendBook.push({name: name, book: book, cell: cell});
       }
 
@@ -235,7 +236,7 @@ AssignBook.prototype.bookAssigned = function(sender, _receiver) {
   var email = new Email(contactEmail2, this.nextBookInfoSubject, this.nextBookInfo, 'Form Responses 1', receiver.cell, options2);
 
   var lastIdx = numberOfRows(this.scheduleSheetData, reciever.idx),
-      cell = NumberToLetters[receivingPerson.idx] + lastIdx,
+      cell = NumberToLetters[receiverInfo.idx] + lastIdx,
       note = "Assigned: " + this.today,
       message = sender.book;
 
