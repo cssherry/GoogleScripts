@@ -50,7 +50,7 @@ var shuffle = function (array) {
   return array;
 };
 
-// Find first row that is not before today's date -- remember date
+// Find first row that is not before today's date return array with index and new cycle date
 var findNextCycle = function(scheduleSheetData, scheduleSheetIndex) {
   var newCycleColumnIdx = scheduleSheetIndex.NewCycle,
       today = new Date();
@@ -72,4 +72,15 @@ var findInArray = function(array, string) {
       }
   }
   return -1;
+};
+
+// Find last row of column
+var numberOfRows = function (sheetData, _columnIndex) {
+  var columnIndex = _columnIndex ? _columnIndex : 0;
+
+  for (var i = 0; i < sheetData.length; i++) {
+    if (!sheetData[i][columnIndex]) {
+      return i;
+    }
+  }
 };
