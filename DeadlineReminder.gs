@@ -2,7 +2,7 @@
 function runDeadlineReminder() {
   // Change this template to change text in automated email
   var reminderEmail = "Hi { firstName },\n\nPlease remember to complete  { bookName } by { NewCycle }.\n\nHappy reading!",
-      subject = '[BOOKCLUB] Reminder For Upcoming Cycle';
+      subject = '[BOOKCLUB] Due Soon: Reminder For Upcoming Cycle';
 
   new DeadlineReminder(reminderEmail, subject).run();
 }
