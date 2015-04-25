@@ -1,11 +1,15 @@
 // Define the Email constructor
-function Email(contactEmail, subject, template, sheetName, cellCode, options) {
+// contactEmail: who to email to
+// subject: email subject
+// template: email body
+// emailOptions: Any regex keys and their values
+// updateCellsOptions: an array of objects, each with sheetName, cellCode, note, and message properties
+function Email(contactEmail, subject, template, emailOptions, updateCellsOptions) {
   this.contactEmail = contactEmail;
-  this.template = template;
   this.subject = subject;
-  this.sheetName = sheetName;
-  this.cellCode = cellCode;
-  this.options = options;
+  this.template = template;
+  this.options = emailOptions;
+  this.updateCellsOptions = updateCellsOptions;
 
   this.send();
 }
@@ -74,33 +78,26 @@ Email.prototype.createPrettyDate = function(date) {
 };
 
 // Function that records when an email is successfully sent
-Email.prototype.updateCell = function(_) {
-  var sheetName,
-      cellCode,
-      note,
-      message;
+Email.prototype.updateCell = function() {
+  for (var i = 0; i < this.updateCellsOptions.length; i++) {
+    var options = this.updateCellsOptions[i],
+        sheetName = options.sheetName,
+        cellCode = options.cellCode,
+        note = options.note,
+        message = options.message;
 
-  if (_) {
-    sheetName = _.sheetName;
-    cellCode = _.cellCode;
-    note = _.note;
-    message = _.message;
-  } else {
-    sheetName = this.sheetName;
-    cellCode = this.cellCode;
-    note = this.options.note;
-    message = this.options.message;
-  }
+    var cell = SpreadsheetApp.getActiveSpreadsheet()
+                             .getSheetByName(sheetName)
+                             .getRange(cellCode);
 
-  var cell = SpreadsheetApp.getActiveSpreadsheet()
-                           .getSheetByName(sheetName)
-                           .getRange(cellCode);
+    if (note) {
+      var currentNote = cell.getNote();
+      cell.setNote(currentNote + "\n" + note);
+    }
 
-  if (note) {
-    cell.setNote(note);
-  }
-
-  if (message) {
-    cell.setValue(message);
+    if (message) {
+      var currentMessage = cell.getValue();
+      cell.setValue(currentMessage + "\n" + message);
+    }
   }
 };

@@ -14,6 +14,11 @@ function DeadlineReminder(reminderEmail, subject) {
   this.scheduleSheetData = scheduleSheet.getDataRange().getValues();
   this.scheduleSheetIndex = indexSheet(this.scheduleSheetData);
 
+  var formSheet = SpreadsheetApp.getActiveSpreadsheet()
+                                 .getSheetByName("Form Responses 1");
+  this.formSheetData = formSheet.getDataRange().getValues();
+  this.formSheetIndex = indexSheet(this.formSheetData);
+
   var addressesSheet = SpreadsheetApp.getActiveSpreadsheet()
                                       .getSheetByName("Addresses");
   this.addressesSheetData = addressesSheet.getDataRange().getValues();
@@ -30,22 +35,48 @@ DeadlineReminder.prototype.run = function() {
   // Get today's date
   var newCycle = findNextCycle(this.scheduleSheetData, this.scheduleSheetIndex),
       newCycleDate = newCycle[1],
-      newCycleRowIdx = newCycle[0];
+      newCycleRowIdx = newCycle[0],
+      numberEntries = numberOfRows(this.formSheetData),
+      hasNewBookIndex = this.formSheetIndex.HasNewBook,
+      finishedNotAssigned = {},
+      name;
 
-  // Go through every column in Schedule tab, send email if the person has not finished book yet -- add note when successfully sent email
-  for (var i = 1; i < this.scheduleSheetData[0].length; i++) {
-    if (this.scheduleSheetData[i][newCycleRowIdx] === "") {
-      var emailIdx = this.addressesSheetIndex.Email,
-          contactEmail = this.addressesSheetData[i][emailIdx],
-          sheetName = 'Schedule',
-          cellCode = NumberToLetters[i] + newCycleRowIdx,
-          nameIdx = this.addressesSheetIndex.Name,
-          options = {note: "Reminder sent: " + this.today,
-                     NewCycle: newCycleDate,
-                     bookName: this.scheduleSheetData[newCycleRowIdx - 1][i],
-                     firstName: this.addressesSheetData[i][nameIdx]};
+  // Only proceed if the current month is the one right before the new cycle
+  if (newCycleDate.getMonth() <= this.today.getMonth()) {
+    // Get hash of people who have finished their book but have not been assigned a new book
+    for (var j = 1; j < numberEntries; j++) {
+      var nameIndex = this.formSheetIndex.Name;
+      name = this.formSheetData[j][nameIndex];
 
-      new Email(contactEmail, this.subject, this.reminderEmail, sheetName, cellCode, options);
+      // add name/book/cell to needSendBook object if HasNewBook empty
+      if (!this.formSheetData[j][hasNewBookIndex]) {
+        cell = NumberToLetters[hasNewBookIndex] + (j + 1);
+        finishedNotAssigned[name] = true;
+      }
+    }
+
+
+    // Go through every column in Schedule tab, send email if the person has not finished book yet -- add note when successfully sent email
+    for (var i = 1; i < this.scheduleSheetData[0].length; i++) {
+      var nameIdx = this.addressesSheetIndex.Name;
+      name = this.addressesSheetData[i][nameIdx];
+
+      if (!this.scheduleSheetData[newCycleRowIdx][i] && !finishedNotAssigned[name]) {
+        var emailIdx = this.addressesSheetIndex.Email,
+            contactEmail = this.addressesSheetData[i][emailIdx],
+            sheetName = 'Schedule',
+            cellCode = NumberToLetters[i] + newCycleRowIdx,
+            emailOptions = {NewCycle: newCycleDate,
+                            bookName: this.scheduleSheetData[newCycleRowIdx - 1][i],
+                            firstName: name},
+            updateCellOptions = {
+                                  note: "Reminder sent: " + this.today,
+                                  sheetName: sheetName,
+                                  cellCode: cellCode
+                                };
+
+        new Email(contactEmail, this.subject, this.reminderEmail, emailOptions, [updateCellOptions]);
+      }
     }
   }
 };

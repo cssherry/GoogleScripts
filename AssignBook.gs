@@ -69,17 +69,20 @@ AssignBook.prototype.firstWeekRandomAssignment = function() {
     var contactEmail = sender.email,
         subject = this.mailInfoSubject,
         emailTemplate = this.mailInfo,
-        sheetName = 'Schedule',
         cellCode = NumberToLetters[receiver.idx] + 2,
-        options = {
+        emailOptions = {
                     firstName: sender.name,
                     sendToPerson: receiver.name,
                     sendAddress: receiver.address,
-                    note: "Assigned: " + new Date(),
-                    message: sender.book,
-                  };
+                  },
+        updateCellOptions = {
+                              note: "Assigned: " + new Date(),
+                              message: sender.book,
+                              cellCode: cellCode,
+                              sheetName: 'Schedule'
+                            };
     // Send email
-    new Email(contactEmail, subject, emailTemplate, sheetName, cellCode, options);
+    new Email(contactEmail, subject, emailTemplate, emailOptions, [updateCellOptions]);
   }
 };
 
@@ -159,8 +162,7 @@ AssignBook.prototype.assignReaders = function(formSheetData) {
   for (var k = 0; k < numberNeedSendBook; k++) {
     sender = formSheetData.needSendBook[k];
     numberNeedSendBook = formSheetData.needSendBook.length;
-    var needNewBookMaxIdx = numberNeedSendBook - 1,
-        book = sender.book,
+    var book = sender.book,
         maxTimeBooksRead = numberOfRows(this.addressesSheetData) - 2,
         numberTimesBookRead = formSheetData.readingHistory[book].numberTimesRead;
 
@@ -180,6 +182,9 @@ AssignBook.prototype.assignReaders = function(formSheetData) {
       formSheetData.needSendBook.splice(k, 1);
       this.bookAssigned(sender, receiver);
     } else {
+
+      var needNewBookMaxIdx = formSheetData.needNewBook.length - 1;
+
       // Else try to find a match
       for (var i = needNewBookMaxIdx; i > -1 ; i--) {
         receiver = formSheetData.needNewBook[i];
@@ -192,7 +197,6 @@ AssignBook.prototype.assignReaders = function(formSheetData) {
         // Skip person if it's their book or if they've already read it
         if (receiversOriginalBook !== book && !receiverReadBook) {
           formSheetData.needNewBook.splice(i, 1);
-          formSheetData.needSendBook.splice(k, 1);
           this.bookAssigned(sender, receiver);
           break;
         }
@@ -223,14 +227,20 @@ AssignBook.prototype.bookAssigned = function(sender, receiver) {
   // sendToPerson: receiver
   // sendAddress: receiver's address
   var contactEmail1 = senderInfo.email,
-      options1 = {note: "Assigned: " + new Date(),
+      emailOptions1 = {note: "Assigned: " + new Date(),
                   message: receiver.name,
                   sendAddress: receiverInfo.address,
                   sendToPerson: receiver.name,
                   firstName: sender.name
-                 };
+                },
+      updateCellOptions1 = {
+                            note: "Assigned: " + new Date(),
+                            message: receiver.name,
+                            cellCode: sender.cell,
+                            sheetName: 'Form Responses 1'
+                          };
 
-  new Email(contactEmail1, this.mailInfoSubject, this.mailInfo, 'Form Responses 1', sender.cell, options1);
+  new Email(contactEmail1, this.mailInfoSubject, this.mailInfo, emailOptions1, [updateCellOptions1]);
 
   // Send heads up email
   // sendToPerson: receiver's name
@@ -239,18 +249,26 @@ AssignBook.prototype.bookAssigned = function(sender, receiver) {
   var contactEmail2 = receiverInfo.email,
       lastIdx = numberOfRows(this.scheduleSheetData, receiverInfo.idx),
       cell = NumberToLetters[receiverInfo.idx] + (lastIdx + 1),
-      options2 = {note: "Assigned: " + new Date(),
-                  message: sender.book,
-                  sendToPerson: receiver.name,
-                  newBook: sender.book,
-                  firstName: sender.name
-                 };
-
-  var email = new Email(contactEmail2, this.nextBookInfoSubject, this.nextBookInfo, 'Schedule', cell, options2);
-
-  var note = "Reminder sent: " + new Date();
+      emailOptions2 = {
+                        sendToPerson: receiver.name,
+                        newBook: sender.book,
+                        firstName: sender.name
+                      },
+      updateCellsOptions2 = [{
+                            note: "Assigned: " + new Date(),
+                            message: sender.book,
+                            cellCode: cell,
+                            sheetName: 'Schedule'
+                          }];
 
   if (receiver.cell) {
-    email.updateCell({sheetName: 'Form Responses 1', cellCode: receiver.cell, note: note, message: "TRUE"});
+    updateCellsOptions2.push({
+      note: "Reminder sent: " + new Date(),
+      message: "TRUE",
+      cellCode: receiver.cell,
+      sheetName: 'Form Responses 1'
+    });
   }
+
+  new Email(contactEmail2, this.nextBookInfoSubject, this.nextBookInfo, emailOptions2, updateCellOptions2);
 };
