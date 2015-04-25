@@ -153,10 +153,12 @@ AssignBook.prototype.assignReaders = function(formSheetData) {
   // Go through everyone who needs to send a book (first to last)
   // Try to pair with people who need a book (last to first)
   var sender,
-      receiver;
+      receiver,
+      numberNeedSendBook = formSheetData.needSendBook.length;
 
   for (var k = 0; k < numberNeedSendBook; k++) {
     sender = formSheetData.needSendBook[k];
+    numberNeedSendBook = formSheetData.needSendBook.length;
     var needNewBookMaxIdx = numberNeedSendBook - 1,
         book = sender.book,
         maxTimeBooksRead = numberOfRows(this.addressesSheetData) - 2,
@@ -171,9 +173,11 @@ AssignBook.prototype.assignReaders = function(formSheetData) {
         if (book === this.addressesSheetData[j][bookIndex]) {
           var name = this.addressesSheetData[j][nameIndex];
           receiver = {name: name};
+          break;
         }
       }
 
+      formSheetData.needSendBook.splice(k, 1);
       this.bookAssigned(sender, receiver);
     } else {
       // Else try to find a match
@@ -188,6 +192,7 @@ AssignBook.prototype.assignReaders = function(formSheetData) {
         // Skip person if it's their book or if they've already read it
         if (receiversOriginalBook !== book && !receiverReadBook) {
           formSheetData.needNewBook.splice(i, 1);
+          formSheetData.needSendBook.splice(k, 1);
           this.bookAssigned(sender, receiver);
           break;
         }
@@ -206,7 +211,8 @@ AssignBook.prototype.bookAssigned = function(sender, receiver) {
     for (var j = 0; j < peopleInfo.length; j++) {
       if (peopleInfo[j].name === sender.name) {
         senderInfo = peopleInfo[j];
-      } else if (peopleInfo[j].name === receiver.name) {
+      }
+      if (peopleInfo[j].name === receiver.name) {
         receiverInfo = peopleInfo[j];
       }
     }
