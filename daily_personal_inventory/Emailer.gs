@@ -38,8 +38,9 @@ Email.prototype.send = function () {
             rules +
             urls,
     });
-
-    this.updateCell();
+    if (this.updateCellsOptions) {
+      this.updateCell();
+    }
 };
 
 // Function that records when an email is successfully sent

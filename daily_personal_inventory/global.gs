@@ -5,7 +5,9 @@ var header = "Don't forget! !1 for Urgent&Important (DO NOW!), !2 for Urgent (Tr
              "Start to-do list with three entries: *must* do (an immediate important task), *should* do (something for long-term goals), and something genuinely *want* to do\n\n" +
              "Keep to-do short with 1 big thing, 3 medium things, and 5 little things\n\n",
     currentDate = createPrettyDate(new Date(), 'short'),
-    footer = "\n\nAs reported on { timestamp }";
+    footer = "\n\nAs reported on { timestamp }\n\n" +
+             "Fill out the form: https://docs.google.com/forms/d/1FUw_hkDrKN_PVS3oJLHGpM13il-Ugyvfhc_Tg5E_JKc/viewform\n\n" +
+             "See the spreadsheet: https://docs.google.com/spreadsheet/ccc?key=0AggnWnxIWH43dFEtdU5jZmwxM2kyU2ZaNk5KOVl1SXc#gid=0";
 
 // To convert column index to letter for cells
 var NumberToLetters = function(n) {

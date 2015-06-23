@@ -17,8 +17,8 @@ function getEditLink(emailTemplate, subject, sendTo) {
 
   this.spreadsheet = SpreadsheetApp.getActiveSpreadsheet()
                                      .getSheetByName("Daily Inventory Data");
-  this.scheduleSheetData = this.spreadsheet.getDataRange().getValues();
-  this.scheduleSheetIndex = indexSheet(this.scheduleSheetData);
+  this.responseSheetData = this.spreadsheet.getDataRange().getValues();
+  this.responseSheetIndex = indexSheet(this.responseSheetData);
 
   this.emailTemplate = emailTemplate;
   this.subject = subject;
@@ -30,17 +30,17 @@ function getEditLink(emailTemplate, subject, sendTo) {
 // gets editLink for form and updates spreadsheet/sends link if it's for current day
 getEditLink.prototype.run = function () {
   var startRow = 3,  // First row of data to process
-      numberEntries = this.scheduleSheetData.length - startRow,// figure out what the last row is (the first row has 2 entries before first real entry)
-      editLinkIdx = this.scheduleSheetIndex.EditLink,
-      timestampIdx = this.scheduleSheetIndex.Timestamp,
-      dateIdx = this.scheduleSheetIndex.Date;
+      numberEntries = this.responseSheetData.length - startRow,// figure out what the last row is (the first row has 2 entries before first real entry)
+      editLinkIdx = this.responseSheetIndex.EditLink,
+      timestampIdx = this.responseSheetIndex.Timestamp,
+      dateIdx = this.responseSheetIndex.Date;
 
   // Go through each line and check to make sure it has an editLink
   for (var i = 0; i < numberEntries ; i++) {
     var rowIdx = startRow + i,
-        editLink = this.scheduleSheetData[rowIdx][editLinkIdx],
-        timestamp = this.scheduleSheetData[rowIdx][timestampIdx],
-        entryDate = this.scheduleSheetData[rowIdx][dateIdx];
+        editLink = this.responseSheetData[rowIdx][editLinkIdx],
+        timestamp = this.responseSheetData[rowIdx][timestampIdx],
+        entryDate = this.responseSheetData[rowIdx][dateIdx];
 
     // If there is not an editLink, put it in, so long as form timestamp and spreadsheet timestamp match
     if (!editLink){
