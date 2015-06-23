@@ -29,7 +29,7 @@ function SendEditLink(emailTemplate, subject, sendTo) {
 // gets editLink for form and updates spreadsheet/sends link if it's for current day
 SendEditLink.prototype.run = function () {
   var startRow = 3,  // First row of data to process
-      numberEntries = numberOfRows(this.scheduleSheetData) - 1,// figure out what the last row is (the first row has 2 entries before first real entry)
+      numberEntries = this.scheduleSheetData.length - startRow,// figure out what the last row is (the first row has 2 entries before first real entry)
       editLinkIdx = this.scheduleSheetIndex.EditLink,
       dateIdx = this.scheduleSheetIndex.Date;
 
