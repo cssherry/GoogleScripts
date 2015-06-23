@@ -15,7 +15,7 @@ function Email(contactEmail, subject, template, emailOptions, updateCellsOptions
 // Replaces all keywords in email template with their actual values
 Email.prototype.populateEmail = function() {
   // dateColumn should be edited to include titles of all columns that contain dates
-  var dateColumns = ['Timestamp', 'Date'];
+  var dateColumns = ['timestamp', 'date'];
 
   for (var keyword in this.options) {
     if (findInArray(dateColumns, keyword) > -1) {

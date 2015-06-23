@@ -1,16 +1,17 @@
 // Instantiate and run constructor
 function runSendEditLink() {
   // Change this template to change text in automated email
-  var reminderEmail = "If you would like to edit today's daily inventory, please visit the following link: { link }\n",
-      currentDate = createPrettyDate(new Date(), 'short'),
+  var reminderEmail = header +
+                      "Edit link: { link }\n" +
+                      footer ,
       subject = "Edit Link for Daily Personal Inventory (" + currentDate + ")",
       sendTo = 'xiao.qiao.zhou+dpiedit@gmail.com';
 
-  new SendEditLink(reminderEmail, subject, sendTo).run();
+  new getEditLink(reminderEmail, subject, sendTo).run();
 }
 
 // Store email template, subject, and sendto
-function SendEditLink(emailTemplate, subject, sendTo) {
+function getEditLink(emailTemplate, subject, sendTo) {
   var form = FormApp.openById('1FUw_hkDrKN_PVS3oJLHGpM13il-Ugyvfhc_Tg5E_JKc'); //form ID
   this.responses = form.getResponses(); //get email responses
 
@@ -27,16 +28,18 @@ function SendEditLink(emailTemplate, subject, sendTo) {
 }
 
 // gets editLink for form and updates spreadsheet/sends link if it's for current day
-SendEditLink.prototype.run = function () {
+getEditLink.prototype.run = function () {
   var startRow = 3,  // First row of data to process
       numberEntries = this.scheduleSheetData.length - startRow,// figure out what the last row is (the first row has 2 entries before first real entry)
       editLinkIdx = this.scheduleSheetIndex.EditLink,
+      timestampIdx = this.scheduleSheetIndex.Timestamp,
       dateIdx = this.scheduleSheetIndex.Date;
 
   // Go through each line and check to make sure it has an editLink
   for (var i = 0; i < numberEntries ; i++) {
     var rowIdx = startRow + i,
         editLink = this.scheduleSheetData[rowIdx][editLinkIdx],
+        timestamp = this.scheduleSheetData[rowIdx][timestampIdx],
         entryDate = this.scheduleSheetData[rowIdx][dateIdx];
 
     // If there is not an editLink, put it in, so long as form timestamp and spreadsheet timestamp match
@@ -76,6 +79,7 @@ SendEditLink.prototype.run = function () {
           var cellcode = NumberToLetters(editLinkIdx) + (rowIdx + 1),
               emailOptions = {
                   link: formUrl,
+                  timestamp: timestamp
                 },
               updateCellOptions = {
                   sheetName: 'Daily Inventory Data',

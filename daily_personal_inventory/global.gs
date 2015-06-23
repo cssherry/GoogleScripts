@@ -1,8 +1,11 @@
 // GLOBAL VARIABLES
 
-// Footer used in all emails
-var rules = '\n\nBookclub Rules:\n- Choose a book you have read\n- Each person has 2 months to finish their book, write some reflection / thoughts in the back\n- Annotations welcomed; use a different color pen than what you\'ve found in the book. Put your initials next to your comments!\n- Once a book is finished, log it by filling out the Google Form (link below). \n- An email will arrive with the address you should send the book to -- please send the book 7 days after receiving the assignment. A separate email will arrive once a new book is about to be sent to you. ',
-    urls = '\n\nGoogle Form: https://docs.google.com/forms/d/1j6oYWu4QcadddV2VD0hBQ7XUVbYnwUrAkgowP_jXSaQ/viewform\nSchedule: https://docs.google.com/spreadsheets/d/1wv54jAwqRxPyWAd8a-m_yLNJo2vHYmjEkfp8TCKRWWY/edit?usp=sharing\nGoodreads:https://www.goodreads.com/group/show/160644-ramikip-2-0.html';
+// Header/Footer used in all emails
+var header = "Don't forget! !1 for Urgent&Important (DO NOW!), !2 for Urgent (Try to Delegate), !3 for Important (Decide when to do), !4 for do later\nUse #e0 for things to do as a break\n\n" +
+             "Start to-do list with three entries: *must* do (an immediate important task), *should* do (something for long-term goals), and something genuinely *want* to do\n\n" +
+             "Keep to-do short with 1 big thing, 3 medium things, and 5 little things\n\n",
+    currentDate = createPrettyDate(new Date(), 'short'),
+    footer = "\n\nAs reported on { timestamp }";
 
 // To convert column index to letter for cells
 var NumberToLetters = function(n) {
