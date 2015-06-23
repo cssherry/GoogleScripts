@@ -10,14 +10,12 @@ function Email(contactEmail, subject, template, emailOptions, updateCellsOptions
   this.template = template;
   this.options = emailOptions;
   this.updateCellsOptions = updateCellsOptions;
-
-  this.send();
 }
 
 // Replaces all keywords in email template with their actual values
 Email.prototype.populateEmail = function() {
   // dateColumn should be edited to include titles of all columns that contain dates
-  var dateColumns = ['Timestamp', 'NewCycle'];
+  var dateColumns = ['Timestamp', 'Date'];
 
   for (var keyword in this.options) {
     if (findInArray(dateColumns, keyword) > -1) {

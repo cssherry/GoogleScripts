@@ -1,60 +1,72 @@
-function SendEditLink() {
+// Instantiate and run constructor
+function runSendEditLink() {
+  // Change this template to change text in automated email
+  var reminderEmail = "If you would like to edit today's daily inventory, please visit the following link: { link }\n",
+      currentDate = createPrettyDate(new Date(), 'short'),
+      subject = "Edit Link for Daily Personal Inventory (" + currentDate + ")",
+      sendTo = 'xiao.qiao.zhou+dpiedit@gmail.com';
 
-  this.form = FormApp.openById('1FUw_hkDrKN_PVS3oJLHGpM13il-Ugyvfhc_Tg5E_JKc'); //form ID
+  new SendEditLink(emailTemplate, subject, sendTo).run();
+}
+
+// Store email template, subject, and sendto
+function SendEditLink(emailTemplate, subject, sendTo) {
+  var form = FormApp.openById('1FUw_hkDrKN_PVS3oJLHGpM13il-Ugyvfhc_Tg5E_JKc'); //form ID
+  this.responses = form.getResponses(); //get email responses
 
   this.spreadsheet = SpreadsheetApp.getActiveSpreadsheet()
                                      .getSheetByName("Daily Inventory Data");
   this.scheduleSheetData = this.spreadsheet.getDataRange().getValues();
   this.scheduleSheetIndex = indexSheet(this.scheduleSheetData);
 
-  var startRow = 4;  // First row of data to process
-  var lastRow = numberOfRows(this.scheduleSheetData);// figure out what the last row is
+  this.emailTemplate = emailTemplate;
+  this.subject = subject;
+  this.sendTo = sendTo;
 
-  for (var i = 0; i < numRows ; i++) {
-    if (data[i][0] != ""){
-      var responses = response[i].getEditResponseUrl(); //grabs the url from the form
-      sheet.getRange(startRow + i, 10).setValue(responses);
+  this.today = new Date();
+}
 
-      var EMAIL_SENT = "EMAIL_SENT";// This constant is written in column S for rows for which an email has been sent successfully.
+// gets editLink for form and updates spreadsheet/sends link if it's for current day
+SendEditLink.prototype.run = function () {
+  var startRow = 4,  // First row of data to process
+      lastRow = numberOfRows(this.scheduleSheetData),// figure out what the last row is
+      editLinkIdx = this.scheduleSheetIndex.EditLink,
+      timestampIdx = this.scheduleSheetIndex.Timestamp,
+      dateIdx = this.scheduleSheetIndex.Date;
 
-      var currentTime = createPrettyDate(new Date(), 'short');
+  // Go through each line and check to make sure it has an editLink
+  for (var i = 0; i < lastRow ; i++) {
+    var editLink = this.addressesSheetData[i][editLinkIdx],
+        timestamp = this.addressesSheetData[i][timestampIdx],
+        entryDate = this.addressesSheetData[i][dateIdx];
 
-      var message = "";
+    // If there is not an editLink, put it in, so long as form timestamp and spreadsheet timestamp match
+    if (!editLink){
+      var response = this.responses[i],
+          formResponse = response.getEditResponseUrl(), //grabs the url from the form
+          formTimestamp = response.getTimestamp(); //grabs the timestamp from the form
 
-      // grab column 3 (the 'First Name' column)
-      var dataRange1 = sheet.getRange(3,3,lastRow-startRow+1,1);
+        if (formTimestamp === timestamp) {
+          var cellcode = NumberToLetters[editLinkIdx] + (i + 1),
+              emailOptions = {
+                  link: editLink,
+                },
+              updateCellOptions = {
+                  note: "Reminder sent: " + this.today,
+                  sheetName: 'Daily Inventory Data',
+                  cellCode: cellCode,
+                  message: editLink,
+                };
 
-      // grab column 4 (the 'Last name' column)
-      var dataRange2 = sheet.getRange(3,4,lastRow-startRow+1,1);
+          var email = new Email(this.sendTo, this.subject, this.emailTemplate, emailOptions, [updateCellOptions]);
 
-      // grab column 4 (the 'email address' column)
-      var dataRange3 = sheet.getRange(3,4,lastRow-startRow+1,1);
-
-      // grab column 11 (the Email_Sent column)
-      var dataRange4 = sheet.getRange(3, 11,lastRow-startRow+1,1);
-
-      // grab column 10 (the editable url column)
-      var dataRange5 = sheet.getRange(3, 10,lastRow-startRow+1,1);
-
-      // Fetch values for each row in the Range.
-      var data1 = dataRange1.getValues();
-      var data2 = dataRange2.getValues();
-      var data3 = dataRange3.getValues();
-      var data4 = dataRange4.getValues();
-      var data5 = dataRange5.getValues();
-
-      var First = data1[i][0];       // 3 column
-      var Last = data2[i][0];       // 4 column
-      var Email = data3[i][0];       // 8 column
-      var emailSent = data4[i][0];     // 19 column
-      var link = data5[i][0];     // 18 column
-      if (emailSent != EMAIL_SENT) {  // Prevents sending duplicates
-        var subject = "Edit Link for Daily Personal Inventory (" + currentTime + ")";
-        message = "If you would like to edit today's daily inventory, please visit the following link: "+link+"\n";
-        MailApp.sendEmail("xiao.qiao.zhou@gmail.com", subject, message);
-        sheet.getRange(startRow + i, 11).setValue(EMAIL_SENT);// Make sure the cell is updated right away in case the script is interrupted
-        SpreadsheetApp.flush();
+          // Only send edit link if today is the day that the entry is about
+          if (this.today === new Date(entryDate)) {
+            email.send();
+          } else {
+            email.updateCell();
+          }
       }
     }
   }
-}
+};
