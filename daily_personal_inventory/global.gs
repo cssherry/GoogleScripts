@@ -1,12 +1,52 @@
 // GLOBAL VARIABLES
 
+// Create pretty date in either short (yyyy/mm/dd) or long (ww, mm dd) format
+var createPrettyDate = function(date, format) {
+  var dateObject = new Date(date), dd, mm, yyyy, dayOfWeek;
+  if (format === 'short') {
+    mm = dateObject.getMonth() + 1;
+    dd = dateObject.getDate();
+    yyyy = dateObject.getFullYear();
+    return yyyy + "/" + mm + "/" + dd;
+  } else {
+    var daysOfWeekIndex = { 0: 'Sunday',
+                            1: 'Monday',
+                            2: 'Tuesday',
+                            3: 'Wednesday',
+                            4: 'Thursday',
+                            5: 'Friday',
+                            6: 'Saturday',
+                          };
+
+    var monthIndex = { 0: 'January',
+                       1: 'February',
+                       2: 'March',
+                       3: 'April',
+                       4: 'May',
+                       5: 'June',
+                       6: 'July',
+                       7: 'August',
+                       8: 'September',
+                       9: 'October',
+                       10: 'November',
+                       11: 'December',
+                     };
+
+    dd = dateObject.getDate();
+    mm = dateObject.getMonth();
+    dayOfWeek = dateObject.getDay(); // starts at Sunday
+
+    return daysOfWeekIndex[dayOfWeek] + ', ' + monthIndex[mm] + ' ' + dd;
+  }
+};
+
 // Header/Footer used in all emails
-var header = "Don't forget! !1 for Urgent&Important (DO NOW!), !2 for Urgent (Try to Delegate), !3 for Important (Decide when to do), !4 for do later\nUse #e0 for things to do as a break\n\n" +
-             "Start to-do list with three entries: *must* do (an immediate important task), *should* do (something for long-term goals), and something genuinely *want* to do\n\n" +
+var header = "Don't forget! !1 for Urgent&Important (DO NOW!), !2 for Urgent (Try to Delegate), !3 for Important (Decide when to do), !4 for do later\nUse #e0 for things to do as a break\n" +
+             "Start to-do list with three entries: *must* do (an immediate important task), *should* do (something for long-term goals), and something genuinely *want* to do\n" +
              "Keep to-do short with 1 big thing, 3 medium things, and 5 little things\n\n",
     currentDate = createPrettyDate(new Date(), 'short'),
-    footer = "\n\nAs reported on { timestamp }\n\n" +
-             "Fill out the form: https://docs.google.com/forms/d/1FUw_hkDrKN_PVS3oJLHGpM13il-Ugyvfhc_Tg5E_JKc/viewform\n\n" +
+    asReported = '\n\nAs reported on { timestamp }',
+    footer = "\n\nFill out the form: https://docs.google.com/forms/d/1FUw_hkDrKN_PVS3oJLHGpM13il-Ugyvfhc_Tg5E_JKc/viewform\n\n" +
              "See the spreadsheet: https://docs.google.com/spreadsheet/ccc?key=0AggnWnxIWH43dFEtdU5jZmwxM2kyU2ZaNk5KOVl1SXc#gid=0";
 
 // To convert column index to letter for cells
@@ -69,45 +109,5 @@ var sameDay = function (date1, date2) {
     return true;
   } else {
     return false;
-  }
-};
-
-// Create pretty date in either short (yyyy/mm/dd) or long (ww, mm dd) format
-var createPrettyDate = function(date, format) {
-  var dateObject = new Date(date), dd, mm, yyyy, dayOfWeek;
-  if (format === 'short') {
-    mm = dateObject.getMonth() + 1;
-    dd = dateObject.getDate();
-    yyyy = dateObject.getFullYear();
-    return yyyy + "/" + mm + "/" + dd;
-  } else {
-    var daysOfWeekIndex = { 0: 'Sunday',
-                            1: 'Monday',
-                            2: 'Tuesday',
-                            3: 'Wednesday',
-                            4: 'Thursday',
-                            5: 'Friday',
-                            6: 'Saturday',
-                          };
-
-    var monthIndex = { 0: 'January',
-                       1: 'February',
-                       2: 'March',
-                       3: 'April',
-                       4: 'May',
-                       5: 'June',
-                       6: 'July',
-                       7: 'August',
-                       8: 'September',
-                       9: 'October',
-                       10: 'November',
-                       11: 'December',
-                     };
-
-    dd = dateObject.getDate();
-    mm = dateObject.getMonth();
-    dayOfWeek = dateObject.getDay(); // starts at Sunday
-
-    return daysOfWeekIndex[dayOfWeek] + ', ' + monthIndex[mm] + ' ' + dd;
   }
 };

@@ -1,9 +1,7 @@
 // Instantiate and run constructor
 function runSendEditLink() {
   // Change this template to change text in automated email
-  var reminderEmail = header +
-                      "Edit link: { link }\n" +
-                      footer ,
+  var reminderEmail = "Edit link: { link }\n" + asReported,
       subject = "Edit Link for Daily Personal Inventory (" + currentDate + ")",
       sendTo = 'xiao.qiao.zhou+dpiedit@gmail.com';
 

@@ -19,7 +19,7 @@ Email.prototype.populateEmail = function() {
 
   for (var keyword in this.options) {
     if (findInArray(dateColumns, keyword) > -1) {
-      this.template = this.template.replace('{ ' + keyword + ' }', this.createPrettyDate(this.options[keyword]));
+      this.template = this.template.replace('{ ' + keyword + ' }', createPrettyDate(this.options[keyword]));
     } else {
       this.template = this.template.replace('{ ' + keyword + ' }', this.options[keyword]);
     }
@@ -33,10 +33,10 @@ Email.prototype.send = function () {
     MailApp.sendEmail({
       to: this.contactEmail,
       subject: this.subject,
-      body: this.populateEmail() +
+      body: header +
+            this.populateEmail() +
             "\n\n---------------------------------------" +
-            rules +
-            urls,
+            footer,
     });
     if (this.updateCellsOptions) {
       this.updateCell();

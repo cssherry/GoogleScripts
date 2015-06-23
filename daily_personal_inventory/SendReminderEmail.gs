@@ -1,6 +1,6 @@
 function runSendReminderEmail() {
   // Change this template to change text in automated email
-  var reminder = "\n\nToday's To-Dos:\n{ goal } " +
+  var reminder = "Today's To-Dos:\n{ goal } " +
                  "\n\nLife goals: \n{ life } \n\n " +
                  "Remember to be thankful for: \n" +
                  "     1) { grateful1 } \n" +
@@ -10,14 +10,14 @@ function runSendReminderEmail() {
       reminderFooter = "{ missed }\n\n" +
                        "-----------------------------\n\n" +
                        "{ throwbacks }" +
-                       footer,
+                       asReported,
       subject = "To-Do's for Today (" + currentDate + ")";
       missingOnlySubject = "Missing " + this.missingDays + " Days (" + currentDate + ")";
       sendTo = 'xiao.qiao.zhou+dpireminder@gmail.com';
 
-  new SendEditLink(header + reminder + reminderFooter, subject,
-                   header + reminderFooter, missingOnlySubject,
-                   sendTo).run();
+  new sendReminderEmail(reminder + reminderFooter, subject,
+                        reminderFooter, missingOnlySubject,
+                        sendTo).run();
 }
 
 function sendReminderEmail(emailTemplate, subject, missingOnlyEmail, missingOnlySubject, sendTo) {
@@ -53,18 +53,18 @@ function sendReminderEmail(emailTemplate, subject, missingOnlyEmail, missingOnly
 
 sendReminderEmail.prototype.run = function () {
   var startRow = 3,  // First row of data to process
-      lastRow = this.scoreCardData.length - 1;
+      endRow = this.scoreCardData.length - 1;
 
   // Gets all missing dates
-  var missed = this.getMissingDates(startRow, lastRow);
+  var missed = this.getMissingDates(startRow, endRow);
 
   // Get all the throwback dates
   startRow = 4;  // First row of data to process
-  lastRow = this.responseSheetData.length - 1;// figure out what the last row is
-  var throwbacks = this.getThrowbacks(startRow, lastRow);
+  endRow = this.responseSheetData.length - 1;// figure out what the last row is
+  var throwbacks = this.getThrowbacks(startRow, endRow);
 
   //Creates email message for yesterday's response if possible
-  this.trySendingYesterdayEmail(startRow, lastRow,
+  this.trySendingYesterdayEmail(startRow, endRow,
                                {missed: missed, throwbacks: throwbacks});
 
   // Send a missing reminder if the form wasn't filled out yesterday
@@ -89,9 +89,9 @@ sendReminderEmail.prototype.getMissingDates = function (startRow, endRow) {
       n = 0,
       missed = '';
 
-  for (var i = lastRow; i >= startRow; i--) {
+  for (var i = endRow; i >= startRow; i--) {
     var daysFrom = this.scoreCardData[i][daysFromIdx];
-    if(daysFrom !== 1) {
+    if(daysFrom !== '1') {
       missed += "     " + daysFrom + "\n";
       n++;
       numberMissed.currentStreak++;
@@ -123,14 +123,22 @@ sendReminderEmail.prototype.trySendingYesterdayEmail = function (startRow, endRo
     if(daysFrom === 1) {
       missingYesterday = false;
         emailOptions.goal = this.responseSheetData[i][this.goalIdx];
-        emailOptions.life = this.responseSheetData[i][this.life];
+        emailOptions.life = this.responseSheetData[i][this.lifeIdx];
         emailOptions.grateful1 = this.responseSheetData[i][this.grateful1Idx];
         emailOptions.grateful2 = this.responseSheetData[i][this.grateful2Idx];
         emailOptions.grateful3 = this.responseSheetData[i][this.grateful3Idx];
         emailOptions.timestamp = this.responseSheetData[i][this.timestampIdx];
         var emailSent = this.responseSheetData[i][this.emailSentIdx];     // 36 column
-          if (emailSent !== 'EMAIL_SENT') {  // Prevents sending duplicates
-            new Email(this.sendTo, this.subject, this.emailTemplate, emailOptions)
+          if (emailSent.indexOf('EMAIL_SENT') === -1) {  // Prevents sending duplicates
+            var cellcode = NumberToLetters(this.emailSentIdx) + (i + 1),
+                updateCellOptions = {
+                    sheetName: 'Daily Inventory Data',
+                    cellCode: cellcode,
+                    message: 'EMAIL_SENT',
+                    note: "Email sent: " + this.today,
+                  };
+
+            new Email(this.sendTo, this.subject, this.emailTemplate, emailOptions, [updateCellOptions])
               .send();
           }
     }
