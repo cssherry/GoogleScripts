@@ -6,7 +6,7 @@ function runSendEditLink() {
       subject = "Edit Link for Daily Personal Inventory (" + currentDate + ")",
       sendTo = 'xiao.qiao.zhou+dpiedit@gmail.com';
 
-  new SendEditLink(emailTemplate, subject, sendTo).run();
+  new SendEditLink(reminderEmail, subject, sendTo).run();
 }
 
 // Store email template, subject, and sendto
@@ -28,45 +28,73 @@ function SendEditLink(emailTemplate, subject, sendTo) {
 
 // gets editLink for form and updates spreadsheet/sends link if it's for current day
 SendEditLink.prototype.run = function () {
-  var startRow = 4,  // First row of data to process
-      lastRow = numberOfRows(this.scheduleSheetData),// figure out what the last row is
+  var startRow = 3,  // First row of data to process
+      numberEntries = numberOfRows(this.scheduleSheetData) - 1,// figure out what the last row is (the first row has 2 entries before first real entry)
       editLinkIdx = this.scheduleSheetIndex.EditLink,
-      timestampIdx = this.scheduleSheetIndex.Timestamp,
       dateIdx = this.scheduleSheetIndex.Date;
 
   // Go through each line and check to make sure it has an editLink
-  for (var i = 0; i < lastRow ; i++) {
-    var editLink = this.addressesSheetData[i][editLinkIdx],
-        timestamp = this.addressesSheetData[i][timestampIdx],
-        entryDate = this.addressesSheetData[i][dateIdx];
+  for (var i = 0; i < numberEntries ; i++) {
+    var rowIdx = startRow + i,
+        editLink = this.scheduleSheetData[rowIdx][editLinkIdx],
+        entryDate = this.scheduleSheetData[rowIdx][dateIdx];
 
     // If there is not an editLink, put it in, so long as form timestamp and spreadsheet timestamp match
     if (!editLink){
       var response = this.responses[i],
-          formResponse = response.getEditResponseUrl(), //grabs the url from the form
-          formTimestamp = response.getTimestamp(); //grabs the timestamp from the form
+          formUrl = response.getEditResponseUrl(); //grabs the url from the form
 
-        if (formTimestamp === timestamp) {
-          var cellcode = NumberToLetters[editLinkIdx] + (i + 1),
+        // Use + to call valueOf() behind the scenes. Another option would be to call getTime()
+        // a =  function () {
+        //   var d1 = new Date(2013, 0, 1);
+        //   var d2 = new Date(2013, 0, 1);
+        //   console.time('valueOf');
+        //     console.log((+d1 === +d2));
+        //     console.log((+d1 === +d2));
+        //     console.log((+d1 === +d2));
+        //     console.log((+d1 === +d2));
+        //     console.log((+d1 === +d2));
+        //     console.log((+d1 === +d2));
+        //   console.timeEnd('valueOf'); // 1.09ms
+        //   console.time('valueOf explicit');
+        //     console.log((d1.valueOf() === d2.valueOf()));
+        //     console.log((d1.valueOf() === d2.valueOf()));
+        //     console.log((d1.valueOf() === d2.valueOf()));
+        //     console.log((d1.valueOf() === d2.valueOf()));
+        //     console.log((d1.valueOf() === d2.valueOf()));
+        //     console.log((d1.valueOf() === d2.valueOf()));
+        //   console.timeEnd('valueOf explicit'); // 0.08ms
+        //   console.time('getTIme explicit');
+        //     console.log(d1.getTime() === d2.getTime());
+        //     console.log(d1.getTime() === d2.getTime());
+        //     console.log(d1.getTime() === d2.getTime());
+        //     console.log(d1.getTime() === d2.getTime());
+        //     console.log(d1.getTime() === d2.getTime());
+        //     console.log(d1.getTime() === d2.getTime());
+        //   console.timeEnd('getTIme explicit'); // 0.06ms
+        // };
+          var cellcode = NumberToLetters(editLinkIdx) + (rowIdx + 1),
               emailOptions = {
-                  link: editLink,
+                  link: formUrl,
                 },
               updateCellOptions = {
-                  note: "Reminder sent: " + this.today,
                   sheetName: 'Daily Inventory Data',
-                  cellCode: cellCode,
-                  message: editLink,
-                };
+                  cellCode: cellcode,
+                  message: formUrl,
+                },
+              email;
 
-          var email = new Email(this.sendTo, this.subject, this.emailTemplate, emailOptions, [updateCellOptions]);
 
           // Only send edit link if today is the day that the entry is about
-          if (this.today === new Date(entryDate)) {
+          if (sameDay(this.today, entryDate)) {
+            updateCellOptions.note = "Reminder sent: " + this.today;
+            email = new Email(this.sendTo, this.subject, this.emailTemplate, emailOptions, [updateCellOptions]);
             email.send();
           } else {
+            updateCellOptions.note = "Script ran: " + this.today;
+            email = new Email(this.sendTo, this.subject, this.emailTemplate, emailOptions, [updateCellOptions]);
             email.updateCell();
           }
       }
     }
-  }
 };

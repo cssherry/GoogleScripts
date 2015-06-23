@@ -5,20 +5,17 @@ var rules = '\n\nBookclub Rules:\n- Choose a book you have read\n- Each person h
     urls = '\n\nGoogle Form: https://docs.google.com/forms/d/1j6oYWu4QcadddV2VD0hBQ7XUVbYnwUrAkgowP_jXSaQ/viewform\nSchedule: https://docs.google.com/spreadsheets/d/1wv54jAwqRxPyWAd8a-m_yLNJo2vHYmjEkfp8TCKRWWY/edit?usp=sharing\nGoodreads:https://www.goodreads.com/group/show/160644-ramikip-2-0.html';
 
 // To convert column index to letter for cells
-var NumberToLetters = {
-  0: 'A',
-  1: 'B',
-  2: 'C',
-  3: 'D',
-  4: 'E',
-  5: 'F',
-  6: 'G',
-  7: 'H',
-  8: 'I',
-  9: 'J',
-  10: 'K',
-  11: 'L',
-  12: 'M',
+var NumberToLetters = function(n) {
+  var ordA = 'a'.charCodeAt(0);
+  var ordZ = 'z'.charCodeAt(0);
+  var len = ordZ - ordA + 1;
+
+  var s = "";
+  while(n >= 0) {
+      s = String.fromCharCode(n % len + ordA) + s;
+      n = Math.floor(n / len) - 1;
+  }
+  return s.toUpperCase();
 };
 
 // HELPER FUNCTIONS
@@ -59,14 +56,25 @@ var numberOfRows = function (sheetData, _columnIndex) {
   return i;
 };
 
+var sameDay = function (date1, date2) {
+  date1 = new Date(date1);
+  date2 = new Date(date2);
+
+  if (date1.getDate() === date2.getDate() && date1.getMonth() === date2.getMonth() && date1.getYear() === date2.getYear()) {
+    return true;
+  } else {
+    return false;
+  }
+};
+
 // Create pretty date in either short (yyyy/mm/dd) or long (ww, mm dd) format
-createPrettyDate = function(date, format) {
+var createPrettyDate = function(date, format) {
   var dateObject = new Date(date), dd, mm, yyyy, dayOfWeek;
   if (format === 'short') {
     mm = dateObject.getMonth() + 1;
     dd = dateObject.getDate();
     yyyy = dateObject.getFullYear();
-    return yyyy + "/" + mm + "/" + dd
+    return yyyy + "/" + mm + "/" + dd;
   } else {
     var daysOfWeekIndex = { 0: 'Sunday',
                             1: 'Monday',
