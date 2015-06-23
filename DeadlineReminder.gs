@@ -1,7 +1,11 @@
 // Instantiate and run constructor
 function runDeadlineReminder() {
   // Change this template to change text in automated email
-  var reminderEmail = "Hi { firstName },\n\nPlease remember to complete  { bookName } by { NewCycle }.\n\nHappy reading!",
+  var reminderEmail = "Hi { firstName },\n\nPlease remember to complete  { bookName } by { NewCycle }. " +
+                      "If you are done reading the book, please:\n" +
+                      "1) Think back to whether you have moved or not. Update the 'Addresses' tab in the Google Sheet if you have moved. \n" +
+                      "2) Fill out the Google Form (https://docs.google.com/forms/d/1j6oYWu4QcadddV2VD0hBQ7XUVbYnwUrAkgowP_jXSaQ/viewform) so you can receive a new book"  +
+                      "\n\nHappy reading!",
       subject = '[BOOKCLUB] Due Soon: Reminder For Upcoming Cycle';
 
   new DeadlineReminder(reminderEmail, subject).run();
@@ -42,7 +46,7 @@ DeadlineReminder.prototype.run = function() {
       name;
 
   // Only proceed if the current month is the one right before the new cycle
-  if (newCycleDate.getMonth() <= this.today.getMonth()) {
+  if (newCycleDate.getMonth() <= this.today.getMonth() + 1 ) {
     // Get hash of people who have finished their book but have not been assigned a new book
     for (var j = 1; j < numberEntries; j++) {
       var nameIndex = this.formSheetIndex.Name;

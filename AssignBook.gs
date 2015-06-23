@@ -227,8 +227,7 @@ AssignBook.prototype.bookAssigned = function(sender, receiver) {
   // sendToPerson: receiver
   // sendAddress: receiver's address
   var contactEmail1 = senderInfo.email,
-      emailOptions1 = {note: "Assigned: " + new Date(),
-                  message: receiver.name,
+      emailOptions1 = {
                   sendAddress: receiverInfo.address,
                   sendToPerson: receiver.name,
                   firstName: sender.name
@@ -249,7 +248,8 @@ AssignBook.prototype.bookAssigned = function(sender, receiver) {
   var contactEmail2 = receiverInfo.email,
       lastIdx = numberOfRows(this.scheduleSheetData, receiverInfo.idx),
       cell = NumberToLetters[receiverInfo.idx] + (lastIdx + 1),
-      emailOptions2 = {
+      emailOptions2 = {note: "Assigned: " + new Date(),
+                        message: sender.book,
                         sendToPerson: receiver.name,
                         newBook: sender.book,
                         firstName: sender.name
@@ -270,5 +270,5 @@ AssignBook.prototype.bookAssigned = function(sender, receiver) {
     });
   }
 
-  new Email(contactEmail2, this.nextBookInfoSubject, this.nextBookInfo, emailOptions2, updateCellOptions2);
+  new Email(contactEmail2, this.nextBookInfoSubject, this.nextBookInfo, emailOptions2, updateCellsOptions2);
 };
