@@ -111,3 +111,46 @@ var sameDay = function (date1, date2) {
     return false;
   }
 };
+
+function getElementByVal( element, elementType, attr, val ) {
+  var value = element[attr];
+  // If the current element matches, return it.
+  if (element[attr] 
+      && value == val
+      && element.getName().getLocalName() == elementType) {
+    return element;
+  }
+
+  // Current element didn't match, check its children
+  var elList = element.getElement();
+  var i = elList.length;
+  while (i--) {
+    // (Recursive) Check each child, in document order.
+    var found = getElementByVal( elList[i], elementType, attr, val );
+    if (found != null) return found;
+  }
+  // No matches at this element OR its children
+  return null;
+};
+
+var getHTML = function(url, el, attr, attrVal) {
+  try {
+    var response = UrlFetchApp.fetch(url);
+  } catch (e) {
+    return "Sorry but Google couldn't fetch the requested web page. "
+      + "Please try another URL!<br />"
+      + "<small>" + e.toString() + "</small>";
+  };
+  
+  var xml = response.getContentText();
+  var document = Xml.parse(xml, true);
+
+  
+  var element = getElementByVal(document, el, attr, attrVal);
+  return element;
+};
+
+function runGetHtml(){
+  getHTML('http://www.merriam-webster.com/word-of-the-day/', 'div', 'id', 'main' );
+};
+ 
