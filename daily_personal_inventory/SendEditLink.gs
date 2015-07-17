@@ -42,7 +42,12 @@ getEditLink.prototype.run = function () {
 
     // If there is not an editLink, put it in, so long as form timestamp and spreadsheet timestamp match
     if (!editLink){
-      var response = this.responses[i],
+      var response = this.responses.filter(function(r){
+        var rTimestamp = r.getTimestamp();
+        if (timestamp.getTime() === rTimestamp.getTime()) {
+          return r;
+        }
+      })[0],
           formUrl = response.getEditResponseUrl(); //grabs the url from the form
 
         // Use + to call valueOf() behind the scenes. Another option would be to call getTime()
