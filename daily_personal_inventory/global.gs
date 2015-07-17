@@ -115,9 +115,9 @@ var sameDay = function (date1, date2) {
 function getElementByVal( element, elementType, attr, val ) {
   var value = element[attr];
   // If the current element matches, return it.
-  if (element[attr] 
-      && value == val
-      && element.getName().getLocalName() == elementType) {
+  if (element[attr] && 
+      value == val && 
+      element.getName().getLocalName() == elementType) {
     return element;
   }
 
@@ -127,20 +127,21 @@ function getElementByVal( element, elementType, attr, val ) {
   while (i--) {
     // (Recursive) Check each child, in document order.
     var found = getElementByVal( elList[i], elementType, attr, val );
-    if (found != null) return found;
+    if (found !== null) return found;
   }
   // No matches at this element OR its children
   return null;
-};
+}
 
 var getHTML = function(url, el, attr, attrVal) {
+  var response;
   try {
-    var response = UrlFetchApp.fetch(url);
+    response = UrlFetchApp.fetch(url);
   } catch (e) {
-    return "Sorry but Google couldn't fetch the requested web page. "
-      + "Please try another URL!<br />"
-      + "<small>" + e.toString() + "</small>";
-  };
+    return "Sorry but Google couldn't fetch the requested web page. " + 
+           "Please try another URL!<br />" + 
+           "<small>" + e.toString() + "</small>";
+  }
   
   var xml = response.getContentText();
   var document = Xml.parse(xml, true);
@@ -152,5 +153,5 @@ var getHTML = function(url, el, attr, attrVal) {
 
 function runGetHtml(){
   getHTML('http://www.merriam-webster.com/word-of-the-day/', 'div', 'id', 'main' );
-};
+}
  

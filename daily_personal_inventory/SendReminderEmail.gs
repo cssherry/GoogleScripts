@@ -33,7 +33,7 @@ function sendReminderEmail(emailTemplate, subject, missingOnlyEmail, missingOnly
   this.grateful1Idx = this.responseSheetIndex['What are you grateful for?'];
   this.grateful2Idx = this.responseSheetIndex['What are you grateful for?'] + 1;
   this.grateful3Idx = this.responseSheetIndex['What are you grateful for?'] + 2;
-  this.editLinkIdx = this.responseSheetIndex['EditLink'];
+  this.editLinkIdx = this.responseSheetIndex.EditLink;
   this.creativeWritingIdx = this.responseSheetIndex['Creative Writing'];
   this.timestampIdx = this.responseSheetIndex.Timestamp;
   this.dateIdx = this.responseSheetIndex.Date;
@@ -167,7 +167,7 @@ sendReminderEmail.prototype.getThrowbacks = function (startRow, endRow) {
           creativeWriting = this.responseSheetData[j][this.creativeWritingIdx];
 
       message += "\n\nRemember " + days_from + " ago you were thankful for: \n" +
-                 "Edit entry here: " + editLink + " \n" + 
+                 "Edit entry here: " + editLink + " \n" +
                  "     1) " + grateful1 + " \n";
 
       if (grateful2 !== "") {
