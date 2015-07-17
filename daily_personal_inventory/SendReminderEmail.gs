@@ -5,7 +5,8 @@ function runSendReminderEmail() {
                  "Remember to be thankful for: \n" +
                  "     1) { grateful1 } \n" +
                  "     2) { grateful2 } \n" +
-                 "     3) { grateful3 } \n\n"+
+                 "     3) { grateful3 } \n\n" +
+                 "Edit at: { editLink } \n\n" +
                  "-----------------------------\n\n",
       reminderFooter = "{ missed }\n\n" +
                        "-----------------------------\n\n" +
@@ -29,9 +30,11 @@ function sendReminderEmail(emailTemplate, subject, missingOnlyEmail, missingOnly
   // Bunch of numbers from responseSheetIndex
   this.goalIdx = this.responseSheetIndex["What are tomorrow's goals?"];
   this.lifeIdx = this.responseSheetIndex['What are your life goals?'];
-  this.grateful1Idx = this.responseSheetIndex['What are you grateful for?1'];
-  this.grateful2Idx = this.responseSheetIndex['What are you grateful for?2'];
-  this.grateful3Idx = this.responseSheetIndex['What are you grateful for?3'];
+  this.grateful1Idx = this.responseSheetIndex['What are you grateful for?'];
+  this.grateful2Idx = this.responseSheetIndex['What are you grateful for?'] + 1;
+  this.grateful3Idx = this.responseSheetIndex['What are you grateful for?'] + 2;
+  this.editLinkIdx = this.responseSheetIndex['EditLink'];
+  this.creativeWritingIdx = this.responseSheetIndex['Creative Writing'];
   this.timestampIdx = this.responseSheetIndex.Timestamp;
   this.dateIdx = this.responseSheetIndex.Date;
   this.daysFromIdx = this.responseSheetIndex.DaysFromToday;
@@ -107,7 +110,7 @@ sendReminderEmail.prototype.getMissingDates = function (startRow, endRow) {
   if (n > 0){
     this.missingDays = numberMissed;
     return "You missed " + n + " days this month in the Daily Personal Inventory " +
-            "(https://docs.google.com/spreadsheet/viewform?usp=drivesdk&formkey=dFhPMklFeUtJY0RCUWhaVUF1QW52MVE6MA#gid=4)\n" +
+            "(https://docs.google.com/forms/d/1FUw_hkDrKN_PVS3oJLHGpM13il-Ugyvfhc_Tg5E_JKc/viewform)\n" +
             missed + "\n";
   } else {
     return "";
@@ -127,6 +130,7 @@ sendReminderEmail.prototype.trySendingYesterdayEmail = function (startRow, endRo
         emailOptions.grateful1 = this.responseSheetData[i][this.grateful1Idx];
         emailOptions.grateful2 = this.responseSheetData[i][this.grateful2Idx];
         emailOptions.grateful3 = this.responseSheetData[i][this.grateful3Idx];
+        emailOptions.editLink = this.responseSheetData[i][this.editLinkIdx];
         emailOptions.timestamp = this.responseSheetData[i][this.timestampIdx];
         var emailSent = this.responseSheetData[i][this.emailSentIdx];     // 36 column
           if (emailSent.indexOf('EMAIL_SENT') === -1) {  // Prevents sending duplicates
@@ -158,10 +162,14 @@ sendReminderEmail.prototype.getThrowbacks = function (startRow, endRow) {
       var days_from = this.responseSheetData[j][this.daysFromIdx],
           grateful1 = this.responseSheetData[j][this.grateful1Idx],
           grateful2 = this.responseSheetData[j][this.grateful2Idx],
-          grateful3 = this.responseSheetData[j][this.grateful3Idx];
+          grateful3 = this.responseSheetData[j][this.grateful3Idx],
+          editLink = this.responseSheetData[j][this.editLinkIdx],
+          creativeWriting = this.responseSheetData[j][this.creativeWritingIdx];
 
       message += "\n\nRemember " + days_from + " ago you were thankful for: \n" +
+                 "Edit entry here: " + editLink + " \n" + 
                  "     1) " + grateful1 + " \n";
+
       if (grateful2 !== "") {
         message += "     2) " + grateful2 + " \n";
         if (grateful3 !== "") {
@@ -171,6 +179,9 @@ sendReminderEmail.prototype.getThrowbacks = function (startRow, endRow) {
         }
       } else {
         message += "\n";
+      }
+      if (creativeWriting !== "") {
+        message += "\n Creative Writing\n" + creativeWriting + "\n\n";
       }
       m++;
     }
