@@ -115,8 +115,8 @@ var sameDay = function (date1, date2) {
 function getElementByVal( element, elementType, attr, val ) {
   var value = element[attr];
   // If the current element matches, return it.
-  if (element[attr] && 
-      value == val && 
+  if (element[attr] &&
+      value == val &&
       element.getName().getLocalName() == elementType) {
     return element;
   }
@@ -138,8 +138,8 @@ var getHTML = function(url, el, attr, attrVal) {
   try {
     response = UrlFetchApp.fetch(url);
   } catch (e) {
-    return "Sorry but Google couldn't fetch the requested web page. " + 
-           "Please try another URL!<br />" + 
+    return "Sorry but Google couldn't fetch the requested web page. " +
+           "Please try another URL!<br />" +
            "<small>" + e.toString() + "</small>";
   }
   
