@@ -3,7 +3,7 @@ function runSendEditLink() {
   // Change this template to change text in automated email
   var reminderEmail = "Edit link: { link }\n" + asReported,
       subject = "Edit Link for Daily Personal Inventory (" + currentDate + ")",
-      sendTo = 'xiao.qiao.zhou+dpiedit@gmail.com';
+      sendTo = '7a828627@opayq.com';
 
   new getEditLink(reminderEmail, subject, sendTo).run();
 }
@@ -43,11 +43,11 @@ getEditLink.prototype.run = function () {
     // If there is not an editLink, put it in, so long as form timestamp and spreadsheet timestamp match
     if (!editLink){
       var response = this.responses.filter(function(r){
-        var rTimestamp = r.getTimestamp();
-        if (timestamp.getTime() === rTimestamp.getTime()) {
-          return r;
-        }
-      })[0],
+                                            var rTimestamp = r.getTimestamp();
+                                            if (timestamp.getTime() === rTimestamp.getTime()) {
+                                              return r;
+                                            }
+                                          })[0],
           formUrl = response.getEditResponseUrl(); //grabs the url from the form
 
         // Use + to call valueOf() behind the scenes. Another option would be to call getTime()
