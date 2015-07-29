@@ -40,7 +40,7 @@ getEditLink.prototype.run = function () {
                        };
 
   // Go through each line and check to make sure it has an editLink
-  for (var i = 0; i <= numberEntries ; i++) {
+  for (var i = 0; i < numberEntries ; i++) {
     var rowIdx = startRow + i,
         editLink = this.responseSheetData[rowIdx][editLinkIdx],
         timestamp = this.responseSheetData[rowIdx][timestampIdx],
