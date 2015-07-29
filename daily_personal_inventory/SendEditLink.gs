@@ -31,7 +31,13 @@ getEditLink.prototype.run = function () {
       numberEntries = this.responseSheetData.length - startRow,// figure out what the last row is (the first row has 2 entries before first real entry)
       editLinkIdx = this.responseSheetIndex.EditLink,
       timestampIdx = this.responseSheetIndex.Timestamp,
-      dateIdx = this.responseSheetIndex.Date;
+      dateIdx = this.responseSheetIndex.Date,
+      checkTimestamp = function(response){
+                        var rTimestamp = response.getTimestamp();
+                        if (timestamp.getTime() === rTimestamp.getTime()) {
+                         return response;
+                        }
+                       };
 
   // Go through each line and check to make sure it has an editLink
   for (var i = 0; i <= numberEntries ; i++) {
@@ -42,12 +48,7 @@ getEditLink.prototype.run = function () {
 
     // If there is not an editLink, put it in, so long as form timestamp and spreadsheet timestamp match
     if (!editLink){
-      var response = this.responses.filter(function(r){
-                                            var rTimestamp = r.getTimestamp();
-                                            if (timestamp.getTime() === rTimestamp.getTime()) {
-                                              return r;
-                                            }
-                                          })[0],
+      var response = this.responses.filter(checkTimestamp)[0],
           formUrl = response.getEditResponseUrl(); //grabs the url from the form
 
         // Use + to call valueOf() behind the scenes. Another option would be to call getTime()
