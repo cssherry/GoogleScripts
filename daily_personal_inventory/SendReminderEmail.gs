@@ -31,8 +31,8 @@ function sendReminderEmail(emailTemplate, subject, missingOnlyEmail, missingOnly
   this.goalIdx = this.responseSheetIndex["What are tomorrow's goals?"];
   this.lifeIdx = this.responseSheetIndex['What are your life goals?'];
   this.grateful1Idx = this.responseSheetIndex['What are you grateful for?'];
-  this.grateful2Idx = this.responseSheetIndex['What are you grateful for?'] + 1;
-  this.grateful3Idx = this.responseSheetIndex['What are you grateful for?'] + 2;
+  this.grateful2Idx = this.responseSheetIndex['What are you grateful for?'] - 1;
+  this.grateful3Idx = this.responseSheetIndex['What are you grateful for?'] - 2;
   this.editLinkIdx = this.responseSheetIndex.EditLink;
   this.creativeWritingIdx = this.responseSheetIndex['Creative Writing'];
   this.timestampIdx = this.responseSheetIndex.Timestamp;
