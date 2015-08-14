@@ -5,6 +5,7 @@ function runSendEditLink() {
       subject = "Edit Link for Daily Personal Inventory (" + currentDate + ")",
       sendTo = '7a828627@opayq.com';
 
+  Utilities.sleep(3 * 1000);
   new getEditLink(reminderEmail, subject, sendTo).run();
 }
 
