@@ -169,8 +169,8 @@ sendReminderEmail.prototype.getThrowbacks = function (startRow, endRow) {
           editLink = this.responseSheetData[j][this.editLinkIdx],
           creativeWriting = this.responseSheetData[j][this.creativeWritingIdx];
 
-      message += "\n\nRemember " + days_from + " ago you were thankful for: \n" +
-                 "Edit entry here: " + editLink + " \n" +
+      message += "\n\nEdit entry here: " + editLink + " \n" +
+                 "Remember " + days_from + " ago you were thankful for: \n" +
                  "     1) " + grateful1 + " \n";
 
       if (grateful2 !== "") {
