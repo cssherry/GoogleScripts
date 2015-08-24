@@ -184,7 +184,7 @@ sendReminderEmail.prototype.getThrowbacks = function (startRow, endRow) {
         message += "\n";
       }
       if (creativeWriting !== "") {
-        message += "\n Creative Writing\n" + creativeWriting + "\n\n";
+        message += "\nCreative Writing\n" + creativeWriting + "\n\n";
       }
       m++;
     }
