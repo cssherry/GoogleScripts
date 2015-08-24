@@ -13,7 +13,7 @@ function runSendReminderEmail() {
                        "{ throwbacks }" +
                        asReported,
       subject = "To-Do's for Today (" + currentDate + ")";
-      missingOnlySubject = "Missing " + this.missingDays + " Days (" + currentDate + ")";
+      missingOnlySubject = "Missing { missingDays } Days (" + currentDate + ")";
       sendTo = '7a828627@opayq.com';
 
   new sendReminderEmail(reminder + reminderFooter, subject,
@@ -77,6 +77,8 @@ sendReminderEmail.prototype.run = function () {
             throwbacks: throwbacks,
             timestamp: this.today,
           };
+
+    this.missingOnlySubject = this.missingOnlySubject.replace("{ missingDays }", this.missingDays.totalMissed);
     new Email(this.sendTo, this.missingOnlySubject, this.missingOnlyEmailTemplate, emailOptions)
       .send();
   }
@@ -108,6 +110,7 @@ sendReminderEmail.prototype.getMissingDates = function (startRow, endRow) {
   }
 
   if (n > 0){
+    numberMissed.totalMissed = n;
     this.missingDays = numberMissed;
     return "You missed " + n + " days this month in the Daily Personal Inventory " +
             "(https://docs.google.com/forms/d/1FUw_hkDrKN_PVS3oJLHGpM13il-Ugyvfhc_Tg5E_JKc/viewform)\n" +
