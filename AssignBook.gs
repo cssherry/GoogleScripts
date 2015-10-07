@@ -52,7 +52,7 @@ AssignBook.prototype.run = function() {
 
 AssignBook.prototype.firstWeekRandomAssignment = function() {
   // Randomize people
-  var people = shuffle(this.peopleInfo());
+  var people = shuffle(this.peopleInfo().array);
 
   // Loop through everyone
   for (var i = 0; i < people.length; i++) {
@@ -89,6 +89,7 @@ AssignBook.prototype.firstWeekRandomAssignment = function() {
 // Array of people with their email, address, and name
 AssignBook.prototype.peopleInfo = function() {
   var result = [],
+      resultHash = {},
       nameIdx = this.addressesSheetIndex.Name,
       emailIdx = this.addressesSheetIndex.Email,
       addressIdx = this.addressesSheetIndex.Address,
@@ -106,9 +107,10 @@ AssignBook.prototype.peopleInfo = function() {
                    name: name
                   };
     result.push(options);
+    resultHash[name] = options;
   }
 
-  return result;
+  return {array: result, hash: resultHash};
 };
 
 // needNewBook: array of form submitter + everyone who has nothing in the HasNewBook column
@@ -171,44 +173,45 @@ AssignBook.prototype.reviewFormResponseSheet = function() {
 AssignBook.prototype.assignReaders = function(formSheetData) {
   // Go through everyone who needs to send a book (first to last)
   // Try to pair with people who need a book (last to first)
-  var sender,
-      receiver,
+  var sender, receiver,
+      book, maxTimeBooksRead, numberTimesBookRead,
       numberNeedSendBook = formSheetData.needSendBook.length;
+  var bookIndex, nameIndex, name;
+  var needNewBookMaxIdx, receiverIdx, bookIdx, receiversOriginalBook, receiverReadBook;
 
   for (var k = 0; k < numberNeedSendBook; k++) {
     sender = formSheetData.needSendBook[k];
-    numberNeedSendBook = formSheetData.needSendBook.length;
-    var book = sender.book,
-        maxTimeBooksRead = numberOfRows(this.addressesSheetData) - 2,
-        numberTimesBookRead = formSheetData.readingHistory[book].numberTimesRead;
+    numberNeedReceiveBook = formSheetData.needNewBook.length;
+    book = sender.book;
+    maxTimeBooksRead = numberOfRows(this.addressesSheetData) - 2;
+    numberTimesBookRead = formSheetData.readingHistory[book].numberTimesRead;
 
     if (numberTimesBookRead >= maxTimeBooksRead) {
       // If everyone has already read this book, send it back
-      var bookIndex = this.addressesSheetIndex.BookChoices,
-          nameIndex = this.addressesSheetIndex.Name;
+      bookIndex = this.addressesSheetIndex.BookChoices;
+      nameIndex = this.addressesSheetIndex.Name;
 
       for (var j = 1; j < this.addressesSheetData.length; j++) {
         if (book === this.addressesSheetData[j][bookIndex]) {
-          var name = this.addressesSheetData[j][nameIndex];
+          name = this.addressesSheetData[j][nameIndex];
           receiver = {name: name};
           break;
         }
       }
 
-      formSheetData.needSendBook.splice(k, 1);
       this.bookAssigned(sender, receiver);
     } else {
 
-      var needNewBookMaxIdx = formSheetData.needNewBook.length - 1;
+      needNewBookMaxIdx = formSheetData.needNewBook.length - 1;
 
       // Else try to find a match
-      for (var i = needNewBookMaxIdx; i > -1 ; i--) {
+      for (var i = 0; i < needNewBookMaxIdx ; i++) {
         receiver = formSheetData.needNewBook[i];
 
-        var receiverIdx = this.scheduleSheetIndex[receiver.name],
-            bookIdx = this.addressesSheetIndex.BookChoices,
-            receiversOriginalBook = this.addressesSheetData[receiverIdx][bookIdx],
-            receiverReadBook = formSheetData.readingHistory[book][receiver.name];
+        receiverIdx = this.scheduleSheetIndex[receiver.name];
+        bookIdx = this.addressesSheetIndex.BookChoices;
+        receiversOriginalBook = this.addressesSheetData[receiverIdx][bookIdx];
+        receiverReadBook = formSheetData.readingHistory[book][receiver.name];
 
         // Skip person if it's their book or if they've already read it
         if (receiversOriginalBook !== book && !receiverReadBook) {
@@ -222,21 +225,9 @@ AssignBook.prototype.assignReaders = function(formSheetData) {
 };
 
 AssignBook.prototype.bookAssigned = function(sender, receiver) {
-  var peopleInfo = this.peopleInfo(),
-      receiverInfo,
-      senderInfo;
-
-  // get receiverInfo and senderInfo
-  while (!senderInfo || !receiverInfo) {
-    for (var j = 0; j < peopleInfo.length; j++) {
-      if (peopleInfo[j].name === sender.name) {
-        senderInfo = peopleInfo[j];
-      }
-      if (peopleInfo[j].name === receiver.name) {
-        receiverInfo = peopleInfo[j];
-      }
-    }
-  }
+  var peopleInfo = this.peopleInfo().hash,
+      receiverInfo = peopleInfo[receiver.name],
+      senderInfo = peopleInfo[sender.name];
 
   // Send out receiver's address to sender
   // firstName: sender
@@ -276,7 +267,7 @@ AssignBook.prototype.bookAssigned = function(sender, receiver) {
                             cellCode: cell,
                             sheetName: 'Schedule'
                           }];
-
+  // Add note in "HasNewBook" column if possible
   if (receiver.cell) {
     updateCellsOptions2.push({
       note: "Reminder sent: " + new Date(),
