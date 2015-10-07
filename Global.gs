@@ -53,10 +53,11 @@ var shuffle = function (array) {
 // Find first row that is not before today's date return array with index and new cycle date
 var findNextCycle = function(scheduleSheetData, scheduleSheetIndex) {
   var newCycleColumnIdx = scheduleSheetIndex.NewCycle,
-      today = new Date();
+      today = new Date(),
+      newCycle;
 
   for (i = 1; i < scheduleSheetData.length; i++) {
-    var newCycle = scheduleSheetData[i][newCycleColumnIdx];
+    newCycle = scheduleSheetData[i][newCycleColumnIdx];
 
     if (newCycle > today) {
       return [i, newCycle];
