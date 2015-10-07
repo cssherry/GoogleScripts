@@ -52,12 +52,14 @@ AssignBook.prototype.run = function() {
 
 AssignBook.prototype.firstWeekRandomAssignment = function() {
   // Randomize people
-  var people = shuffle(this.peopleInfo().array);
+  var people = shuffle(this.peopleInfo().array),
+      sender,
+      contactEmail, subject, emailTemplate, cellCode, emailOptions, updateCellOptions;
 
   // Loop through everyone
   for (var i = 0; i < people.length; i++) {
     // assign sender/receiver
-    var sender = people[i];
+    sender = people[i];
 
     if (i === people.length - 1) {
       receiver = people[0];
@@ -66,21 +68,21 @@ AssignBook.prototype.firstWeekRandomAssignment = function() {
     }
 
     // Create info for email
-    var contactEmail = sender.email,
-        subject = this.mailInfoSubject,
-        emailTemplate = this.mailInfo,
-        cellCode = NumberToLetters[receiver.idx] + 2,
-        emailOptions = {
-                    firstName: sender.name,
-                    sendToPerson: receiver.name,
-                    sendAddress: receiver.address,
-                  },
-        updateCellOptions = {
-                              note: "Assigned: " + new Date(),
-                              message: sender.book,
-                              cellCode: cellCode,
-                              sheetName: 'Schedule'
-                            };
+    contactEmail = sender.email;
+    subject = this.mailInfoSubject;
+    emailTemplate = this.mailInfo;
+    cellCode = NumberToLetters[receiver.idx] + 2;
+    emailOptions = {
+                      firstName: sender.name,
+                      sendToPerson: receiver.name,
+                      sendAddress: receiver.address,
+                    };
+    updateCellOptions = {
+                          note: "Assigned: " + new Date(),
+                          message: sender.book,
+                          cellCode: cellCode,
+                          sheetName: 'Schedule'
+                        };
     // Send email
     new Email(contactEmail, subject, emailTemplate, emailOptions, [updateCellOptions]);
   }
@@ -93,14 +95,15 @@ AssignBook.prototype.peopleInfo = function() {
       nameIdx = this.addressesSheetIndex.Name,
       emailIdx = this.addressesSheetIndex.Email,
       addressIdx = this.addressesSheetIndex.Address,
-      bookIdx = this.addressesSheetIndex.BookChoices;
+      bookIdx = this.addressesSheetIndex.BookChoices,
+      book, email, address, name, options;
 
   for (var i = 1; i < this.addressesSheetData.length; i++) {
-    var book = this.addressesSheetData[i][bookIdx],
-        email = this.addressesSheetData[i][emailIdx],
-        address = this.addressesSheetData[i][addressIdx],
-        name = this.addressesSheetData[i][nameIdx],
-        options = {book: book,
+    book = this.addressesSheetData[i][bookIdx];
+    email = this.addressesSheetData[i][emailIdx];
+    address = this.addressesSheetData[i][addressIdx];
+    name = this.addressesSheetData[i][nameIdx];
+    options = {book: book,
                    email: email,
                    address: address,
                    idx: i,
@@ -124,11 +127,12 @@ AssignBook.prototype.reviewFormResponseSheet = function() {
         nameIndex = this.formSheetIndex.Name,
         result = {needNewBook: [], needSendBook: [], readingHistory: {}, needNewBookHash: {}, needSendBookHash: {}},
         cell, userBookObject,
-        numberEntries = numberOfRows(this.formSheetData);
+        numberEntries = numberOfRows(this.formSheetData),
+        book, name;
 
     for (var i = 1; i < numberEntries; i++) {
-      var book = this.formSheetData[i][bookIndex],
-          name = this.formSheetData[i][nameIndex];
+      book = this.formSheetData[i][bookIndex];
+      name = this.formSheetData[i][nameIndex];
 
       // add name/book/cell to needSendBook object if WhoWillReadNext empty
       // add sanity check so book doesn't get added twice

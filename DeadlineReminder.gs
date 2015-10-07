@@ -43,13 +43,14 @@ DeadlineReminder.prototype.run = function() {
       numberEntries = numberOfRows(this.formSheetData),
       hasNewBookIndex = this.formSheetIndex.HasNewBook,
       finishedNotAssigned = {},
-      name;
+      name, nameIndex, cell,
+      emailIdx, contactEmail, sheetName, cellCode, emailOptions, updateCellOptions;
 
   // Only proceed if the current month is the one right before the new cycle
   if (newCycleDate.getMonth() <= this.today.getMonth() + 1 ) {
     // Get hash of people who have finished their book but have not been assigned a new book
     for (var j = 1; j < numberEntries; j++) {
-      var nameIndex = this.formSheetIndex.Name;
+      nameIndex = this.formSheetIndex.Name;
       name = this.formSheetData[j][nameIndex];
 
       // add name/book/cell to needSendBook object if HasNewBook empty
@@ -62,22 +63,22 @@ DeadlineReminder.prototype.run = function() {
 
     // Go through every column in Schedule tab, send email if the person has not finished book yet -- add note when successfully sent email
     for (var i = 1; i < this.scheduleSheetData[0].length; i++) {
-      var nameIdx = this.addressesSheetIndex.Name;
-      name = this.addressesSheetData[i][nameIdx];
+      nameIndex = this.addressesSheetIndex.Name;
+      name = this.addressesSheetData[i][nameIndex];
 
       if (!this.scheduleSheetData[newCycleRowIdx][i] && !finishedNotAssigned[name]) {
-        var emailIdx = this.addressesSheetIndex.Email,
-            contactEmail = this.addressesSheetData[i][emailIdx],
-            sheetName = 'Schedule',
-            cellCode = NumberToLetters[i] + newCycleRowIdx,
-            emailOptions = {NewCycle: newCycleDate,
-                            bookName: this.scheduleSheetData[newCycleRowIdx - 1][i],
-                            firstName: name},
-            updateCellOptions = {
-                                  note: "Reminder sent: " + this.today,
-                                  sheetName: sheetName,
-                                  cellCode: cellCode
-                                };
+        emailIdx = this.addressesSheetIndex.Email;
+        contactEmail = this.addressesSheetData[i][emailIdx];
+        sheetName = 'Schedule';
+        cellCode = NumberToLetters[i] + newCycleRowIdx;
+        emailOptions = {NewCycle: newCycleDate,
+                        bookName: this.scheduleSheetData[newCycleRowIdx - 1][i],
+                        firstName: name};
+        updateCellOptions = {
+                              note: "Reminder sent: " + this.today,
+                              sheetName: sheetName,
+                              cellCode: cellCode
+                            };
 
         new Email(contactEmail, this.subject, this.reminderEmail, emailOptions, [updateCellOptions]);
       }
