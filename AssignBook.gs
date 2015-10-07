@@ -299,15 +299,20 @@ AssignBook.prototype.sendErrorMessage = function (duplicate1, duplicate2, errort
       mailBody = "There are duplicate form entries:\n" +
                  "First entry: name ( { name1 } ), book ( { book1 } ), cell ( { cell1 } )\n" +
                  "Second entry: name ( { name2 } ), book ( { book2 } ), cell ( { cell2 } )\n",
-      emailOptions1 = {
+      emailOptions = {
                   name1: duplicate1.name,
                   book1: duplicate1.book,
                   cell1: duplicate1.cell,
                   name2: duplicate2.name,
                   book2: duplicate2.book,
                   cell2: duplicate2.cell
-                };
+                },
+      updateCellOptions = {
+                            note: "Error email sent: " + new Date(),
+                            message: errortype,
+                            cellCode: duplicate2.cell,
+                            sheetName: 'Form Responses 1'
+                          };
 
-  new Email(contactEmail1, this.mailInfoSubject, this.mailInfo, emailOptions1);
-
+  new Email(contactEmail1, mailSubject, mailBody, emailOptions, updateCellOptions);
 };
