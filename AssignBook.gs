@@ -148,7 +148,7 @@ AssignBook.prototype.reviewFormResponseSheet = function() {
         cell = NumberToLetters[hasNewBookIndex] + (i + 1);
         userBookObject = {name: name, book: book, cell: cell};
         // Only add name once. If name appears more than once, send me troubleshooting email
-        if (result.needSendBookHash[name]) {
+        if (result.needNewBookHash[name]) {
           this.sendErrorMessage(result.needNewBookHash[name], userBookObject, "Duplicate person recieving books");
         } else {
           result.needNewBookHash[name] = userBookObject;
@@ -314,5 +314,5 @@ AssignBook.prototype.sendErrorMessage = function (duplicate1, duplicate2, errort
                             sheetName: 'Form Responses 1'
                           };
 
-  new Email(contactEmail1, mailSubject, mailBody, emailOptions, updateCellOptions);
+  new Email(contactEmail1, mailSubject, mailBody, emailOptions, [updateCellOptions]);
 };
