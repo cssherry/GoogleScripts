@@ -17,11 +17,11 @@ function Email(contactEmail, subject, template, emailOptions, updateCellsOptions
 // Replaces all keywords in email template with their actual values
 Email.prototype.populateEmail = function() {
   // dateColumn should be edited to include titles of all columns that contain dates
-  var dateColumns = ['Timestamp', 'NewCycle'];
+  var dateColumns = ['Timestamp'];
 
   for (var keyword in this.options) {
     if (findInArray(dateColumns, keyword) > -1) {
-      this.template = this.template.replace('{ ' + keyword + ' }', this.createPrettyDate(this.options[keyword]));
+      this.template = this.template.replace('{ ' + keyword + ' }', createPrettyDate(this.options[keyword]));
     } else {
       this.template = this.template.replace('{ ' + keyword + ' }', this.options[keyword]);
     }
@@ -42,39 +42,6 @@ Email.prototype.send = function () {
     });
 
     this.updateCell();
-};
-
-Email.prototype.createPrettyDate = function(date) {
-  var daysOfWeekIndex = { 0: 'Sunday',
-                          1: 'Monday',
-                          2: 'Tuesday',
-                          3: 'Wednesday',
-                          4: 'Thursday',
-                          5: 'Friday',
-                          6: 'Saturday',
-                        };
-
-  var monthIndex = { 0: 'January',
-                     1: 'February',
-                     2: 'March',
-                     3: 'April',
-                     4: 'May',
-                     5: 'June',
-                     6: 'July',
-                     7: 'August',
-                     8: 'September',
-                     9: 'October',
-                     10: 'November',
-                     11: 'December',
-                   };
-
-  var dateObject = new Date(date);
-  var dd = dateObject.getDate();
-  var mm = dateObject.getMonth();
-  var dayOfWeek = dateObject.getDay(); // starts at Sunday
-
-  var prettyDate = daysOfWeekIndex[dayOfWeek] + ', ' + monthIndex[mm] + ' ' + dd;
-  return '*' + prettyDate + '*';
 };
 
 // Function that records when an email is successfully sent

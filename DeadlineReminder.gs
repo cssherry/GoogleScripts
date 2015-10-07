@@ -6,7 +6,7 @@ function runDeadlineReminder() {
                       "1) Think back to whether you have moved or not. Update the 'Addresses' tab in the Google Sheet if you have moved. \n" +
                       "2) Fill out the Google Form (https://docs.google.com/forms/d/1j6oYWu4QcadddV2VD0hBQ7XUVbYnwUrAkgowP_jXSaQ/viewform) so you can receive a new book"  +
                       "\n\nHappy reading!",
-      subject = '[BOOKCLUB] Due Soon: Reminder For Upcoming Cycle';
+      subject = '[BOOKCLUB] Reminder For Upcoming Cycle';
 
   new DeadlineReminder(reminderEmail, subject).run();
 }
@@ -40,11 +40,12 @@ DeadlineReminder.prototype.run = function() {
   var newCycle = findNextCycle(this.scheduleSheetData, this.scheduleSheetIndex),
       newCycleDate = newCycle[1],
       newCycleRowIdx = newCycle[0],
+      newCycleColumnIdx = this.scheduleSheetIndex.NewCycle,
       numberEntries = numberOfRows(this.formSheetData),
       hasNewBookIndex = this.formSheetIndex.HasNewBook,
       finishedNotAssigned = {},
       name, nameIndex, cell,
-      emailIdx, contactEmail, sheetName, cellCode, emailOptions, updateCellOptions;
+      emailIdx, currentRow, contactEmail, sheetName, cellCode, emailOptions, updateCellOptions;
 
   // Only proceed if the current month is the one right before the new cycle
   if (newCycleDate.getMonth() <= this.today.getMonth() + 1 ) {
@@ -53,10 +54,10 @@ DeadlineReminder.prototype.run = function() {
       nameIndex = this.formSheetIndex.Name;
       name = this.formSheetData[j][nameIndex];
 
-      // add name/book/cell to needSendBook object if HasNewBook empty
+      // Mark person as "finished current book, not assigned new book"
       if (!this.formSheetData[j][hasNewBookIndex]) {
         cell = NumberToLetters[hasNewBookIndex] + (j + 1);
-        finishedNotAssigned[name] = true;
+        finishedNotAssigned[name] = cell;
       }
     }
 
@@ -68,11 +69,12 @@ DeadlineReminder.prototype.run = function() {
 
       if (!this.scheduleSheetData[newCycleRowIdx][i] && !finishedNotAssigned[name]) {
         emailIdx = this.addressesSheetIndex.Email;
+        currentRow = numberOfRows(this.scheduleSheetData, i);
         contactEmail = this.addressesSheetData[i][emailIdx];
         sheetName = 'Schedule';
         cellCode = NumberToLetters[i] + newCycleRowIdx;
-        emailOptions = {NewCycle: newCycleDate,
-                        bookName: this.scheduleSheetData[newCycleRowIdx - 1][i],
+        emailOptions = {NewCycle: currentRow < newCycleRowIdx ? "ASAP (was due " + createPrettyDate(this.scheduleSheetData[currentRow][newCycleColumnIdx]) + ")": createPrettyDate(newCycleDate),
+                        bookName: this.scheduleSheetData[currentRow - 1][i],
                         firstName: name};
         updateCellOptions = {
                               note: "Reminder sent: " + this.today,
