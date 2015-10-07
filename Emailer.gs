@@ -79,25 +79,27 @@ Email.prototype.createPrettyDate = function(date) {
 
 // Function that records when an email is successfully sent
 Email.prototype.updateCell = function() {
-  for (var i = 0; i < this.updateCellsOptions.length; i++) {
-    var options = this.updateCellsOptions[i],
-        sheetName = options.sheetName,
-        cellCode = options.cellCode,
-        note = options.note,
-        message = options.message;
+  if (this.updateCellsOptions) {
+    for (var i = 0; i < this.updateCellsOptions.length; i++) {
+      var options = this.updateCellsOptions[i],
+          sheetName = options.sheetName,
+          cellCode = options.cellCode,
+          note = options.note,
+          message = options.message;
 
-    var cell = SpreadsheetApp.getActiveSpreadsheet()
-                             .getSheetByName(sheetName)
-                             .getRange(cellCode);
+      var cell = SpreadsheetApp.getActiveSpreadsheet()
+                               .getSheetByName(sheetName)
+                               .getRange(cellCode);
 
-    if (note) {
-      var currentNote = cell.getNote();
-      cell.setNote(currentNote + "\n" + note);
-    }
+      if (note) {
+        var currentNote = cell.getNote();
+        cell.setNote(currentNote + "\n" + note);
+      }
 
-    if (message) {
-      var currentMessage = cell.getValue();
-      cell.setValue(currentMessage + "\n" + message);
+      if (message) {
+        var currentMessage = cell.getValue();
+        cell.setValue(currentMessage + "\n" + message);
+      }
     }
   }
 };

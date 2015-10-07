@@ -120,24 +120,40 @@ AssignBook.prototype.reviewFormResponseSheet = function() {
         hasNewBookIndex = this.formSheetIndex.HasNewBook,
         bookIndex = this.formSheetIndex['Which book did you just finish reading?'],
         nameIndex = this.formSheetIndex.Name,
-        result = {needNewBook: [], needSendBook: [], readingHistory: {}},
-        cell,
+        result = {needNewBook: [], needSendBook: [], readingHistory: {}, needNewBookHash: {}, needSendBookHash: {}},
+        cell, userBookObject,
         numberEntries = numberOfRows(this.formSheetData);
 
     for (var i = 1; i < numberEntries; i++) {
       var book = this.formSheetData[i][bookIndex],
           name = this.formSheetData[i][nameIndex];
 
-      // add name/book/cell to needNewBook object if WhoWillReadNext empty
+      // add name/book/cell to needSendBook object if WhoWillReadNext empty
+      // add sanity check so book doesn't get added twice
       if (!this.formSheetData[i][whoWillReadNextIndex]) {
         cell = NumberToLetters[whoWillReadNextIndex] + (i + 1);
-        result.needSendBook.push({name: name, book: book, cell: cell});
+        userBookObject = {name: name, book: book, cell: cell};
+        // Only add book once. If book appears more than once, send me troubleshooting email
+        if (result.needSendBookHash[book]) {
+          this.sendErrorMessage(result.needSendBookHash[book], userBookObject, "Duplicate book being sent");
+        } else {
+          result.needSendBookHash[book] = userBookObject;
+          result.needSendBook.push(userBookObject);
+        }
       }
 
-      // add name/book/cell to needSendBook object if HasNewBook empty
+      // add name/book/cell to needNewBook object if HasNewBook empty
+      // add sanity check so user isn't added twice
       if (!this.formSheetData[i][hasNewBookIndex]) {
         cell = NumberToLetters[hasNewBookIndex] + (i + 1);
-        result.needNewBook.push({name: name, book: book, cell: cell});
+        userBookObject = {name: name, book: book, cell: cell};
+        // Only add name once. If name appears more than once, send me troubleshooting email
+        if (result.needSendBookHash[name]) {
+          this.sendErrorMessage(result.needNewBookHash[name], userBookObject, "Duplicate person recieving books");
+        } else {
+          result.needNewBookHash[name] = userBookObject;
+          result.needNewBook.push(userBookObject);
+        }
       }
 
       // Add name and book to reading history
@@ -271,4 +287,27 @@ AssignBook.prototype.bookAssigned = function(sender, receiver) {
   }
 
   new Email(contactEmail2, this.nextBookInfoSubject, this.nextBookInfo, emailOptions2, updateCellsOptions2);
+};
+
+AssignBook.prototype.sendErrorMessage = function (duplicate1, duplicate2, errortype) {
+  // Send out receiver's address to sender
+  // firstName: sender
+  // sendToPerson: receiver
+  // sendAddress: receiver's address
+  var contactEmail1 = myEmail,
+      mailSubject = "[BOOKCLUB] ERROR: " + errortype,
+      mailBody = "There are duplicate form entries:\n" +
+                 "First entry: name ( { name1 } ), book ( { book1 } ), cell ( { cell1 } )\n" +
+                 "Second entry: name ( { name2 } ), book ( { book2 } ), cell ( { cell2 } )\n",
+      emailOptions1 = {
+                  name1: duplicate1.name,
+                  book1: duplicate1.book,
+                  cell1: duplicate1.cell,
+                  name2: duplicate2.name,
+                  book2: duplicate2.book,
+                  cell2: duplicate2.cell
+                };
+
+  new Email(contactEmail1, this.mailInfoSubject, this.mailInfo, emailOptions1);
+
 };
