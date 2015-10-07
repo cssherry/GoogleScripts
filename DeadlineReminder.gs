@@ -73,9 +73,13 @@ DeadlineReminder.prototype.run = function() {
         contactEmail = this.addressesSheetData[i][emailIdx];
         sheetName = 'Schedule';
         cellCode = NumberToLetters[i] + newCycleRowIdx;
-        emailOptions = {NewCycle: currentRow < newCycleRowIdx ? "ASAP (was due " + createPrettyDate(this.scheduleSheetData[currentRow][newCycleColumnIdx]) + ")": createPrettyDate(newCycleDate),
-                        bookName: this.scheduleSheetData[currentRow - 1][i],
-                        firstName: name};
+        emailOptions = {
+                          NewCycle: currentRow < newCycleRowIdx ?
+                                    "ASAP (was due " + createPrettyDate(this.scheduleSheetData[currentRow][newCycleColumnIdx]) + ")" :
+                                    createPrettyDate(newCycleDate),
+                          bookName: this.scheduleSheetData[currentRow - 1][i],
+                          firstName: name
+                        };
         updateCellOptions = {
                               note: "Reminder sent: " + this.today,
                               sheetName: sheetName,
