@@ -16,13 +16,14 @@ function JSONtoRSS(json) {
         if (len) {
 
           rss  = '<?xml version="1.0"?><rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/">';
-          rss += ' <channel><title>' + articles.meta.method + '</title>';
+          rss += ' <channel><title>' + escapeXml(articles.meta.method) + '</title>';
+          rss += ' <description>' + escapeXml(articles.meta.description) + '</description>';
           rss += ' <link>' + articles.meta.link + '</link>';
           rss += ' <pubDate>' + new Date().toUTCString() + '</pubDate>';
 
           for (var i=0; i<len; i++) {
-            var group = results[i].group.name;
-            var urlname = results[i].group.urlname;
+            var group = escapeXml(results[i].group.name);
+            var urlname = escapeXml(results[i].group.urlname);
             var addedTime = new Date(results[i].created).toUTCString();
             var eventStartTime = new Date(results[i].time).toString();
             var eventPlace;
@@ -35,7 +36,7 @@ function JSONtoRSS(json) {
             }
             var eventUrl = results[i].event_url;
             var RSVPLimit = results[i].rsvp_limit;
-            var eventName  = results[i].name ;
+            var eventName  = escapeXml(results[i].name) ;
             var eventDescription  = "Time: " + eventStartTime + "/ Place: " + eventPlace + "\n" + results[i].description;
 
             rss += "<item><title>" + group + ": " + eventName + "</title>";
