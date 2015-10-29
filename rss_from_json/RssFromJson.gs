@@ -73,8 +73,8 @@ function escapeXml(unsafe) {
             case '&': return '&amp;';
             case '\'': return '&apos;';
             case '"': return '&quot;';
-            case '\n': return '&#xD;';
-            case '\r': return '&#xD;';
+            case '\n': return '&#xA;';
+            case '\r': return '&#xA;';
         }
     });
 }
