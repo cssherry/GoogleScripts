@@ -37,10 +37,13 @@ function JSONtoRSS(json) {
             var eventUrl = results[i].event_url;
             var RSVPLimit = results[i].rsvp_limit;
             var eventName  = escapeXml(results[i].name) ;
-            var eventDescription  = "Time: " + eventStartTime + "/ Place: " + eventPlace + "\n" + results[i].description;
+            var eventDescription  = "<b>Time:</b> " + eventStartTime + "\n" +
+                                    "<b>Place:</b> " + eventPlace + "\n" +
+                                    "<b>RSVP Limit:</b> " + RSVPLimit + "\n" +
+                                    results[i].description;
 
             rss += "<item><title>" + group + ": " + eventName + "</title>";
-            rss += " <dc:creator>" + group + "(" + urlname + ") </dc:creator>";
+            rss += " <dc:creator>" + group + " (" + urlname + ") </dc:creator>";
             rss += " <pubDate>" + addedTime + "</pubDate>";
             rss += " <guid isPermaLink='false'>" + results[i].id + "</guid>";
             rss += " <link>" + eventUrl + "</link>";
