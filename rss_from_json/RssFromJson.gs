@@ -37,9 +37,9 @@ function JSONtoRSS(json) {
             var eventUrl = results[i].event_url;
             var RSVPLimit = results[i].rsvp_limit;
             var eventName  = escapeXml(results[i].name) ;
-            var eventDescription  = "<b>Time:</b> " + eventStartTime + "\n" +
-                                    "<b>Place:</b> " + eventPlace + "\n" +
-                                    "<b>RSVP Limit:</b> " + RSVPLimit + "\n" +
+            var eventDescription  = "<h2><b>Time:</b> " + eventStartTime + "</h2>" +
+                                    "<h2><b>Place:</b> " + eventPlace + "</h2>" +
+                                    "<h2><b>RSVP Limit:</b> " + RSVPLimit + "</h2>" +
                                     results[i].description;
 
             rss += "<item><title>" + group + ": " + eventName + "</title>";
