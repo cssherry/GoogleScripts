@@ -47,8 +47,7 @@ var header = "Don't forget! !1 for Urgent&Important (DO NOW!), !2 for Urgent (Tr
     currentDate = createPrettyDate(new Date(), 'short'),
     asReported = '\n\nAs reported on { timestamp }',
     footer = "\n\nFill out the form: https://docs.google.com/forms/d/1FUw_hkDrKN_PVS3oJLHGpM13il-Ugyvfhc_Tg5E_JKc/viewform\n\n" +
-             "See the spreadsheet: https://docs.google.com/spreadsheet/ccc?key=0AggnWnxIWH43dFEtdU5jZmwxM2kyU2ZaNk5KOVl1SXc#gid=0\n\n" + 
-             runGetHtml().html();
+             "See the spreadsheet: https://docs.google.com/spreadsheet/ccc?key=0AggnWnxIWH43dFEtdU5jZmwxM2kyU2ZaNk5KOVl1SXc#gid=0\n\n";
 
 // To convert column index to letter for cells
 var NumberToLetters = function(n) {
