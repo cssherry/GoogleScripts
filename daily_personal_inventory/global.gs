@@ -142,11 +142,11 @@ var getHTML = function(url, el, attr, attrVal) {
            "Please try another URL!<br />" +
            "<small>" + e.toString() + "</small>";
   }
-  
+
   var xml = response.getContentText();
   var document = Xml.parse(xml, true);
 
-  
+
   var element = getElementByVal(document, el, attr, attrVal);
   return element;
 };
@@ -154,4 +154,3 @@ var getHTML = function(url, el, attr, attrVal) {
 function runGetHtml(){
   getHTML('http://www.merriam-webster.com/word-of-the-day/', 'div', 'id', 'main' );
 }
- 
