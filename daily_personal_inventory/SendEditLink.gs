@@ -15,7 +15,7 @@ function getEditLink(emailTemplate, subject, sendTo) {
   this.responses = form.getResponses(); //get email responses
 
   this.spreadsheet = SpreadsheetApp.getActiveSpreadsheet()
-                                     .getSheetByName("Daily Inventory Data");
+                                   .getSheetByName("Daily Inventory Data");
   this.responseSheetData = this.spreadsheet.getDataRange().getValues();
   this.responseSheetIndex = indexSheet(this.responseSheetData);
 
@@ -34,10 +34,10 @@ getEditLink.prototype.run = function () {
       timestampIdx = this.responseSheetIndex.Timestamp,
       dateIdx = this.responseSheetIndex.Date,
       checkTimestamp = function(response){
-                        var rTimestamp = response.getTimestamp();
-                        if (timestamp.getTime() === rTimestamp.getTime()) {
-                         return response;
-                        }
+                          var rTimestamp = response.getTimestamp();
+                          if (timestamp.getTime() === rTimestamp.getTime()) {
+                            return response;
+                          }
                        };
 
   // Go through each line and check to make sure it has an editLink
@@ -52,35 +52,6 @@ getEditLink.prototype.run = function () {
       var response = this.responses.filter(checkTimestamp)[0],
           formUrl = response.getEditResponseUrl(); //grabs the url from the form
 
-        // Use + to call valueOf() behind the scenes. Another option would be to call getTime()
-        // a =  function () {
-        //   var d1 = new Date(2013, 0, 1);
-        //   var d2 = new Date(2013, 0, 1);
-        //   console.time('valueOf');
-        //     console.log((+d1 === +d2));
-        //     console.log((+d1 === +d2));
-        //     console.log((+d1 === +d2));
-        //     console.log((+d1 === +d2));
-        //     console.log((+d1 === +d2));
-        //     console.log((+d1 === +d2));
-        //   console.timeEnd('valueOf'); // 1.09ms
-        //   console.time('valueOf explicit');
-        //     console.log((d1.valueOf() === d2.valueOf()));
-        //     console.log((d1.valueOf() === d2.valueOf()));
-        //     console.log((d1.valueOf() === d2.valueOf()));
-        //     console.log((d1.valueOf() === d2.valueOf()));
-        //     console.log((d1.valueOf() === d2.valueOf()));
-        //     console.log((d1.valueOf() === d2.valueOf()));
-        //   console.timeEnd('valueOf explicit'); // 0.08ms
-        //   console.time('getTIme explicit');
-        //     console.log(d1.getTime() === d2.getTime());
-        //     console.log(d1.getTime() === d2.getTime());
-        //     console.log(d1.getTime() === d2.getTime());
-        //     console.log(d1.getTime() === d2.getTime());
-        //     console.log(d1.getTime() === d2.getTime());
-        //     console.log(d1.getTime() === d2.getTime());
-        //   console.timeEnd('getTIme explicit'); // 0.06ms
-        // };
           var cellcode = NumberToLetters(editLinkIdx) + (rowIdx + 1),
               emailOptions = {
                   link: formUrl,
