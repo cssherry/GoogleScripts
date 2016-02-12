@@ -11,7 +11,7 @@ function runSendEditLink() {
 
 // Store email template, subject, and sendto
 function getEditLink(emailTemplate, subject, sendTo) {
-  var form = FormApp.openById('1FUw_hkDrKN_PVS3oJLHGpM13il-Ugyvfhc_Tg5E_JKc'); //form ID
+  var form = FormApp.openById('1kL9sSIQbbBnb3Botbf0RuJepG6ird_GXqUwkSZ1oTg4'); //form ID
   this.responses = form.getResponses(); //get email responses
 
   this.spreadsheet = SpreadsheetApp.getActiveSpreadsheet()
