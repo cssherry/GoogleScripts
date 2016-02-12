@@ -79,11 +79,13 @@ getEditLink.prototype.run = function () {
         }
     }
     if (!sleepTime) {
+      // If user hasn't put in sleep time, insert sleep like an android sleep time and info
       this.getSleep(dateIdx, rowIdx, hoursSleepIdx);
     }
   }
 };
 
+// Gets sleep info from calendar inserted by Sleep like an Android
 getEditLink.prototype.getSleep = function(currDate, row, sleepIdx) {
   var calendar = CalendarApp.getCalendarsByName("Sleep"),
       sleepEvents = calendar.getEventsForDay(currDate),
