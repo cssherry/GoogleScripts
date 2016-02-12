@@ -33,6 +33,7 @@ getEditLink.prototype.run = function () {
       editLinkIdx = this.responseSheetIndex.EditLink,
       timestampIdx = this.responseSheetIndex.Timestamp,
       dateIdx = this.responseSheetIndex.Date,
+      hoursSleepIdx = this.responseSheetIndex['How many hours did you sleep?'],
       checkTimestamp = function(response){
                           var rTimestamp = response.getTimestamp();
                           if (timestamp.getTime() === rTimestamp.getTime()) {
@@ -45,7 +46,8 @@ getEditLink.prototype.run = function () {
     var rowIdx = startRow + i,
         editLink = this.responseSheetData[rowIdx][editLinkIdx],
         timestamp = this.responseSheetData[rowIdx][timestampIdx],
-        entryDate = this.responseSheetData[rowIdx][dateIdx];
+        entryDate = this.responseSheetData[rowIdx][dateIdx],
+        sleepTime = this.responseSheetData[rowIdx][hoursSleepIdx];
 
     // If there is not an editLink, put it in, so long as form timestamp and spreadsheet timestamp match
     if (!editLink){
@@ -65,16 +67,41 @@ getEditLink.prototype.run = function () {
               email;
 
 
-          // Only send edit link if today is the day that the entry is about
-          if (sameDay(this.today, entryDate)) {
-            updateCellOptions.note = "Reminder sent: " + this.today;
-            email = new Email(this.sendTo, this.subject, this.emailTemplate, emailOptions, [updateCellOptions]);
-            email.send();
-          } else {
-            updateCellOptions.note = "Script ran: " + this.today;
-            email = new Email(this.sendTo, this.subject, this.emailTemplate, emailOptions, [updateCellOptions]);
-            email.updateCell();
-          }
-      }
+        // Only send edit link if today is the day that the entry is about
+        if (sameDay(this.today, entryDate)) {
+          updateCellOptions.note = "Reminder sent: " + this.today;
+          email = new Email(this.sendTo, this.subject, this.emailTemplate, emailOptions, [updateCellOptions]);
+          email.send();
+        } else {
+          updateCellOptions.note = "Script ran: " + this.today;
+          email = new Email(this.sendTo, this.subject, this.emailTemplate, emailOptions, [updateCellOptions]);
+          email.updateCell();
+        }
     }
+    if (!sleepTime) {
+      this.getSleep(dateIdx, rowIdx, hoursSleepIdx);
+    }
+  }
+};
+
+getEditLink.prototype.getSleep = function(currDate, row, sleepIdx) {
+  var calendar = CalendarApp.getCalendarsByName("Sleep"),
+      sleepEvents = calendar.getEventsForDay(currDate),
+      cellcode = NumberToLetters(sleepIdx) + (row + 1),
+      eventLength = 0,
+      eventDescription = "",
+      updateCellOptions;
+
+  for (var i = 0; i < sleepEvents.length; i++) {
+    eventLength += (sleepEvents[i].getEndTime() - sleepEvents[i].getStartTime());
+    eventDescription += ("\n\n" + sleepEvents[i].getDescription());
+    updateCellOptions = {
+      sheetName: 'Daily Inventory Data',
+      cellCode: cellcode,
+      message: eventLength,
+      note: eventDescription,
+    };
+
+    new Email(null, null, null, null, [updateCellOptions]).updateCell();
+  }
 };
