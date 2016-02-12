@@ -35,6 +35,8 @@ function sendReminderEmail(emailTemplate, subject, missingOnlyEmail, missingOnly
   this.grateful3Idx = this.responseSheetIndex['What are you grateful for?'] - 2;
   this.editLinkIdx = this.responseSheetIndex.EditLink;
   this.creativeWritingIdx = this.responseSheetIndex['Creative Writing'];
+  this.happenedIdx = this.responseSheetIndex['What happened today?'];
+  this.happenedMostIdx = this.responseSheetIndex['What one thing happened today that you\'ll remember the most?'];
   this.timestampIdx = this.responseSheetIndex.Timestamp;
   this.dateIdx = this.responseSheetIndex.Date;
   this.daysFromIdx = this.responseSheetIndex.DaysFromToday;
@@ -167,6 +169,8 @@ sendReminderEmail.prototype.getThrowbacks = function (startRow, endRow) {
           grateful2 = this.responseSheetData[j][this.grateful2Idx],
           grateful3 = this.responseSheetData[j][this.grateful3Idx],
           editLink = this.responseSheetData[j][this.editLinkIdx],
+          happened = this.responseSheetData[j][this.happenedIdx],
+          happenedMost = this.responseSheetData[j][this.happenedMostIdx],
           creativeWriting = this.responseSheetData[j][this.creativeWritingIdx];
 
       message += "\n\nEdit entry here: " + editLink + " \n" +
@@ -182,6 +186,12 @@ sendReminderEmail.prototype.getThrowbacks = function (startRow, endRow) {
         }
       } else {
         message += "\n";
+      }
+      if (happenedMost !== "") {
+        message += "\nMost Important Event\n" + happenedMost + "\n\n";
+      }
+      if (happened !== "") {
+        message += "\nDay in Summary\n" + happened + "\n\n";
       }
       if (creativeWriting !== "") {
         message += "\nCreative Writing\n" + creativeWriting + "\n\n";
