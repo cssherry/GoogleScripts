@@ -80,30 +80,38 @@ getEditLink.prototype.run = function () {
     }
     if (!sleepTime) {
       // If user hasn't put in sleep time, insert sleep like an android sleep time and info
-      this.getSleep(dateIdx, rowIdx, hoursSleepIdx);
+      this.getSleep(entryDate, rowIdx, hoursSleepIdx);
     }
   }
 };
 
 // Gets sleep info from calendar inserted by Sleep like an Android
 getEditLink.prototype.getSleep = function(currDate, row, sleepIdx) {
-  var calendar = CalendarApp.getCalendarsByName("Sleep"),
-      sleepEvents = calendar.getEventsForDay(currDate),
+  var sleepCalendar = CalendarApp.getCalendarsByName("Sleep")[0],
+      startTime = new Date(currDate),
+      endTIme = new Date(currDate),
       cellcode = NumberToLetters(sleepIdx) + (row + 1),
       eventLength = 0,
       eventDescription = "",
       updateCellOptions;
 
+  startTime.setDate(currDate.getDate() - 1);
+  startTime.setHours(22);
+  endTIme.setHours(22);
+
+  var sleepEvents = sleepCalendar.getEvents(startTime, endTIme);
+
   for (var i = 0; i < sleepEvents.length; i++) {
     eventLength += (sleepEvents[i].getEndTime() - sleepEvents[i].getStartTime());
     eventDescription += ("\n\n" + sleepEvents[i].getDescription());
-    updateCellOptions = {
-      sheetName: 'Daily Inventory Data',
-      cellCode: cellcode,
-      message: eventLength,
-      note: eventDescription,
-    };
-
-    new Email(null, null, null, null, [updateCellOptions]).updateCell();
   }
+
+  updateCellOptions = {
+    sheetName: 'Daily Inventory Data',
+    cellCode: cellcode,
+    message: eventLength / 1000 / 60 / 60,
+    note: eventDescription,
+  };
+
+  new Email(null, null, null, null, [updateCellOptions]).updateCell();
 };
