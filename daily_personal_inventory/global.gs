@@ -154,3 +154,26 @@ function getHTML(url, el, attr, attrVal) {
 function runGetHtml(){
   return getHTML('http://www.merriam-webster.com/word-of-the-day/', 'div', 'class', 'wod-definition-container' );
 }
+
+function getDayDiff (day1, day2) {
+  if (!isDate(day1)) {
+    day1 = parseDateString(day1);
+  }
+  if (!isDate(day2)) {
+    day2 = parseDateString(day2);
+  }
+  var milliPerSecond = 1000,
+      secondPerMin = 60,
+      minToHour = 60,
+      hourToDay = 24,
+      conversionFactor = milliPerSecond * secondPerMin * minToHour * hourToDay;
+  return Math.floor((day1 - day2) / conversionFactor);
+
+  function isDate (date) {
+    return Object.prototype.toString.call(date) === '[object Date]';
+  }
+  function parseDateString (date) {
+    var mdy = date.split('/');
+    return new Date(mdy[2], mdy[0]-1, mdy[1]);
+  }
+}
