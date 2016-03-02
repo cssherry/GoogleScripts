@@ -39,13 +39,13 @@ function sendReminderEmail(emailTemplate, subject, missingOnlyEmail, missingOnly
   this.happenedMostIdx = this.responseSheetIndex['What one thing happened today that you\'ll remember the most?'];
   this.timestampIdx = this.responseSheetIndex.Timestamp;
   this.dateIdx = this.responseSheetIndex.Date;
-  this.daysFromIdx = this.responseSheetIndex.DaysFromToday;
   this.emailSentIdx = this.responseSheetIndex.EmailSent;
 
   this.scoreCardSorted = SpreadsheetApp.getActiveSpreadsheet()
                                        .getSheetByName("Score Card");
   this.scoreCardData = this.scoreCardSorted.getDataRange().getValues();
   this.scoreCardIndex = indexSheet(this.scoreCardData);
+  this.daysFromIdx = this.scoreCardIndex['Drinking Score'];
 
   this.emailTemplate = emailTemplate;
   this.subject = subject;
@@ -92,12 +92,11 @@ sendReminderEmail.prototype.getMissingDates = function (startRow, endRow) {
   // Get all the dates that were missed
   var numRows = endRow - startRow,
       numberMissed = {currentStreak: 0, highestStreak: 0},
-      daysFromIdx = this.scoreCardIndex['Drinking Score'],
       n = 0,
       missed = '';
 
   for (var i = endRow; i >= startRow; i--) {
-    var daysFrom = this.scoreCardData[i][daysFromIdx];
+    var daysFrom = this.scoreCardData[i][this.daysFromIdx];
     if(daysFrom !== '1') {
       missed += "     " + daysFrom + "\n";
       n++;
@@ -127,7 +126,7 @@ sendReminderEmail.prototype.getMissingDates = function (startRow, endRow) {
 sendReminderEmail.prototype.trySendingYesterdayEmail = function (startRow, endRow, emailOptions) {
   var missingYesterday = true;
   for (var i = startRow; i <= endRow; i++) {
-    var daysFrom = this.responseSheetData[i][this.daysFromIdx];
+    var daysFrom = getDayDiff(this.responseSheetData[i][this.dateIdx]);
     if(daysFrom === 1) {
       missingYesterday = false;
         emailOptions.goal = this.responseSheetData[i][this.goalIdx];
@@ -164,7 +163,7 @@ sendReminderEmail.prototype.getThrowbacks = function (startRow, endRow) {
   //Creates message with random grateful thing
   for (var j = endRow - 20; j >= startRow ; j--) {
     if(this.responseSheetData[j][this.grateful1Idx] !== "" && m < 4) {
-      var days_from = this.responseSheetData[j][this.daysFromIdx],
+      var days_from = getDayDiff(this.responseSheetData[j][this.dateIdx]),
           grateful1 = this.responseSheetData[j][this.grateful1Idx],
           grateful2 = this.responseSheetData[j][this.grateful2Idx],
           grateful3 = this.responseSheetData[j][this.grateful3Idx],

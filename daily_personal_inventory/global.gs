@@ -154,20 +154,24 @@ function getHTML(url, el, attr, attrVal) {
 function runGetHtml(){
   return getHTML('http://www.merriam-webster.com/word-of-the-day/', 'div', 'class', 'wod-definition-container' );
 }
-
+// Day2 is newer date, day1 is older date
 function getDayDiff (day1, day2) {
   if (!isDate(day1)) {
     day1 = parseDateString(day1);
   }
-  if (!isDate(day2)) {
-    day2 = parseDateString(day2);
+  if (day2) {
+    if (!isDate(day2)) {
+      day2 = parseDateString(day2);
+    }
+  } else {
+    day2 = new Date();
   }
   var milliPerSecond = 1000,
       secondPerMin = 60,
       minToHour = 60,
       hourToDay = 24,
       conversionFactor = milliPerSecond * secondPerMin * minToHour * hourToDay;
-  return Math.floor((day1 - day2) / conversionFactor);
+  return Math.floor((day2 - day1) / conversionFactor);
 
   function isDate (date) {
     return Object.prototype.toString.call(date) === '[object Date]';
