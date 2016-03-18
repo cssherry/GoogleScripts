@@ -29,25 +29,20 @@ function getEditLink(emailTemplate, subject, sendTo) {
 // gets editLink for form and updates spreadsheet/sends link if it's for current day
 getEditLink.prototype.run = function () {
   var startRow = 3,  // First row of data to process
-      numberEntries = this.responseSheetData.length - startRow,// figure out what the last row is (the first row has 2 entries before first real entry)
+      numberEntries = this.spreadsheet.getLastRow(),// figure out what the last row is (the first row has 2 entries before first real entry)
       editLinkIdx = this.responseSheetIndex.EditLink,
       timestampIdx = this.responseSheetIndex.Timestamp,
       dateIdx = this.responseSheetIndex.Date,
       hoursSleepIdx = this.responseSheetIndex['How many hours did you sleep?'],
-      checkTimestamp = function(response){
-                          var rTimestamp = response.getTimestamp();
-                          if (timestamp.getTime() === rTimestamp.getTime()) {
-                            return response;
-                          }
-                       };
+      rowIdx, editLink, entryDate, sleepTime;
 
   // Go through each line and check to make sure it has an editLink
-  for (var i = 0; i < numberEntries ; i++) {
-    var rowIdx = startRow + i,
-        editLink = this.responseSheetData[rowIdx][editLinkIdx],
-        timestamp = this.responseSheetData[rowIdx][timestampIdx],
-        entryDate = this.responseSheetData[rowIdx][dateIdx],
-        sleepTime = this.responseSheetData[rowIdx][hoursSleepIdx];
+  for (var i = 0; i < numberEntries - startRow; i++) {
+    rowIdx = startRow + i;
+    editLink = this.responseSheetData[rowIdx][editLinkIdx];
+    timestamp = this.responseSheetData[rowIdx][timestampIdx];
+    entryDate = this.responseSheetData[rowIdx][dateIdx];
+    sleepTime = this.responseSheetData[rowIdx][hoursSleepIdx];
 
     // If there is not an editLink, put it in, so long as form timestamp and spreadsheet timestamp match
     if (!editLink){
@@ -81,6 +76,14 @@ getEditLink.prototype.run = function () {
     if (!sleepTime) {
       // If user hasn't put in sleep time, insert sleep like an android sleep time and info
       this.getSleep(entryDate, rowIdx, hoursSleepIdx);
+    }
+  }
+
+  function checkTimestamp(response){
+    var rTimestamp = response.getTimestamp();
+    var timestampT = new Date(timestamp);
+    if (timestampT.getTime() === rTimestamp.getTime()) {
+      return response;
     }
   }
 };
