@@ -45,7 +45,7 @@ getEditLink.prototype.run = function () {
     sleepTime = this.responseSheetData[rowIdx][hoursSleepIdx];
 
     // If there is not an editLink, put it in, so long as form timestamp and spreadsheet timestamp match
-    if (!editLink){
+    if (!editLink && timestamp /*check for timestamp and make sure row isn't empty*/){
       var response = this.responses.filter(checkTimestamp)[0],
           formUrl = response.getEditResponseUrl(); //grabs the url from the form
 
