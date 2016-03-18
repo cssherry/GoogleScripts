@@ -5,7 +5,7 @@ function runSendEditLink() {
       subject = "Edit Link for Daily Personal Inventory (" + currentDate + ")",
       sendTo = '7a828627@opayq.com';
 
-  Utilities.sleep(3 * 1000);
+  Utilities.sleep(4 * 1000);
   new getEditLink(reminderEmail, subject, sendTo).run();
 }
 
@@ -81,8 +81,7 @@ getEditLink.prototype.run = function () {
 
   function checkTimestamp(response){
     var rTimestamp = response.getTimestamp();
-    var timestampT = new Date(timestamp);
-    if (timestampT.getTime() === rTimestamp.getTime()) {
+    if (timestamp.getTime() === rTimestamp.getTime()) {
       return response;
     }
   }
