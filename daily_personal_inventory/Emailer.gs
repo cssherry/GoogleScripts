@@ -50,20 +50,21 @@ Email.prototype.updateCell = function() {
         sheetName = options.sheetName,
         cellCode = options.cellCode,
         note = options.note,
-        message = options.message;
+        message = options.message,
+        overwrite = options.overwrite;
 
     var cell = SpreadsheetApp.getActiveSpreadsheet()
                              .getSheetByName(sheetName)
                              .getRange(cellCode);
 
     if (note) {
-      var currentNote = cell.getNote();
-      cell.setNote(currentNote + "\n" + note);
+      var currentNote = overwrite ? "" : cell.getNote() + "\n";
+      cell.setNote(currentNote + note);
     }
 
     if (message) {
-      var currentMessage = cell.getValue();
-      cell.setValue(currentMessage + "\n" + message);
+      var currentMessage = overwrite ? "" : cell.getValue() + "\n";
+      cell.setValue(currentMessage + message);
     }
   }
 };

@@ -73,7 +73,8 @@ getEditLink.prototype.run = function () {
           email.updateCell();
         }
     }
-    if (!sleepTime) {
+    // recalculate sleeptime if less than 4 hours -- probably calendar event wasn't uploaded yet
+    if (!sleepTime || sleepTime < 4) {
       // If user hasn't put in sleep time, insert sleep like an android sleep time and info
       this.getSleep(entryDate, rowIdx, hoursSleepIdx);
     }
@@ -113,6 +114,7 @@ getEditLink.prototype.getSleep = function(currDate, row, sleepIdx) {
     cellCode: cellcode,
     message: eventLength / 1000 / 60 / 60,
     note: eventDescription,
+    overwrite: true,
   };
 
   new Email(null, null, null, null, [updateCellOptions]).updateCell();
