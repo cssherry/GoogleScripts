@@ -14,7 +14,7 @@ function runSendReminderEmail() {
                        asReported,
       subject = "To-Do's for Today (" + currentDate + ")";
       missingOnlySubject = "Missing { missingDays } Days (" + currentDate + ")";
-      sendTo = '7a828627@opayq.com';
+      sendTo = myEmail;
 
   new sendReminderEmail(reminder + reminderFooter, subject,
                         reminderFooter, missingOnlySubject,

@@ -3,7 +3,7 @@ function runSendEditLink() {
   // Change this template to change text in automated email
   var reminderEmail = "Edit link: { link }\n" + asReported,
       subject = "Edit Link for Daily Personal Inventory (" + currentDate + ")",
-      sendTo = '7a828627@opayq.com';
+      sendTo = myEmail;
 
   Utilities.sleep(4 * 1000);
   new getEditLink(reminderEmail, subject, sendTo).run();
