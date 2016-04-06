@@ -60,6 +60,7 @@ sendReminderEmail.prototype.run = function () {
   var startRow = 3,  // First row of data to process
       endRow = this.scoreCardData.length - 1;
 
+  myRecalculate();
   // Gets all missing dates
   var missed = this.getMissingDates(startRow, endRow);
 
@@ -83,6 +84,13 @@ sendReminderEmail.prototype.run = function () {
     this.missingOnlySubject = this.missingOnlySubject.replace("{ missingDays }", this.missingDays.totalMissed);
     new Email(this.sendTo, this.missingOnlySubject, this.missingOnlyEmailTemplate, emailOptions)
       .send();
+  }
+
+  // Solution for not updating the Today() function
+  // https://community.risevision.com/rise_vision_inc/topics/google_spreadsheet_automatic_recalculate
+  function myRecalculate() {
+    var cell = this.scoreCardSorted.getRange('A2');
+    cell.setValue(1);
   }
 };
 
