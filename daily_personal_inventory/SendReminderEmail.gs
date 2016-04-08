@@ -60,7 +60,7 @@ sendReminderEmail.prototype.run = function () {
   var startRow = 3,  // First row of data to process
       endRow = this.scoreCardData.length - 1;
 
-  myRecalculate();
+  myRecalculate.bind(this)();
   // Gets all missing dates
   var missed = this.getMissingDates(startRow, endRow);
 
