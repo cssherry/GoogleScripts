@@ -61,12 +61,18 @@ Email.prototype.updateCell = function() {
 
       if (note) {
         currentNote = cell.getNote();
-        cell.setNote(currentNote + "\n" + note);
+        if (currentNote !== "") {
+          currentNote += "\n";
+        }
+        cell.setNote(currentNote + note);
       }
 
       if (message) {
         currentMessage = cell.getValue();
-        cell.setValue(currentMessage + "\n" + message);
+        if (currentMessage !== "") {
+          currentMessage += "\n";
+        }
+        cell.setValue(currentMessage + message);
       }
     }
   }
