@@ -32,6 +32,17 @@ function AssignBook(mailInfo, mailInfoSubject, nextBookInfo, nextBookInfoSubject
   this.mailInfoSubject = mailInfoSubject;
   this.nextBookInfo = nextBookInfo;
   this.nextBookInfoSubject = nextBookInfoSubject;
+
+  // Filter out duplicate cells
+  var hasNewBookIdx = this.formSheetIndex.HasNewBook,
+      whichBookIdx = this.formSheetIndex["Which book did you just finish reading?"];
+  for (var i = 1; i < this.formSheetData.length; i++) {
+    var row = this.formSheetData[i],
+        hasNewBookValue = row[hasNewBookIdx];
+    if (hasNewBookValue !== true && hasNewBookValue !== "") {
+      row[whichBookIdx] = "";
+    }
+  }
 }
 
 AssignBook.prototype.run = function() {
