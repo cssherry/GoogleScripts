@@ -232,7 +232,7 @@ AssignBook.prototype.assignReaders = function(formSheetData) {
         needNewBookMaxIdx = formSheetData.needNewBook.length - 1;
 
         // Else try to find a match
-        for (var i = 0; i < needNewBookMaxIdx ; i++) {
+        for (var i = 0; i <= needNewBookMaxIdx ; i++) {
           receiver = formSheetData.needNewBook[i];
 
           receiverIdx = this.scheduleSheetIndex[receiver.name];
