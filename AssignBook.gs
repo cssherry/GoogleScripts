@@ -205,23 +205,46 @@ AssignBook.prototype.assignReaders = function(formSheetData) {
 
       this.bookAssigned(sender, receiver);
     } else {
+      bookIdx = this.addressesSheetIndex.BookChoices;
+      // Assign to last person if needed
+      if (numberTimesBookRead === maxTimeBooksRead - 1) {
+        var userIdx,
+            indexOfBook,
+            readerNames = this.scheduleSheetData[0].slice(0),
+            currentList;
+        for (var l = 1; l < this.scheduleSheetData.length; l++) {
+          currentList = this.scheduleSheetData[l];
+          for (var n = 0; n < currentList.length; n++) {
+            if (currentList[n] === book) {
+              readerNames[n] = null;
+            }
+          }
+        }
+        for (var m = 1; m < readerNames.length; m++) {
+          if (this.addressesSheetData[m][bookIdx] === book) {
+            readerNames[m] = null;
+          } else {
+            this.bookAssigned(sender, readerNames[m]);
+          }
+        }
+      } else {
+        // Else, assign to person who still needs to read book
+        needNewBookMaxIdx = formSheetData.needNewBook.length - 1;
 
-      needNewBookMaxIdx = formSheetData.needNewBook.length - 1;
+        // Else try to find a match
+        for (var i = 0; i < needNewBookMaxIdx ; i++) {
+          receiver = formSheetData.needNewBook[i];
 
-      // Else try to find a match
-      for (var i = 0; i < needNewBookMaxIdx ; i++) {
-        receiver = formSheetData.needNewBook[i];
+          receiverIdx = this.scheduleSheetIndex[receiver.name];
+          receiversOriginalBook = this.addressesSheetData[receiverIdx][bookIdx];
+          receiverReadBook = formSheetData.readingHistory[book][receiver.name];
 
-        receiverIdx = this.scheduleSheetIndex[receiver.name];
-        bookIdx = this.addressesSheetIndex.BookChoices;
-        receiversOriginalBook = this.addressesSheetData[receiverIdx][bookIdx];
-        receiverReadBook = formSheetData.readingHistory[book][receiver.name];
-
-        // Skip person if it's their book or if they've already read it
-        if (receiversOriginalBook !== book && !receiverReadBook) {
-          formSheetData.needNewBook.splice(i, 1);
-          this.bookAssigned(sender, receiver);
-          break;
+          // Skip person if it's their book or if they've already read it
+          if (receiversOriginalBook !== book && !receiverReadBook) {
+            formSheetData.needNewBook.splice(i, 1);
+            this.bookAssigned(sender, receiver);
+            break;
+          }
         }
       }
     }
@@ -229,8 +252,10 @@ AssignBook.prototype.assignReaders = function(formSheetData) {
 };
 
 AssignBook.prototype.bookAssigned = function(sender, receiver) {
-  var peopleInfo = this.peopleInfo().hash,
-      receiverInfo = peopleInfo[receiver.name],
+  var receiver_type = typeof(receiver),
+      receiver_name = receiver_type === String ? receiver : receiver.name,
+      peopleInfo = this.peopleInfo().hash,
+      receiverInfo = peopleInfo[receiver_name],
       senderInfo = peopleInfo[sender.name];
 
   // Send out receiver's address to sender
