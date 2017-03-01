@@ -90,8 +90,10 @@ getEditLink.prototype.run = function () {
 
 // Gets sleep info from calendar inserted by Sleep like an Android
 getEditLink.prototype.getSleep = function(currDate, row, sleepIdx) {
-  var sleepCalendar = CalendarApp.getCalendarsByName("Sleep")[0],
-      startTime = new Date(currDate),
+  if (!this.sleepCalendar) {
+    this.sleepCalendar = CalendarApp.getCalendarsByName("Sleep")[0];
+  }
+  var startTime = new Date(currDate),
       endTIme = new Date(currDate),
       cellcode = NumberToLetters(sleepIdx) + (row + 1),
       eventLength = 0,
@@ -102,7 +104,7 @@ getEditLink.prototype.getSleep = function(currDate, row, sleepIdx) {
   startTime.setHours(22);
   endTIme.setHours(22);
 
-  var sleepEvents = sleepCalendar.getEvents(startTime, endTIme);
+  var sleepEvents = this.sleepCalendar.getEvents(startTime, endTIme);
 
   for (var i = 0; i < sleepEvents.length; i++) {
     eventLength += (sleepEvents[i].getEndTime() - sleepEvents[i].getStartTime());
