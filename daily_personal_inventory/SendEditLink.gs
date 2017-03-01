@@ -74,7 +74,8 @@ getEditLink.prototype.run = function () {
         }
     }
     // recalculate sleeptime if less than 4 hours -- probably calendar event wasn't uploaded yet
-    if (!sleepTime || sleepTime < 4) {
+    // Only do this for last 30 dates (otherwise, overuse)
+    if (rowIdx > numberEntries - 31 && (!sleepTime || sleepTime < 4)) {
       // If user hasn't put in sleep time, insert sleep like an android sleep time and info
       this.getSleep(entryDate, rowIdx, hoursSleepIdx);
     }
@@ -104,6 +105,8 @@ getEditLink.prototype.getSleep = function(currDate, row, sleepIdx) {
   startTime.setHours(22);
   endTIme.setHours(22);
 
+  // Lag between calls prevents 'Service invoked too many times in a short time'
+  Utilities.sleep(1000);
   var sleepEvents = this.sleepCalendar.getEvents(startTime, endTIme);
 
   for (var i = 0; i < sleepEvents.length; i++) {
