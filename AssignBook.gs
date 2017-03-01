@@ -232,10 +232,11 @@ AssignBook.prototype.assignReaders = function(formSheetData) {
           }
         }
         for (var m = 1; m < readerNames.length; m++) {
+          var reader = readerNames[m];
           if (this.addressesSheetData[m][bookIdx] === book) {
-            readerNames[m] = null;
-          } else {
-            this.bookAssigned(sender, readerNames[m]);
+            reader = null;
+          } else if (reader !== null) {
+            this.bookAssigned(sender, reader);
           }
         }
       } else {
