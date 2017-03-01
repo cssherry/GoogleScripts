@@ -265,7 +265,7 @@ AssignBook.prototype.assignReaders = function(formSheetData) {
 
 AssignBook.prototype.bookAssigned = function(sender, receiver) {
   var receiver_type = typeof(receiver),
-      receiver_name = receiver_type === String ? receiver : receiver.name,
+      receiver_name = receiver_type === "string" ? receiver : receiver.name,
       peopleInfo = this.peopleInfo().hash,
       receiverInfo = peopleInfo[receiver_name],
       senderInfo = peopleInfo[sender.name];
@@ -277,12 +277,12 @@ AssignBook.prototype.bookAssigned = function(sender, receiver) {
   var contactEmail1 = senderInfo.email,
       emailOptions1 = {
                   sendAddress: receiverInfo.address,
-                  sendToPerson: receiver.name,
+                  sendToPerson: receiver_name,
                   firstName: sender.name
                 },
       updateCellOptions1 = {
                             note: "Assigned: " + new Date(),
-                            message: receiver.name,
+                            message: receiver_name,
                             cellCode: sender.cell,
                             sheetName: 'Form Responses 1'
                           };
@@ -298,7 +298,7 @@ AssignBook.prototype.bookAssigned = function(sender, receiver) {
       cell = NumberToLetters[receiverInfo.idx] + (lastIdx + 1),
       emailOptions2 = {note: "Assigned: " + new Date(),
                         message: sender.book,
-                        sendToPerson: receiver.name,
+                        sendToPerson: receiver_name,
                         newBook: sender.book,
                         firstName: sender.name
                       },
