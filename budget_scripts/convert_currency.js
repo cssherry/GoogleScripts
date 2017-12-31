@@ -1,7 +1,7 @@
-var sheetsToUpdate = ['Itemized Budget', 'MonthlyTheater', 'Charities-notax'];
+var sheetsToUpdate = ['ItemizedBudget', 'MonthlyTheater', 'Charities-notax'];
 
 /** MAIN FUNCTION
-    Runs upon change event, ideally new row being added to Itemized Budget Sheet
+    Runs upon change event, ideally new row being added to ItemizedBudget Sheet
 */
 function createConversions() {
   new convertUponNewRow();
@@ -94,20 +94,20 @@ convertUponNewRow.prototype.getConversion = function (convertTo, _convertFrom) {
 /** Calculates if date is for current day */
 convertUponNewRow.prototype.getConversionRow = function (convertTo) {
   var today = new Date();
-  var rateIdx = this['Itemized BudgetIndex'].Rate;
-  var cacheDayIdx = this['Itemized BudgetIndex'].CacheDay;
-  var rateTypeIdx = this['Itemized BudgetIndex'].RateType;
-  var rateTypeData = this['Itemized BudgetData'];
+  var rateIdx = this['ItemizedBudgetIndex'].Rate;
+  var cacheDayIdx = this['ItemizedBudgetIndex'].CacheDay;
+  var rateTypeIdx = this['ItemizedBudgetIndex'].RateType;
+  var rateTypeData = this['ItemizedBudgetData'];
 
-  for (var i = 0; i < rateTypeData.length; i++) {
+  for (var i = 1; i < rateTypeData.length; i++) {
     if (!rateTypeData[i][rateTypeIdx] || rateTypeData[i][rateTypeIdx] === convertTo) {
       break;
     }
   }
 
   return {
-    Rate: this['Itemized BudgetData'][i][rateIdx],
-    CacheDay: this['Itemized BudgetData'][i][cacheDayIdx],
+    Rate: this['ItemizedBudgetData'][i][rateIdx],
+    CacheDay: this['ItemizedBudgetData'][i][cacheDayIdx],
     row: i,
   };
 };
@@ -122,20 +122,20 @@ convertUponNewRow.prototype.getOnlineRate = function (convertTo, _convertFrom, r
   var rate = conversionData.rates[_convertFrom];
   var dateUpdated = 'Rate from: ' + conversionData.date;
   var row = rowIdx + 1;
-  var RateIdx = this['Itemized BudgetIndex'].Rate;
-  var CacheDayIdx = this['Itemized BudgetIndex'].CacheDay;
-  var RateTypeIdx = this['Itemized BudgetIndex'].RateType;
+  var RateIdx = this['ItemizedBudgetIndex'].Rate;
+  var CacheDayIdx = this['ItemizedBudgetIndex'].CacheDay;
+  var RateTypeIdx = this['ItemizedBudgetIndex'].RateType;
   var RateCell = NumberToLetters[RateIdx] + row;
   var CacheDayCell = NumberToLetters[CacheDayIdx] + row;
   var RateTypeCell = NumberToLetters[RateTypeIdx] + row;
   var today = new Date();
 
-  updateCell('Itemized Budget', RateCell, dateUpdated, rate, true);
-  updateCell('Itemized Budget', CacheDayCell, dateUpdated, today, true);
-  updateCell('Itemized Budget', RateTypeCell, dateUpdated, convertTo, true);
-  this['Itemized BudgetData'][rowIdx][RateIdx] = rate;
-  this['Itemized BudgetData'][rowIdx][CacheDayIdx] = today;
-  this['Itemized BudgetData'][rowIdx][RateTypeIdx] = convertTo;
+  updateCell('ItemizedBudget', RateCell, dateUpdated, rate, true);
+  updateCell('ItemizedBudget', CacheDayCell, dateUpdated, today, true);
+  updateCell('ItemizedBudget', RateTypeCell, dateUpdated, convertTo, true);
+  this['ItemizedBudgetData'][rowIdx][RateIdx] = rate;
+  this['ItemizedBudgetData'][rowIdx][CacheDayIdx] = today;
+  this['ItemizedBudgetData'][rowIdx][RateTypeIdx] = convertTo;
 
   return rate;
 };
