@@ -4,7 +4,76 @@ var sheetsToUpdate = ['ItemizedBudget', 'MonthlyTheater', 'Charities-notax'];
     Runs upon change event, ideally new row being added to ItemizedBudget Sheet
 */
 function createConversions() {
-  new convertUponNewRow();
+  var convertInstance = new convertUponNewRow();
+
+  // Send email on Sunday
+  var today = new Date();
+  var emailTemplate = 'THIS WEEK:\n' +
+                      '{ itemsWeek }\n\n' +
+                      'THIS MONTH:\n' +
+                      '{ itemsMonth }\n\n' +
+                      'THIS YEAR:\n' +
+                      '{ itemsTotal }\n\n' +
+                      '-----------\n' +
+                      'CONVERSIONS (to USD):\n' +
+                      '{ conversionUSD }\n\n' +
+                      '-----------\n' +
+                      'ITEMS:' +
+                      '{ itemList }';
+
+  if (today.getDay() === 0) {
+    var subject = 'Weekly Budget Report (' + today.toDateString() + ')';
+    var overviewSheet = SpreadsheetApp.getActiveSpreadsheet()
+                                      .getSheetByName('Overview');
+    var data = overviewSheet.getDataRange().getValues();
+    var index = indexSheet(data);
+    var itemIdx = index['Item'];
+    var weekIdx = index['Items (Week)'];
+    var monthIdx = index['Items (Month)'];
+    var totalIdx = index['Items (Total)'];
+    var actualIdx = index.Actual;
+    var itemsWeek = '';
+    var itemsMonth = '';
+    var itemsTotal = '';
+    var itemList = '';
+    for (var i = 2; i < data.length; i++) {
+      var itemName = data[i][itemIdx];
+
+      if (!itemName) {
+        break;
+      }
+
+      itemsWeek += ('\n' + itemName + ':\n' + data[i][weekIdx]);
+      itemsMonth += ('\n' + itemName + ':\n' + data[i][monthIdx]);
+      itemsTotal += ('\n' + itemName + ' (£' + data[i][actualIdx] + '):\n' + data[i][totalIdx]);
+      itemList += ('\n' + (i - 1) + ': ' + itemName);
+    }
+
+    var allCodes = ['USD'];
+    var RateTypeIdx = convertInstance['ItemizedBudgetIndex'].RateType;
+    for (var i = 1; i < convertInstance['ItemizedBudgetData'].length; i++) {
+      var rateValue = convertInstance['ItemizedBudgetData'][i][RateTypeIdx];
+      if (!rateValue) {
+        break;
+      }
+
+      allCodes.push(rateValue);
+    }
+
+    var rateUrl = 'https://api.fixer.io/latest?base=GBP&symbols=' + allCodes.join(',');
+    var response = UrlFetchApp.fetch(rateUrl);
+    var conversionUSD = response.getContentText();
+
+    var emailOptions = {
+      itemsWeek: itemsWeek,
+      itemsMonth: itemsMonth,
+      itemsTotal: itemsTotal,
+      conversionUSD: conversionUSD,
+      itemList: itemList,
+    };
+    email = new Email(myEmail, subject, emailTemplate, emailOptions);
+    email.send();
+  }
 }
 
 function convertUponNewRow() {
