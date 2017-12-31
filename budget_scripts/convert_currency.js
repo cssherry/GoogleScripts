@@ -162,7 +162,9 @@ function evaluate(cellValue) {
   if (cellValue instanceof Array) {
     for (i in cellValue){
       for (j in cellValue[i]){
-        cellValue[i][j] = eval(cellValue[i][j]);
+        if (cellValue[i][j].match && cellValue[i][j].match('[/*/+-]')) {
+          cellValue[i][j] = eval(cellValue[i][j]);
+        }
       }
     }
     return cellValue;
