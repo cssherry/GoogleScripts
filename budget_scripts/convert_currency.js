@@ -32,6 +32,8 @@ function createConversions() {
     var monthIdx = index['Items (Month)'];
     var totalIdx = index['Items (Total)'];
     var actualIdx = index.Actual;
+    var monthbudgetIdx = index['Month Budget'];
+    var weekbudgetIdx = index['Week Budget'];
     var itemsWeek = '';
     var itemsMonth = '';
     var itemsTotal = '';
@@ -43,9 +45,22 @@ function createConversions() {
         break;
       }
 
-      itemsWeek += ('\n' + itemName + ':\n' + data[i][weekIdx]);
-      itemsMonth += ('\n' + itemName + ':\n' + data[i][monthIdx]);
-      itemsTotal += ('\n' + itemName + ' (£' + data[i][actualIdx] + '):\n' + data[i][totalIdx]);
+      var weekData = data[i][weekIdx];
+      var monthData = data[i][monthIdx];
+      var totalData = data[i][totalIdx];
+
+      if (weekData && weekData !== '#N/A') {
+        itemsWeek += ('\n' + itemName + '(out of £' + data[i][weekbudgetIdx] + '):\n' + weekData);
+      }
+
+      if (monthData && monthData !== '#N/A') {
+        itemsMonth += ('\n' + itemName + '(out of £' + data[i][monthbudgetIdx] + '):\n' + monthData);
+      }
+
+      if (totalData && totalData !== '#N/A') {
+        itemsTotal += ('\n' + itemName + ' (£' + data[i][actualIdx] + '):\n' + totalData);
+      }
+
       itemList += ('\n' + (i - 1) + ': ' + itemName);
     }
 
