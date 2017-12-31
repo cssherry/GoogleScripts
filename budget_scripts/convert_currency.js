@@ -156,3 +156,17 @@ function updateCell(sheetName, cellCode, _note, _message, _overwrite) {
     cell.setValue(currentMessage + _message);
   }
 }
+
+// Evaluate
+function evaluate(cellValue) {
+  if (cellValue instanceof Array) {
+    for (i in cellValue){
+      for (j in cellValue[i]){
+        cellValue[i][j] = eval(cellValue[i][j]);
+      }
+    }
+    return cellValue;
+  } else {
+    return eval(cellValue);
+  }
+}
