@@ -8,18 +8,18 @@ function createConversions() {
 
   // Send email on Sunday
   var today = new Date();
-  var emailTemplate = 'THIS WEEK:\n' +
+  var emailTemplate = 'THIS WEEK (£{ weekSpent }):\n' +
                       '{ itemsWeek }\n\n' +
-                      'THIS MONTH:\n' +
+                      'THIS MONTH (£{ monthSpent }):\n' +
                       '{ itemsMonth }\n\n' +
-                      'THIS YEAR:\n' +
+                      'THIS YEAR (£{ totalSpent }):\n' +
                       '{ itemsTotal }\n\n' +
                       '-----------\n' +
                       'CONVERSIONS (to USD):\n' +
                       '{ conversionUSD }\n\n' +
                       '-----------\n' +
                       'ITEMS:' +
-                      '{ itemList }';
+                      '{ itemList }' +
 
   if (today.getDay() === 0) {
     var subject = 'Weekly Budget Report (' + today.toDateString() + ')';
@@ -85,6 +85,9 @@ function createConversions() {
       itemsTotal: itemsTotal,
       conversionUSD: conversionUSD,
       itemList: itemList,
+      weekSpent: data[1][weekIdx],
+      monthSpent: data[1][monthIdx],
+      totalSpent: data[1][totalIdx],
     };
     email = new Email(myEmail, subject, emailTemplate, emailOptions);
     email.send();
