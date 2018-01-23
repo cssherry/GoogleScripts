@@ -186,7 +186,7 @@ convertUponNewRow.prototype.updateCell = function (sheetName, startAndEnd) {
     or false if there's no new rows */
 convertUponNewRow.prototype.getConversion = function (convertTo, _convertFrom) {
   convertTo = convertTo.trim().toUpperCase();
-  _convertFrom = _convertFrom.trim().toUpperCase();
+  _convertFrom = _convertFrom && _convertFrom.trim().toUpperCase();
 
   if (convertTo === _convertFrom) {
     return 1;
