@@ -184,6 +184,12 @@ convertUponNewRow.prototype.updateCell = function (sheetName, startAndEnd) {
     or false if there's no new rows */
 convertUponNewRow.prototype.getConversion = function (convertTo, _convertFrom) {
   convertTo = convertTo.trim().toUpperCase();
+  _convertFrom = _convertFrom.trim().toUpperCase();
+
+  if (convertTo === _convertFrom) {
+    return 1;
+  }
+
   var conversionRow = this.getConversionRow(convertTo);
   var today = new Date();
   var convertedDate = new Date(conversionRow.CacheDay);
@@ -219,6 +225,11 @@ convertUponNewRow.prototype.getConversionRow = function (convertTo) {
 convertUponNewRow.prototype.getOnlineRate = function (convertTo, _convertFrom, rowIdx) {
   _convertFrom = _convertFrom || 'GBP';
   _convertFrom = _convertFrom.trim().toUpperCase();
+
+  if (_convertFrom === convertTo) {
+    return 1;
+  }
+
   var url = 'https://api.fixer.io/latest?base=' + convertTo + '&symbols=﻿' + _convertFrom;
   var response = UrlFetchApp.fetch(url);
   var conversionData = JSON.parse(response.getContentText());
