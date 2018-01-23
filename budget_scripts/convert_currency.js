@@ -8,10 +8,7 @@ function createConversions() {
 
   // Send email on Sunday
   var today = new Date();
-  var emailTemplate = 'THIS WEEK (£{ weekSpent }/£{ weekBudget }):\n' +
-                      '{ itemsWeek }\n\n' +
-                      '---------------------------------\n' +
-                      'THIS MONTH (£{ monthSpent }/£{ monthBudget }):\n' +
+  var emailTemplate = 'THIS MONTH (£{ monthSpent }/£{ monthBudget }):\n' +
                       '{ itemsMonth }\n\n' +
                       '---------------------------------\n' +
                       'THIS YEAR (£{ totalSpent }/£{ totalBudget }):\n' +
@@ -25,7 +22,15 @@ function createConversions() {
 
   var lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
   var isLastDay = today.getDate() === lastDayOfMonth.getDate();
-  if (today.getDay() === 0 || isLastDay) {
+  var isSunday = today.getDay() === 0;
+  if (isSunday || isLastDay) {
+    if (isSunday) {
+      emailTemplate = 'THIS WEEK (£{ weekSpent }/£{ weekBudget }):\n' +
+                      '{ itemsWeek }\n\n' +
+                      '---------------------------------\n' +
+                      emailTemplate;
+    }
+
     var subject = 'Weekly Budget Report (' + today.toDateString() + ')';
     var overviewSheet = SpreadsheetApp.getActiveSpreadsheet()
                                       .getSheetByName('Overview');
