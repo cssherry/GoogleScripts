@@ -175,14 +175,21 @@ convertUponNewRow.prototype.updateCell = function (sheetName, startAndEnd) {
   var index = this[sheetName + 'Index'];
   var data = this[sheetName + 'Data'];
   var conversionIdx = index.Conversion;
+  var today = new Date();
   for (var i = startAndEnd.start; i < startAndEnd.end; i++) {
     var conversion = data[i][conversionIdx];
     var cellCode = NumberToLetters[index.ConversionRate] + (i + 1);
     if (conversion) {
       var conversion = this.getConversion(conversion);
-      updateCell(sheetName, cellCode, new Date(), conversion, true);
+      var note = 'Updated: ' + (conversion.cacheDay ? conversion.cacheDay : today);
+
+      if (conversion.date) {
+        note += '\nRate from: ' + conversion.date;
+      }
+
+      updateCell(sheetName, cellCode, note, conversion.rate, true);
     } else {
-      updateCell(sheetName, cellCode, new Date(), 1, true);
+      updateCell(sheetName, cellCode, today, 1, true);
     }
   }
 };
@@ -194,14 +201,20 @@ convertUponNewRow.prototype.getConversion = function (convertTo, _convertFrom) {
   _convertFrom = _convertFrom && _convertFrom.trim().toUpperCase();
 
   if (convertTo === _convertFrom) {
-    return 1;
+    return {
+      rate: 1,
+    };
   }
 
   var conversionRow = this.getConversionRow(convertTo);
   var today = new Date();
   var convertedDate = new Date(conversionRow.CacheDay);
   if (today.toDateString() === convertedDate.toDateString()) {
-    return conversionRow.Rate;
+    return {
+      rate: conversionRow.Rate,
+      date: conversionRow.RateDate,
+      cacheDay: conversionRow.CacheDay,
+    };
   }
 
   return this.getOnlineRate(convertTo, _convertFrom, conversionRow.row);
@@ -212,6 +225,7 @@ convertUponNewRow.prototype.getConversionRow = function (convertTo) {
   var today = new Date();
   var rateIdx = this.ItemizedBudgetIndex.Rate;
   var cacheDayIdx = this.ItemizedBudgetIndex.CacheDay;
+  var rateDateIdx = this.ItemizedBudgetIndex.RateDate;
   var rateTypeIdx = this.ItemizedBudgetIndex.RateType;
   var rateTypeData = this.ItemizedBudgetData;
 
@@ -222,8 +236,9 @@ convertUponNewRow.prototype.getConversionRow = function (convertTo) {
   }
 
   return {
-    Rate: this['ItemizedBudgetData'][i][rateIdx],
-    CacheDay: this['ItemizedBudgetData'][i][cacheDayIdx],
+    Rate: this.ItemizedBudgetData[i][rateIdx],
+    CacheDay: this.ItemizedBudgetData[i][cacheDayIdx],
+    RateDate: this.ItemizedBudgetData[i][rateDateIdx],
     row: i,
   };
 };
@@ -234,7 +249,9 @@ convertUponNewRow.prototype.getOnlineRate = function (convertTo, _convertFrom, r
   _convertFrom = _convertFrom.trim().toUpperCase();
 
   if (_convertFrom === convertTo) {
-    return 1;
+    return {
+      rate: 1,
+    };
   }
 
   var url = 'https://api.fixer.io/latest?base=' + convertTo + '&symbols=﻿' + _convertFrom;
@@ -245,20 +262,28 @@ convertUponNewRow.prototype.getOnlineRate = function (convertTo, _convertFrom, r
   var row = rowIdx + 1;
   var RateIdx = this.ItemizedBudgetIndex.Rate;
   var CacheDayIdx = this.ItemizedBudgetIndex.CacheDay;
+  var RateDateIdx = this.ItemizedBudgetIndex.RateDate;
   var RateTypeIdx = this.ItemizedBudgetIndex.RateType;
   var RateCell = NumberToLetters[RateIdx] + row;
   var CacheDayCell = NumberToLetters[CacheDayIdx] + row;
+  var RateDateCell = NumberToLetters[RateDateIdx] + row;
   var RateTypeCell = NumberToLetters[RateTypeIdx] + row;
   var today = new Date();
 
   updateCell('ItemizedBudget', RateCell, dateUpdated, rate, true);
   updateCell('ItemizedBudget', CacheDayCell, dateUpdated, today, true);
+  updateCell('ItemizedBudget', RateDateCell, dateUpdated, conversionData.date, true);
   updateCell('ItemizedBudget', RateTypeCell, dateUpdated, convertTo, true);
   this.ItemizedBudgetData[rowIdx][RateIdx] = rate;
   this.ItemizedBudgetData[rowIdx][CacheDayIdx] = today;
+  this.ItemizedBudgetData[rowIdx][RateDateIdx] = conversionData.date;
   this.ItemizedBudgetData[rowIdx][RateTypeIdx] = convertTo;
 
-  return rate;
+  return {
+    rate: rate,
+    date: conversionData.date,
+    cacheDay: today,
+  };
 };
 
 // Function that records when an email is successfully sent
