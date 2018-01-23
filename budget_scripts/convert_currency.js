@@ -8,18 +8,20 @@ function createConversions() {
 
   // Send email on Sunday
   var today = new Date();
-  var emailTemplate = 'THIS WEEK (£{ weekSpent }):\n' +
+  var emailTemplate = 'THIS WEEK (£{ weekSpent }/£{ weekBudget }):\n' +
                       '{ itemsWeek }\n\n' +
-                      'THIS MONTH (£{ monthSpent }):\n' +
+                      '---------------------------------\n' +
+                      'THIS MONTH (£{ monthSpent }/£{ monthBudget }):\n' +
                       '{ itemsMonth }\n\n' +
-                      'THIS YEAR (£{ totalSpent }):\n' +
+                      '---------------------------------\n' +
+                      'THIS YEAR (£{ totalSpent }/£{ totalBudget }):\n' +
                       '{ itemsTotal }\n\n' +
-                      '-----------\n' +
+                      '---------------------------------\n' +
                       'CONVERSIONS (to USD):\n' +
                       '{ conversionUSD }\n\n' +
-                      '-----------\n' +
-                      'ITEMS:' +
-                      '{ itemList }' +
+                      '---------------------------------\n' +
+                      'ITEMS:\n' +
+                      '{ itemList }\n\n' +
 
   if (today.getDay() === 0) {
     var subject = 'Weekly Budget Report (' + today.toDateString() + ')';
@@ -38,6 +40,9 @@ function createConversions() {
     var itemsMonth = '';
     var itemsTotal = '';
     var itemList = '';
+    var weekSpent = 0;
+    var monthSpent = 0;
+    var skipItems = ['Home', 'Retirement', 'Taxes', 'Savings'];
     for (var i = 2; i < data.length; i++) {
       var itemName = data[i][itemIdx];
 
@@ -50,15 +55,23 @@ function createConversions() {
       var totalData = data[i][totalIdx];
 
       if (weekData && weekData !== '#N/A') {
-        itemsWeek += ('\n' + itemName + '(out of £' + data[i][weekbudgetIdx] + '):\n' + weekData);
+        itemsWeek += ('\n\n----' + itemName + ' (out of £' + data[i][weekbudgetIdx] + ')--------\n' + weekData);
+
+        if (skipItems.indexOf(itemName) === -1) {
+          weekSpent += parseFloat(weekData.replace('£', ''));
+        }
       }
 
       if (monthData && monthData !== '#N/A') {
-        itemsMonth += ('\n' + itemName + '(out of £' + data[i][monthbudgetIdx] + '):\n' + monthData);
+        itemsMonth += ('\n\n----' + itemName + ' (out of £' + data[i][monthbudgetIdx] + ')--------\n' + monthData);
+
+        if (skipItems.indexOf(itemName) === -1) {
+          monthSpent += parseFloat(monthData.replace('£', ''));
+        }
       }
 
       if (totalData && totalData !== '#N/A') {
-        itemsTotal += ('\n' + itemName + ' (£' + data[i][actualIdx] + '):\n' + totalData);
+        itemsTotal += ('\n\n----' + itemName + ' (out of £' + data[i][actualIdx] + ')--------\n' + totalData);
       }
 
       itemList += ('\n' + (i - 1) + ': ' + itemName);
@@ -85,9 +98,12 @@ function createConversions() {
       itemsTotal: itemsTotal,
       conversionUSD: conversionUSD,
       itemList: itemList,
-      weekSpent: data[1][weekIdx],
-      monthSpent: data[1][monthIdx],
-      totalSpent: data[1][totalIdx],
+      weekBudget: data[1][index['Week Budget']],
+      monthBudget: data[1][index['Month Budget']],
+      totalBudget: data[1][index.Budget],
+      weekSpent: weekSpent,
+      monthSpent: monthSpent,
+      totalSpent: data[1][index.Actual],
     };
     email = new Email(myEmail, subject, emailTemplate, emailOptions);
     email.send();
