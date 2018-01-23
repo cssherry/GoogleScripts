@@ -78,9 +78,9 @@ function createConversions() {
     }
 
     var allCodes = ['USD'];
-    var RateTypeIdx = convertInstance['ItemizedBudgetIndex'].RateType;
-    for (var i = 1; i < convertInstance['ItemizedBudgetData'].length; i++) {
-      var rateValue = convertInstance['ItemizedBudgetData'][i][RateTypeIdx];
+    var RateTypeIdx = convertInstance.ItemizedBudgetIndex.RateType;
+    for (var i = 1; i < convertInstance.ItemizedBudgetData.length; i++) {
+      var rateValue = convertInstance.ItemizedBudgetData[i][RateTypeIdx];
       if (!rateValue) {
         break;
       }
@@ -203,10 +203,10 @@ convertUponNewRow.prototype.getConversion = function (convertTo, _convertFrom) {
 /** Calculates if date is for current day */
 convertUponNewRow.prototype.getConversionRow = function (convertTo) {
   var today = new Date();
-  var rateIdx = this['ItemizedBudgetIndex'].Rate;
-  var cacheDayIdx = this['ItemizedBudgetIndex'].CacheDay;
-  var rateTypeIdx = this['ItemizedBudgetIndex'].RateType;
-  var rateTypeData = this['ItemizedBudgetData'];
+  var rateIdx = this.ItemizedBudgetIndex.Rate;
+  var cacheDayIdx = this.ItemizedBudgetIndex.CacheDay;
+  var rateTypeIdx = this.ItemizedBudgetIndex.RateType;
+  var rateTypeData = this.ItemizedBudgetData;
 
   for (var i = 1; i < rateTypeData.length; i++) {
     if (!rateTypeData[i][rateTypeIdx] || rateTypeData[i][rateTypeIdx] === convertTo) {
@@ -236,9 +236,9 @@ convertUponNewRow.prototype.getOnlineRate = function (convertTo, _convertFrom, r
   var rate = conversionData.rates[_convertFrom];
   var dateUpdated = 'Rate from: ' + conversionData.date;
   var row = rowIdx + 1;
-  var RateIdx = this['ItemizedBudgetIndex'].Rate;
-  var CacheDayIdx = this['ItemizedBudgetIndex'].CacheDay;
-  var RateTypeIdx = this['ItemizedBudgetIndex'].RateType;
+  var RateIdx = this.ItemizedBudgetIndex.Rate;
+  var CacheDayIdx = this.ItemizedBudgetIndex.CacheDay;
+  var RateTypeIdx = this.ItemizedBudgetIndex.RateType;
   var RateCell = NumberToLetters[RateIdx] + row;
   var CacheDayCell = NumberToLetters[CacheDayIdx] + row;
   var RateTypeCell = NumberToLetters[RateTypeIdx] + row;
@@ -247,9 +247,9 @@ convertUponNewRow.prototype.getOnlineRate = function (convertTo, _convertFrom, r
   updateCell('ItemizedBudget', RateCell, dateUpdated, rate, true);
   updateCell('ItemizedBudget', CacheDayCell, dateUpdated, today, true);
   updateCell('ItemizedBudget', RateTypeCell, dateUpdated, convertTo, true);
-  this['ItemizedBudgetData'][rowIdx][RateIdx] = rate;
-  this['ItemizedBudgetData'][rowIdx][CacheDayIdx] = today;
-  this['ItemizedBudgetData'][rowIdx][RateTypeIdx] = convertTo;
+  this.ItemizedBudgetData[rowIdx][RateIdx] = rate;
+  this.ItemizedBudgetData[rowIdx][CacheDayIdx] = today;
+  this.ItemizedBudgetData[rowIdx][RateTypeIdx] = convertTo;
 
   return rate;
 };
@@ -261,12 +261,12 @@ function updateCell(sheetName, cellCode, _note, _message, _overwrite) {
                            .getRange(cellCode);
 
   if (_note) {
-    var currentNote = _overwrite ? "" : cell.getNote() + "\n";
+    var currentNote = _overwrite ? '' : cell.getNote() + '\n';
     cell.setNote(currentNote + _note);
   }
 
   if (_message) {
-    var currentMessage = _overwrite ? "" : cell.getValue() + "\n";
+    var currentMessage = _overwrite ? '' : cell.getValue() + '\n';
     cell.setValue(currentMessage + _message);
   }
 }
@@ -274,15 +274,20 @@ function updateCell(sheetName, cellCode, _note, _message, _overwrite) {
 // Evaluate
 function evaluate(cellValue) {
   if (cellValue instanceof Array) {
-    for (i in cellValue){
-      for (j in cellValue[i]){
+    var i, j;
+    for (i in cellValue) {
+      for (j in cellValue[i]) {
         if (cellValue[i][j].match && cellValue[i][j].match('[/*/+-]')) {
           cellValue[i][j] = eval(cellValue[i][j]);
         }
       }
     }
     return cellValue;
-  } else {
+  }
+
+  if (cellValue.match && cellValue.match('[/*/+-]')) {
     return eval(cellValue);
   }
+
+  return cellValue;
 }
