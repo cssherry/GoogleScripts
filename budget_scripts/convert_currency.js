@@ -23,7 +23,9 @@ function createConversions() {
                       'ITEMS:\n' +
                       '{ itemList }\n\n' +
 
-  if (today.getDay() === 0) {
+  var lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  var isLastDay = today.getDate() === lastDayOfMonth.getDate();
+  if (today.getDay() === 0 || isLastDay) {
     var subject = 'Weekly Budget Report (' + today.toDateString() + ')';
     var overviewSheet = SpreadsheetApp.getActiveSpreadsheet()
                                       .getSheetByName('Overview');
