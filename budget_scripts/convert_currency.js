@@ -62,9 +62,7 @@ function createConversions() {
                         'NAME', 'CURRENT DOLLARS',
                       ];
   var columnsToColorCode = {
-                            '52W growth': 0,
-                            '1W growth': 0,
-                            'Current': ['Year High', 'Year Low'],
+                            'Current': 'Year High',
                             'Expense Ratio': .5,
                           };
   var totalSavingsTable = '<table> <tr> <th>' + columnsToAdd.join('</th><th>') + '</th> </tr>';
