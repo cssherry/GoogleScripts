@@ -1,4 +1,6 @@
 var sheetsToUpdate = ['ItemizedBudget', 'MonthlyTheater', 'Charities-notax'];
+var alertPercent = 0.01;
+var skipItems = ['Home', 'Retirement', 'Taxes', 'Savings'];
 
 /** MAIN FUNCTION
     Runs upon change event, ideally new row being added to ItemizedBudget Sheet
@@ -52,7 +54,6 @@ function createConversions() {
   var highIdx = totalSavingIndex['Year High'];
   var lowIdx = totalSavingIndex['Year Low'];
   var nameIdx = totalSavingIndex.Ticker;
-  var alertPercent = 0.01;
   var columnsToAdd = [
                         // Doesn't show up properly for some reason
                         // '52W growth', '1W growth',
@@ -188,7 +189,6 @@ function createConversions() {
     var weekSpent = 0;
     var monthSpent = 0;
     var totalSpent = roundMoney(data[1][actualIdx]);
-    var skipItems = ['Home', 'Retirement', 'Taxes', 'Savings'];
 
     // Get week/month/total and list of budget categories
     var itemName, weekData, monthData, totalData, currentValue, currentBudget;
