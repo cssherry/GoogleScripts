@@ -8,30 +8,158 @@ function createConversions() {
 
   // Send email on Sunday
   var today = new Date();
-  var emailTemplate = 'THIS MONTH (£{ monthSpent }/£{ monthBudget }):\n' +
-                      '{ itemsMonth }\n\n' +
-                      '---------------------------------\n' +
-                      'THIS YEAR (£{ totalSpent }/£{ totalBudget }):\n' +
-                      '{ itemsTotal }\n\n' +
-                      '---------------------------------\n' +
-                      'CONVERSIONS (to USD):\n' +
-                      '{ conversionUSD }\n\n' +
-                      '---------------------------------\n' +
-                      'ITEMS:\n' +
-                      '{ itemList }\n\n' +
+
+  var alertTemplate = '<h1>SAVINGS (in USD):</h1>' +
+                      '<b> Total (liquid): </b> { totalSavingsLiquid } <br/>' +
+                      '<b> Total + Savings: </b> { totalSavingsAll } <br/>' +
+                      '{ totalSavingsTable }' +
+                      '<hr>';
+
+  var emailTemplate = '<h1>THIS MONTH <span { monthStyle }>({ monthSpent }/{ monthBudget })</span>:</h1>' +
+                      '{ itemsMonth }' +
+                      '<hr>' +
+
+                      '<h1>THIS YEAR <span { totalStyle }>({ totalSpent }/{ totalBudget })</span>:</h1>' +
+                      '{ itemsTotal }' +
+                      '<hr>' +
+
+                      '<h1>CONVERSIONS (to USD):</h1>' +
+                      '{ conversionUSD }' +
+                      '<hr>' +
+
+                      alertTemplate +
+
+                      '<h1>ITEMS:</h1>' +
+                      '{ itemList }' +
+                      '<hr>' +
+
 
   var lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
   var isLastDay = today.getDate() === lastDayOfMonth.getDate();
   var isSunday = today.getDay() === 0;
+  var subject;
+
+
+  // Get information from TotalSavings tab
+  var stockAlerts = [];
+  var alertInfo = {};
+  var totalSavingSheet = SpreadsheetApp.getActiveSpreadsheet()
+                                       .getSheetByName('TotalSavings');
+  var totalSavingData = totalSavingSheet.getDataRange().getValues();
+  var totalSavingIndex = indexSheet(totalSavingData);
+  var currentDollarIdx = totalSavingIndex['CURRENT DOLLARS'];
+  var currentPriceIdx = totalSavingIndex.Current;
+  var highIdx = totalSavingIndex['Year High'];
+  var lowIdx = totalSavingIndex['Year Low'];
+  var nameIdx = totalSavingIndex.Ticker;
+  var alertPercent = 0.01;
+  var columnsToAdd = [
+                        // Doesn't show up properly for some reason
+                        // '52W growth', '1W growth',
+                        'Current',
+                        'Year High', 'Year Low',
+                        'PE Ratio', 'Expense Ratio',
+                        'NAME', 'CURRENT DOLLARS',
+                      ];
+  var columnsToColorCode = {
+                            '52W growth': 0,
+                            '1W growth': 0,
+                            'Current': ['Year High', 'Year Low'],
+                            'Expense Ratio': .5,
+                          };
+  var totalSavingsTable = '<table> <tr> <th>' + columnsToAdd.join('</th><th>') + '</th> </tr>';
+  var row, currentColumn, currentColumnIdx, currentRow, currentValue, colorStyle = '', colorCompare;
+  var currentPrice, highValue, lowValue, currentName;
+  for (var i = 3; i < totalSavingData.length; i++) {
+    var firstValue = totalSavingData[i][0];
+    if (!firstValue) {
+      break;
+    }
+
+    currentRow = totalSavingData[i];
+
+    // Determine if the price is extreme enough to send alert
+    currentPrice = parseFloat(currentRow[currentPriceIdx]);
+    highValue = parseFloat(currentRow[highIdx]);
+    lowValue = parseFloat(currentRow[lowIdx]);
+    currentName = currentRow[nameIdx];
+    if (currentName && currentPrice > highValue * (1 - alertPercent)) {
+      stockAlerts.push(currentName);
+      alertInfo[currentName] = '$' + currentPrice + ' within ' + alertPercent * 100 + '% of High ($' + highValue + ')';
+    } else if (currentName && currentPrice < lowValue * (1 + alertPercent)) {
+      stockAlerts.push(currentName);
+      alertInfo[currentName] = '$' + currentPrice + ' within ' + alertPercent * 100 + '% of Low ($' + lowValue + ')';
+    }
+
+    row = '<tr>';
+    for (var j = 0; j < columnsToAdd.length; j++) {
+      currentColumn = columnsToAdd[j];
+      currentColumnIdx = totalSavingIndex[currentColumn];
+      currentValue = currentRow[currentColumnIdx];
+
+      // Don't print 'N/A' or 'REF!' cells
+      if (currentValue === '#N/A' || currentValue === '#REF!') {
+        currentValue = '';
+      }
+
+      if (columnsToColorCode[currentColumn]) {
+        colorCompare = columnsToColorCode[currentColumn];
+        if (parseFloat(colorCompare) == colorCompare) {
+          colorCompare = colorCompare;
+        } else {
+          colorCompare = currentRow[totalSavingIndex[colorCompare]];
+        }
+
+        colorStyle = getColorStyle(currentValue, colorCompare);
+      } else {
+        colorStyle = '';
+      }
+
+      row += ('<td ' + colorStyle + '>' + currentValue + '</td>');
+    }
+
+    totalSavingsTable += (row +'</tr>');
+  }
+
+  var emailOptions = {
+    totalSavingsLiquid: '$' + roundMoney(totalSavingData[1][currentDollarIdx]),
+    totalSavingsAll: '$' + roundMoney(totalSavingData[2][currentDollarIdx]),
+    totalSavingsTable: totalSavingsTable,
+  };
+
+  // Send full email if Sunday or last day of the month
   if (isSunday || isLastDay) {
+    subject = 'Weekly ';
     if (isSunday) {
-      emailTemplate = 'THIS WEEK (£{ weekSpent }/£{ weekBudget }):\n' +
-                      '{ itemsWeek }\n\n' +
-                      '---------------------------------\n' +
+      emailTemplate = '<h1>THIS WEEK <span { weekStyle }>({ weekSpent }/{ weekBudget })</span>:</h1>' +
+                      '{ itemsWeek }' +
+                      '<hr>' +
                       emailTemplate;
     }
 
-    var subject = 'Weekly Budget Report (' + today.toDateString() + ')';
+    if (isLastDay) {
+      subject = 'Monthly ';
+      emailTemplate = '<h2>ANEESH TASKS:</h2>' +
+                      '<ul>' +
+                        '<li> Add tube/bus charges (4) </li>' +
+                        '<li> Add home bills (7) </li>' +
+                        '<li> Update TotalSavings/Make Investments (https://docs.google.com/spreadsheets/d/1wRSKZh7nMRJI2zICg7uKy2YXeNE1NYEfY2Ru8ZGkeS8/edit#gid=989997624) </li>' +
+                      '</ul>' +
+                      '<h2>SHERRY TASKS:</h2>' +
+                      '<ul>' +
+                        '<li> Update TotalSavings (https://docs.google.com/spreadsheets/d/1wRSKZh7nMRJI2zICg7uKy2YXeNE1NYEfY2Ru8ZGkeS8/edit#gid=989997624) </li>' +
+                        '<li> Make donations (2) </li>' +
+                      '</ul>' +
+                      '<hr>' +
+                      emailTemplate;
+    }
+
+    if (stockAlerts.length) {
+      subject = '**' + subject;
+      emailTemplate = processStocks(stockAlerts, alertInfo) + emailTemplate;
+    }
+
+    subject += 'Budget Report (' + today.toDateString() + ')';
     var overviewSheet = SpreadsheetApp.getActiveSpreadsheet()
                                       .getSheetByName('Overview');
     var data = overviewSheet.getDataRange().getValues();
@@ -40,50 +168,66 @@ function createConversions() {
     var weekIdx = index['Items (Week)'];
     var monthIdx = index['Items (Month)'];
     var totalIdx = index['Items (Total)'];
+    var budgetIdx = index.Budget;
     var actualIdx = index.Actual;
-    var monthbudgetIdx = index['Month Budget'];
     var weekbudgetIdx = index['Week Budget'];
+    var monthbudgetIdx = index['Month Budget'];
+    var weekBudget = roundMoney(data[1][weekbudgetIdx]);
+    var monthBudget = roundMoney(data[1][monthbudgetIdx]);
+    var totalBudget = roundMoney(data[1][budgetIdx]);
     var itemsWeek = '';
     var itemsMonth = '';
     var itemsTotal = '';
     var itemList = '';
     var weekSpent = 0;
     var monthSpent = 0;
+    var totalSpent = roundMoney(data[1][actualIdx]);
     var skipItems = ['Home', 'Retirement', 'Taxes', 'Savings'];
+
+    // Get week/month/total and list of budget categories
+    var itemName, weekData, monthData, totalData, currentValue, currentBudget;
     for (var i = 2; i < data.length; i++) {
-      var itemName = data[i][itemIdx];
+      itemName = data[i][itemIdx];
 
       if (!itemName) {
         break;
       }
 
-      var weekData = data[i][weekIdx];
-      var monthData = data[i][monthIdx];
-      var totalData = data[i][totalIdx];
-
+      weekData = data[i][weekIdx];
+      monthData = data[i][monthIdx];
+      totalData = data[i][totalIdx];
       if (weekData && weekData !== '#N/A') {
-        itemsWeek += ('\n\n----' + itemName + ' (out of £' + data[i][weekbudgetIdx] + ')--------\n' + weekData);
+        currentValue = roundMoney(parseFloat(weekData.replace('£', '')));
+        currentBudget = roundMoney(data[i][weekbudgetIdx]);
+
+        itemsWeek += ('<h3 ' + getColorStyle(currentValue, currentBudget) + '>' + itemName + ' (£' + currentValue + '/£' + currentBudget + ')</h3>' + formatWeekMonth(weekData));
 
         if (skipItems.indexOf(itemName) === -1) {
-          weekSpent += parseFloat(weekData.replace('£', ''));
+          weekSpent += currentValue;
         }
       }
 
       if (monthData && monthData !== '#N/A') {
-        itemsMonth += ('\n\n----' + itemName + ' (out of £' + data[i][monthbudgetIdx] + ')--------\n' + monthData);
+        currentValue = roundMoney(parseFloat(monthData.replace('£', '')));
+        currentBudget = roundMoney(data[i][monthbudgetIdx]);
+        itemsMonth += ('<h3 ' + getColorStyle(currentValue, currentBudget) + '>' + itemName + ' (£' + currentValue + '/£' + currentBudget + ')</h3>' + formatWeekMonth(monthData));
 
         if (skipItems.indexOf(itemName) === -1) {
-          monthSpent += parseFloat(monthData.replace('£', ''));
+          monthSpent += currentValue;
         }
       }
 
       if (totalData && totalData !== '#N/A') {
-        itemsTotal += ('\n\n----' + itemName + ' (out of £' + data[i][actualIdx] + ')--------\n' + totalData);
+        currentValue = roundMoney(data[i][actualIdx]);
+        currentBudget = roundMoney(data[i][budgetIdx]);
+        totalData = '<ul><li>' + totalData.replace(' | ', '</li><li>') + '</li></ul>';
+        itemsTotal += ('<h3 ' + getColorStyle(currentValue, currentBudget) + '>' + itemName + ' (£' + currentValue + '/£' + currentBudget + ')</h3>' + totalData);
       }
 
-      itemList += ('\n' + (i - 1) + ': ' + itemName);
+      itemList += ('<br>' + (i - 1) + ': ' + itemName);
     }
 
+    // Get conversion information
     var allCodes = ['USD'];
     var RateTypeIdx = convertInstance.ItemizedBudgetIndex.RateType;
     for (var i = 1; i < convertInstance.ItemizedBudgetData.length; i++) {
@@ -99,22 +243,98 @@ function createConversions() {
     var response = UrlFetchApp.fetch(rateUrl);
     var conversionUSD = response.getContentText();
 
-    var emailOptions = {
-      itemsWeek: itemsWeek,
-      itemsMonth: itemsMonth,
-      itemsTotal: itemsTotal,
-      conversionUSD: conversionUSD,
-      itemList: itemList,
-      weekBudget: data[1][index['Week Budget']],
-      monthBudget: data[1][index['Month Budget']],
-      totalBudget: data[1][index.Budget],
-      weekSpent: weekSpent,
-      monthSpent: monthSpent,
-      totalSpent: data[1][index.Actual],
-    };
-    email = new Email(myEmail, subject, emailTemplate, emailOptions);
+    emailOptions.itemsWeek = itemsWeek,
+    emailOptions.itemsMonth = itemsMonth;
+    emailOptions.itemsTotal = itemsTotal;
+    emailOptions.conversionUSD = conversionUSD;
+    emailOptions.itemList = itemList;
+    emailOptions.weekBudget = '£' + weekBudget;
+    emailOptions.monthBudget = '£' + monthBudget;
+    emailOptions.totalBudget = '£' + totalBudget;
+    emailOptions.weekSpent = '£' + roundMoney(weekSpent);
+    emailOptions.monthSpent = '£' + roundMoney(monthSpent);
+    emailOptions.totalSpent = '£' + roundMoney(totalSpent);
+    emailOptions.weekStyle = getColorStyle(weekSpent, weekBudget);
+    emailOptions.monthStyle = getColorStyle(monthSpent, monthBudget);
+    emailOptions.totalStyle = getColorStyle(totalSpent, totalBudget);
+
+    var email = new Email(myEmail, subject, emailTemplate, emailOptions);
+    email.send();
+  } else if (stockAlerts.length) {
+    alertTemplate = processStocks(stockAlerts, alertInfo) + alertTemplate;
+    var email = new Email(myEmail, 'Stock Alert (' + today.toDateString() + ': ' + stockAlerts.join(', ') + ')', alertTemplate, emailOptions);
     email.send();
   }
+}
+
+function processStocks(stockAlerts, alertInfo) {
+  return '<h1>Stock Alerts</h1> <ul>' +
+        stockAlerts.map(function concatAlerts(alert) {
+          return '<li>' + alert + ': ' + alertInfo[alert] + '</li>';
+        }).join('') +
+        '</ul>';
+}
+
+// Format month and week data by removing total and making into list
+function formatWeekMonth(fullData) {
+  var resultString = '';
+  var list = '';
+  fullData.split('\n').forEach(function addToResult(line) {
+    if (line) {
+      // italicize total
+      if (line[0] === '£') {
+        resultString += ('<em>' + line + '</em>');
+      } else if (line[0] === '-') {
+        // Add items to list
+        if (!list) {
+          list = '<ul>';
+        }
+
+        list += ('<li>' + line.slice(1) + '</li>');
+      } else {
+        // Complete out list if there are any
+        if (list) {
+          resultString += (list + '</ul>');
+          list = '';
+        }
+
+        // Add header
+        resultString += ('<br/><b>' + line + '</b>');
+      }
+    }
+  });
+
+  if (list) {
+    resultString += (list + '</ul>');
+  }
+
+  return resultString;
+}
+
+// Returns back correct styling given actual versus expected number
+function getColorStyle (actual, expected) {
+  var styleColor;
+  actual = parseFloat(actual);
+  expected = parseFloat(expected);
+  if (actual < expected * .85) {
+    styleColor = 'darkgreen';
+  } else if (actual < expected * .95) {
+    styleColor = 'green';
+  } else if (actual <= expected) {
+    styleColor = 'darkseagreen';
+  } else if (actual > expected * 1.15) {
+    styleColor = 'darkred';
+  } else if (actual > expected * 1.05) {
+    styleColor = 'mediumvioletred';
+  } else {
+    styleColor = 'indianred';
+  }
+
+  return 'style="color:' + styleColor + ';"';
+}
+
+function roundMoney(value) {
+  return Math.round(parseFloat(value) * 100) / 100;
 }
 
 function convertUponNewRow() {
