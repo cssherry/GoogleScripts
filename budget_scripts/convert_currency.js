@@ -65,6 +65,12 @@ function createConversions() {
                             'Current': 'Year High',
                             'Expense Ratio': .5,
                           };
+  var roundCurr = {
+                    'Current': true,
+                    'Year High': true,
+                    'Year Low': true,
+                    'CURRENT DOLLARS': true,
+                  };
   var totalSavingsTable = '<table> <tr> <th>' + columnsToAdd.join('</th><th>') + '</th> </tr>';
   var row, currentColumn, currentColumnIdx, currentRow, currentValue, colorStyle = '', colorCompare;
   var currentPrice, highValue, lowValue, currentName;
@@ -98,6 +104,8 @@ function createConversions() {
       // Don't print 'N/A' or 'REF!' cells
       if (currentValue === '#N/A' || currentValue === '#REF!') {
         currentValue = '';
+      } else if (roundCurr[currentColumn]) {
+        currentValue = '$' + roundMoney(currentValue);
       }
 
       if (columnsToColorCode[currentColumn]) {
