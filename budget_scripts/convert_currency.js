@@ -17,6 +17,7 @@ function createConversions() {
                       '{ totalSavingsTable }' +
                       '<hr>';
 
+  var footer = '<hr>' +
   var emailTemplate = '<h1>THIS MONTH <span { monthStyle }>({ monthSpent }/{ monthBudget })</span>:</h1>' +
                       '{ itemsMonth }' +
                       '<hr>' +
@@ -33,8 +34,8 @@ function createConversions() {
 
                       '<h1>ITEMS:</h1>' +
                       '{ itemList }' +
-                      '<hr>' +
 
+                      footer;
 
   var lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
   var isLastDay = today.getDate() === lastDayOfMonth.getDate();
@@ -267,7 +268,7 @@ function createConversions() {
     var email = new Email(myEmail, subject, emailTemplate, emailOptions);
     email.send();
   } else if (stockAlerts.length) {
-    alertTemplate = processStocks(stockAlerts, alertInfo) + alertTemplate;
+    alertTemplate = processStocks(stockAlerts, alertInfo) + alertTemplate + footer;
     var email = new Email(myEmail, 'Stock Alert (' + today.toDateString() + ': ' + stockAlerts.join(', ') + ')', alertTemplate, emailOptions);
     email.send();
   }
