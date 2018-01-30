@@ -71,7 +71,7 @@ function createConversions() {
                     'Year Low': true,
                     'CURRENT DOLLARS': true,
                   };
-  var totalSavingsTable = '<table> <tr> <th>' + columnsToAdd.join('</th><th>') + '</th> </tr>';
+  var totalSavingsTable = '<table style="border: 1px solid black;"> <tr style="border: 1px solid black;"> <th>' + columnsToAdd.join('</th><th>') + '</th> </tr>';
   var row, currentColumn, currentColumnIdx, currentRow, currentValue, colorStyle = '', colorCompare;
   var currentPrice, highValue, lowValue, currentName;
   for (var i = 3; i < totalSavingData.length; i++) {
@@ -95,7 +95,7 @@ function createConversions() {
       alertInfo[currentName] = '$' + currentPrice + ' within ' + alertPercent * 100 + '% of Low ($' + lowValue + ')';
     }
 
-    row = '<tr>';
+    row = '<tr style="border: 1px solid black;">';
     for (var j = 0; j < columnsToAdd.length; j++) {
       currentColumn = columnsToAdd[j];
       currentColumnIdx = totalSavingIndex[currentColumn];
