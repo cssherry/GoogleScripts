@@ -243,7 +243,7 @@ function createConversions() {
     var response = UrlFetchApp.fetch(rateUrl);
     var conversionUSD = response.getContentText();
 
-    emailOptions.itemsWeek = itemsWeek,
+    emailOptions.itemsWeek = itemsWeek;
     emailOptions.itemsMonth = itemsMonth;
     emailOptions.itemsTotal = itemsTotal;
     emailOptions.conversionUSD = conversionUSD;
