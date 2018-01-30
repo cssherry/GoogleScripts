@@ -149,7 +149,7 @@ function createConversions() {
       emailTemplate = '<h2>ANEESH TASKS:</h2>' +
                       '<ul>' +
                         '<li> Add tube/bus charges (4) </li>' +
-                        '<li> Add home bills (7) </li>' +
+                        '<li> Add home bills (water, electricity, gas, google fi extra: 7) </li>' +
                         '<li> Update TotalSavings/Make Investments (https://docs.google.com/spreadsheets/d/1wRSKZh7nMRJI2zICg7uKy2YXeNE1NYEfY2Ru8ZGkeS8/edit#gid=989997624) </li>' +
                       '</ul>' +
                       '<h2>SHERRY TASKS:</h2>' +
