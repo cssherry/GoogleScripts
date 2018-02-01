@@ -97,7 +97,7 @@ function createConversions() {
       alertInfo[currentName] = '$' + currentPrice + ' within ' + alertPercent * 100 + '% of Low ($' + lowValue + ')';
     }
 
-    row = '<tr style="border: 1px solid black;">';
+    row = '<tr>';
     for (var j = 0; j < columnsToAdd.length; j++) {
       currentColumn = columnsToAdd[j];
       currentColumnIdx = totalSavingIndex[currentColumn];
@@ -106,28 +106,33 @@ function createConversions() {
       // Don't print 'N/A' or 'REF!' cells
       if (currentValue === '#N/A' || currentValue === '#REF!') {
         currentValue = '';
-      } else if (roundCurr[currentColumn]) {
-        currentValue = '$' + roundMoney(currentValue);
-      }
+        colorStyle = 'style="';
+      } else {
+        if (columnsToColorCode[currentColumn]) {
+          colorCompare = columnsToColorCode[currentColumn];
+          if (parseFloat(colorCompare) == colorCompare) {
+            colorCompare = colorCompare;
+          } else {
+            colorCompare = currentRow[totalSavingIndex[colorCompare]];
+          }
 
-      if (columnsToColorCode[currentColumn]) {
-        colorCompare = columnsToColorCode[currentColumn];
-        if (parseFloat(colorCompare) == colorCompare) {
-          colorCompare = colorCompare;
+          colorStyle = getColorStyle(currentValue, colorCompare).slice(0, -1);
         } else {
-          colorCompare = currentRow[totalSavingIndex[colorCompare]];
+          colorStyle = 'style="';
         }
 
-        colorStyle = getColorStyle(currentValue, colorCompare);
-      } else {
-        colorStyle = '';
+        if (roundCurr[currentColumn]) {
+          currentValue = '$' + roundMoney(currentValue);
+        }
       }
 
-      row += ('<td ' + colorStyle + '>' + currentValue + '</td>');
+      row += ('<td ' + colorStyle + 'border-top: black 1px solid;">' + currentValue + '</td>');
     }
 
     totalSavingsTable += (row +'</tr>');
   }
+
+  totalSavingsTable += '</table>';
 
   var emailOptions = {
     totalSavingsLiquid: '$' + roundMoney(totalSavingData[1][currentDollarIdx]),
