@@ -104,7 +104,7 @@ function createConversions() {
       currentValue = currentRow[currentColumnIdx];
 
       // Don't print 'N/A' or 'REF!' cells
-      if (currentValue === '#N/A' || currentValue === '#REF!') {
+      if (['#N/A', 'NaN', '#REF!', ''].indexOf(currentValue) !== -1) {
         currentValue = '';
         colorStyle = 'style="';
       } else {
