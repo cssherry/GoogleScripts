@@ -61,7 +61,7 @@ function createConversions() {
                         'Current',
                         'Year High', 'Year Low',
                         'PE Ratio', 'Expense Ratio',
-                        'NAME', 'CURRENT DOLLARS',
+                        'Ticker', 'NAME', 'CURRENT DOLLARS',
                       ];
   var columnsToColorCode = {
                             'Current': 'Year High',
