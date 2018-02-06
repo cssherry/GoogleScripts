@@ -537,10 +537,11 @@ function updateCell(sheetName, cellCode, _note, _message, _overwrite) {
 // Evaluate
 function evaluate(cellValue) {
   if (cellValue instanceof Array) {
-    var i, j;
+    var i, j, currValue;
     for (i in cellValue) {
       for (j in cellValue[i]) {
-        if (cellValue[i][j] && cellValue[i][j].match && cellValue[i][j].match('[/*/+-]')) {
+        currValue = cellValue[i][j];
+        if (currValue && currValue.match && parseFloat(currValue) != currValue && currValue.match('[/*/+-]')) {
           cellValue[i][j] = eval(cellValue[i][j]);
         }
       }
@@ -548,7 +549,7 @@ function evaluate(cellValue) {
     return cellValue;
   }
 
-  if (cellValue && cellValue.match && cellValue.match('[/*/+-]')) {
+  if (cellValue && cellValue.match && parseFloat(currValue) != currValue && cellValue.match('[/*/+-]')) {
     return eval(cellValue);
   }
 
