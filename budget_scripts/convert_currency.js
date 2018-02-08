@@ -541,7 +541,7 @@ function evaluate(cellValue) {
     for (i in cellValue) {
       for (j in cellValue[i]) {
         currValue = cellValue[i][j];
-        if (currValue && currValue.match && parseFloat(currValue) != currValue && currValue.match('[/*/+-]')) {
+        if (currValue && currValue.match && isNaN(currValue) && currValue.match('[/*/+-]')) {
           cellValue[i][j] = eval(cellValue[i][j]);
         }
       }
@@ -549,7 +549,7 @@ function evaluate(cellValue) {
     return cellValue;
   }
 
-  if (cellValue && cellValue.match && parseFloat(currValue) != currValue && cellValue.match('[/*/+-]')) {
+  if (cellValue && cellValue.match && isNaN(currValue) && cellValue.match('[/*/+-]')) {
     return eval(cellValue);
   }
 
