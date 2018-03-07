@@ -542,7 +542,7 @@ function evaluate(cellValue) {
       for (j in cellValue[i]) {
         currValue = cellValue[i][j];
         if (currValue && currValue.match && isNaN(currValue) && currValue.match('[/*/+-]')) {
-          cellValue[i][j] = eval(cellValue[i][j]);
+          cellValue[i][j] = eval(currValue);
         }
       }
     }
