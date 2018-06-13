@@ -250,7 +250,7 @@ function createConversions() {
       allCodes.push(rateValue);
     }
 
-    var rateUrl = 'https://api.fixer.io/latest?base=GBP&symbols=' + allCodes.join(',');
+    var rateUrl = 'https://exchangeratesapi.io/api/latest?base=GBP&symbols=' + allCodes.join(',');
     var response = UrlFetchApp.fetch(rateUrl);
     var conversionUSD = response.getContentText();
 
