@@ -529,7 +529,7 @@ function evaluate(cellValue) {
     for (i in cellValue) {
       for (j in cellValue[i]) {
         currValue = cellValue[i][j];
-        if (currValue && currValue.match && isNaN(currValue) && currValue.match('[/*/+-]')) {
+        if (currValue && isNaN(currValue) && currValue.match) {
           cellValue[i][j] = eval(currValue);
         }
       }
@@ -537,7 +537,7 @@ function evaluate(cellValue) {
     return cellValue;
   }
 
-  if (cellValue && cellValue.match && isNaN(currValue) && cellValue.match('[/*/+-]')) {
+  if (cellValue && isNaN(cellValue) && cellValue.match) {
     return eval(cellValue);
   }
 
