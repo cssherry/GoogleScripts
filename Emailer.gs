@@ -35,10 +35,10 @@ Email.prototype.send = function () {
     MailApp.sendEmail({
       to: this.contactEmail,
       subject: this.subject,
-      body: this.populateEmail() +
-            "\n\n---------------------------------------" +
-            rules +
-            urls,
+      htmlBody: this.populateEmail() +
+                "\n\n---------------------------------------" +
+                rules +
+                urls,
     });
 
     this.updateCell();
