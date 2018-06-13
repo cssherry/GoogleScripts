@@ -413,6 +413,11 @@ convertUponNewRow.prototype.updateCell = function (sheetName, startAndEnd) {
     if (conversion) {
       var conversion = this.getConversion(conversion);
       var note = 'Updated: ' + (conversion.cacheDay ? conversion.cacheDay : today);
+
+      if (conversion.date) {
+        note += '\nRate from: ' + conversion.date;
+      }
+
       updateCell(sheetName, cellCode, note, conversion.rate, true);
     } else {
       updateCell(sheetName, cellCode, today, 1, true);
@@ -438,6 +443,7 @@ convertUponNewRow.prototype.getConversion = function (convertTo, _convertFrom) {
   if (today.toDateString() === convertedDate.toDateString()) {
     return {
       rate: conversionRow.Rate,
+      date: conversionRow.RateDate,
       cacheDay: conversionRow.CacheDay,
     };
   }
@@ -450,6 +456,7 @@ convertUponNewRow.prototype.getConversionRow = function (convertTo) {
   var today = new Date();
   var rateIdx = this.ItemizedBudgetIndex.Rate;
   var cacheDayIdx = this.ItemizedBudgetIndex.CacheDay;
+  var rateDateIdx = this.ItemizedBudgetIndex.RateDate;
   var rateTypeIdx = this.ItemizedBudgetIndex.RateType;
   var rateTypeData = this.ItemizedBudgetData;
 
@@ -462,6 +469,7 @@ convertUponNewRow.prototype.getConversionRow = function (convertTo) {
   return {
     Rate: this.ItemizedBudgetData[i][rateIdx],
     CacheDay: this.ItemizedBudgetData[i][cacheDayIdx],
+    RateDate: this.ItemizedBudgetData[i][rateDateIdx],
     row: i,
   };
 };
@@ -477,30 +485,34 @@ convertUponNewRow.prototype.getOnlineRate = function (convertTo, _convertFrom, r
     };
   }
 
-  var rateName = convertTo + '_' + _convertFrom;
-  var url = 'https://free.currencyconverterapi.com/api/v5/convert?compact=ultra&q=' + rateName;
+  var url = 'https://api.fixer.io/latest?base=' + convertTo + '&symbols=﻿' + _convertFrom;
   var response = UrlFetchApp.fetch(url);
-  var today = new Date();
   var conversionData = JSON.parse(response.getContentText());
-  var rate = conversionData[rateName];
-  var dateUpdated = 'Rate from: ' + createPrettyDate(today);
+  var rate = conversionData.rates[_convertFrom];
+  var dateUpdated = 'Rate from: ' + conversionData.date;
   var row = rowIdx + 1;
   var RateIdx = this.ItemizedBudgetIndex.Rate;
   var CacheDayIdx = this.ItemizedBudgetIndex.CacheDay;
+  var RateDateIdx = this.ItemizedBudgetIndex.RateDate;
   var RateTypeIdx = this.ItemizedBudgetIndex.RateType;
   var RateCell = NumberToLetters[RateIdx] + row;
   var CacheDayCell = NumberToLetters[CacheDayIdx] + row;
+  var RateDateCell = NumberToLetters[RateDateIdx] + row;
   var RateTypeCell = NumberToLetters[RateTypeIdx] + row;
+  var today = new Date();
 
   updateCell('ItemizedBudget', RateCell, dateUpdated, rate, true);
   updateCell('ItemizedBudget', CacheDayCell, dateUpdated, today, true);
+  updateCell('ItemizedBudget', RateDateCell, dateUpdated, conversionData.date, true);
   updateCell('ItemizedBudget', RateTypeCell, dateUpdated, convertTo, true);
   this.ItemizedBudgetData[rowIdx][RateIdx] = rate;
   this.ItemizedBudgetData[rowIdx][CacheDayIdx] = today;
+  this.ItemizedBudgetData[rowIdx][RateDateIdx] = conversionData.date;
   this.ItemizedBudgetData[rowIdx][RateTypeIdx] = convertTo;
 
   return {
     rate: rate,
+    date: conversionData.date,
     cacheDay: today,
   };
 };
