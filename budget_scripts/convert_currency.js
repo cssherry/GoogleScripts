@@ -250,7 +250,7 @@ function createConversions() {
       allCodes.push(rateValue);
     }
 
-    var rateUrl = 'https://data.fixer.io/api/latest?' + fixerKey + '&base=GBP&symbols=' + allCodes.join(',');
+    var rateUrl = 'https://api.fixer.io/latest?base=GBP&symbols=' + allCodes.join(',');
     var response = UrlFetchApp.fetch(rateUrl);
     var conversionUSD = response.getContentText();
 
@@ -485,7 +485,7 @@ convertUponNewRow.prototype.getOnlineRate = function (convertTo, _convertFrom, r
     };
   }
 
-  var url = 'https://data.fixer.io/api/latest?' + fixerKey + '&base=' + convertTo + '&symbols=﻿' + _convertFrom;
+  var url = 'https://api.fixer.io/latest?base=' + convertTo + '&symbols=﻿' + _convertFrom;
   var response = UrlFetchApp.fetch(url);
   var conversionData = JSON.parse(response.getContentText());
   var rate = conversionData.rates[_convertFrom];
