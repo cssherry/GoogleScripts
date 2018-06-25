@@ -485,7 +485,7 @@ convertUponNewRow.prototype.getOnlineRate = function (convertTo, _convertFrom, r
     };
   }
 
-  var url = 'https://data.fixer.io/api/latest?' + fixerKey + '&base=' + convertTo + '&symbols=﻿' + _convertFrom;
+  var url = 'https://data.fixer.io/api/latest?' + fixerKey + '&base=' + convertTo + '&symbols=' + _convertFrom;
   var response = UrlFetchApp.fetch(url);
   var conversionData = JSON.parse(response.getContentText());
   var rate = conversionData.rates[_convertFrom];
