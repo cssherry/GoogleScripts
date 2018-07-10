@@ -183,11 +183,21 @@ function updateCell(cellCode, _note, _message, _overwrite) {
 
   if (_note) {
     var currentNote = _overwrite ? '' : cell.getNote() + '\n';
-    cell.setNote(currentNote + _note);
+
+    if (currentNote) {
+      cell.setNote(currentNote + _note);
+    } else {
+      cell.setNote(_note);
+    }
   }
 
   if (_message) {
     var currentMessage = _overwrite ? '' : cell.getValue() + '\n';
-    cell.setValue(currentMessage + _message);
+
+    if (currentMessage) {
+      cell.setValue(currentMessage + _message);
+    } else {
+      cell.setValue(_message);
+    }
   }
 }
