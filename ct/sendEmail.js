@@ -11,25 +11,29 @@ function login() {
       'email': fetchPayload.email,
       'password': sjcl.decrypt(fetchPayload.salt, fetchPayload.password),
     },
-    followRedirects: true,
+    followRedirects: false,
   };
-  var loginPage = UrlFetchApp.fetch(urls.login , postOptions);
-  fetchPayload.cookie = loginPage.getAllHeaders()['Set-Cookie'];
-  return loginPage.getContentText();
+  var loginPage = UrlFetchApp.fetch(urls.login, postOptions);
+  var loginCode = loginPage.getResponseCode();
+  if (loginCode === 200) { //could not log in.
+    return "Couldn't login. Please make sure your username/password is correct.";
+  } else if (loginCode == 303 || loginCode == 302) {
+    return loginPage.getAllHeaders()['Set-Cookie'];
+  }
 }
 
 function getMainPage() {
   if (!fetchPayload.cookie) {
-    return login();
-  } else {
-    var mainPage = UrlFetchApp.fetch(urls.main,
-                                    {
-                                      headers : {
-                                        Cookie: fetchPayload.cookie,
-                                      },
-                                    });
-    return mainPage.getContentText();
+    fetchPayload.cookie = login();
   }
+
+  var mainPage = UrlFetchApp.fetch(urls.main,
+                                  {
+                                    headers : {
+                                      Cookie: fetchPayload.cookie,
+                                    },
+                                  });
+  return mainPage.getContentText();
 }
 
 // Main function for each sheet
