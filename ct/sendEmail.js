@@ -4,6 +4,7 @@ var fetchPayload = {
 var urls = {
 };
 
+// Get login cookie
 function login() {
   var postOptions = {
     method: 'post',
@@ -22,6 +23,7 @@ function login() {
   }
 }
 
+// Get the main page
 function getMainPage() {
   if (!fetchPayload.cookie) {
     fetchPayload.cookie = login();
