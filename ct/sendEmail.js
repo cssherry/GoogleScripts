@@ -45,7 +45,10 @@ function updateSheet() {
   contextValues.sheetData = contextValues.sheet.getDataRange().getValues();
   contextValues.sheetIndex = indexSheet(contextValues.sheetData);
   processPreviousListings();
-  var mainPage = getMainPage();
+  var mainPage = getMainPage().match(/<body[\s\S]*?<\/body>/)[0].replace(/<(no)?script[\s\S]*?<\/(no)?script>/g, '');
+  var doc = Xml.parse(mainPage, true).getElement();
+  var mainList = getElementsByClassName(doc, 'list-group');
+  var items = getElementsByTagName(mainList[0], 'li');
   archiveExpiredItems();
 }
 
