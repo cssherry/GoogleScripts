@@ -43,17 +43,16 @@ function updateSheet() {
   archiveExpiredItems();
 }
 
-// Figure out last 30 listings so there are no repeats
+// Process previous data, including title and fee in case those change
 function processPreviousListings() {
   contextValues.lastRow = numberOfRows(contextValues.sheetData);
   var idIdx = contextValues.sheetIndex.Url;
   var titleIdx = contextValues.sheetIndex.Title;
-  var feeIdx = contextValues.sheetIndex['Admin Fee'];
+  var feeIdx = contextValues.sheetIndex.AdminFee;
   contextValues.previousListings = {};
   for (var i = 1; i < contextValues.lastRow; i++) {
     contextValues.previousListings[contextValues.sheetData[i][idIdx]] = {
       row: i,
-      id: contextValues.sheetData[i][idIdx],
       title: contextValues.sheetData[i][titleIdx],
       fee: contextValues.sheetData[i][feeIdx],
     };
