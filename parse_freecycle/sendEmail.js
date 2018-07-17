@@ -8,7 +8,7 @@ var searchTerms = new RegExp(' cat | pet | keyboard | vacuum | yoga | plant ');
 var maxPrevious = 60;
 var contextValues = {};
 var fetchPayload = {
-}
+};
 
 /** MAIN FUNCTION
     Runs upon change event, ideally new row being added to ItemizedBudget Sheet
@@ -19,7 +19,7 @@ function updateAllSheets() {
 
 // Main function for each sheet
 function updateSheet(sheetName) {
-  Utilities.sleep(2000);
+  Utilities.sleep(1000);
   contextValues.sheetName = sheetName;
   contextValues.sheet = SpreadsheetApp.getActiveSpreadsheet()
                             .getSheetByName(sheetName);
@@ -70,7 +70,7 @@ function trackIfMissing(item) {
 // Get listing full page
 function getListing(listingId) {
   // Max 1 query per second
-  Utilities.sleep(2000);
+  Utilities.sleep(1000);
   contextValues.lastRow++;
   var freecycleItemUrl = 'https://groups.freecycle.org/group/' + contextValues.sheetName + '/posts/' + listingId;
   var freecycleItemHTML = UrlFetchApp.fetch(freecycleItemUrl, fetchPayload).getContentText().match(/<section[\s\S]*<\/section>/)[0];
