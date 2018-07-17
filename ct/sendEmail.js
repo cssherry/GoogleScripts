@@ -39,16 +39,24 @@ function getMainPage() {
 }
 
 // Main function for each sheet
+// Add to arrays for emailing out later
+var updated = [];
+var newItems = [];
+var newItemsForUpdate = [];
 function updateSheet() {
   contextValues.sheet = SpreadsheetApp.getActiveSpreadsheet()
                                       .getSheetByName('Current');
   contextValues.sheetData = contextValues.sheet.getDataRange().getValues();
   contextValues.sheetIndex = indexSheet(contextValues.sheetData);
   processPreviousListings();
-  var mainPage = getMainPage().match(/<body[\s\S]*?<\/body>/)[0].replace(/<(no)?script[\s\S]*?<\/(no)?script>/g, '');
+  var mainPage = getMainPage().match(/<body[\s\S]*?<\/body>/)[0]
+                              .replace(/<(no)?script[\s\S]*?<\/(no)?script>/g, '')
+                              .replace(/<!--|-->/g, '');
   var doc = Xml.parse(mainPage, true).getElement();
   var mainList = getElementsByTagName(doc, 'ul');
   var items = getElementsByTagName(mainList[2], 'li');
+  items.forEach(addOrUpdate);
+  updateCellRow(newItemsForUpdate);
   archiveExpiredItems();
 }
 
@@ -68,9 +76,69 @@ function processPreviousListings() {
   }
 }
 
+// Figure out of the page which listings are new
+function addOrUpdate(item) {
+  // Get href
+  var aElement = getElementsByTagName(item, 'a')[0];
+  var url = aElement.getAttribute('href').getValue();
+  var itemInfo = contextValues.previousListings[url];
+  var htmlText = item.toXmlString();
+  if (itemInfo) {
+    // see if there's anything to update, if not, then just delete
+    var title = getTitle(item),
+        fee = getFee(htmlText);
+    if (fee !== itemInfo.fee) {
+      updateCell(itemInfo.row + 1, 'AdminFee', fee);
+    } else if (title !== itemInfo.title) {
+      updateCell(itemInfo.row + 1, 'Title', title);
     }
+    delete contextValues.previousListings[url];
+  } else {
+    addNewListing(item, htmlText, url);
+  }
+}
+
+// Get listing full page
+function addNewListing(item, htmlText, url) {
+  var ImageUrl = getElementsByTagName(item, 'img')[0].getAttribute('src').getValue();
+  var listingInfo = [];
+  listingInfo[contextValues.sheetIndex.Image] = '=Image(' + ImageUrl + ')';
+  listingInfo[contextValues.sheetIndex.Title] = getTitle(item);
+  listingInfo[contextValues.sheetIndex.AdminFee] = getFee(htmlText);
+  listingInfo[contextValues.sheetIndex.Date] = getColonSeparatedText(htmlText, 'Event Date');
+  listingInfo[contextValues.sheetIndex.Category] = getColonSeparatedText(htmlText, 'Category');
+  listingInfo[contextValues.sheetIndex.Location] = getColonSeparatedText(htmlText, 'Location');
+  listingInfo[contextValues.sheetIndex.Url] = url;
+  listingInfo[contextValues.sheetIndex.EventManager] = getColonSeparatedText(htmlText, 'Event Manager');
+  listingInfo[contextValues.sheetIndex.UploadDate] = new Date().toString();
+  newItemsForUpdate.push(listingInfo);
+}
+
+// Parse with text
+function getTitle(item) {
+  return getElementsByTagName(getElementsByTagName(item, 'h4')[0], 'a')[0].getText().trim();
+}
+
+function getFee(htmlText) {
+  return getColonSeparatedText(htmlText, 'Admin Fee');
+}
+
+function getColonSeparatedText(text, expression) {
+  var regexExpr = new RegExp(expression + '\\s*:[\\s\\S]*?</p>', 'im');
+  var match = text.match(regexExpr);
+  if (match) {
+    return trimHeader(trimHtml(match[0]));
   }
 
+  return 'None';
+}
+
+function trimHtml(text) {
+  return text.replace(/<.*?>/g, '');
+}
+
+function trimHeader(text) {
+  return text.replace(/[\s\S]*?:/, '').trim();
 }
 
 // Work with HTML
