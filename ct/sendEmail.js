@@ -67,6 +67,41 @@ function processPreviousListings() {
     };
   }
 }
+// Work with HTML
+function getElementsByClassName(element, classToFind) {
+  var totalFound = [];
+  var currentClass = element.getAttribute('class');
+  if (currentClass && currentClass.getValue().includes(classToFind)) {
+    totalFound.push(element);
+  }
+
+  var elList = element.getElement();
+  var i = elList.length;
+  while (i--) {
+    // (Recursive) Check each child, in document order.
+    var found = getElementsByClassName(elList[i], classToFind);
+    if (found) {
+      totalFound = totalFound.concat(found);
+    }
+  }
+
+  return totalFound;
+}
+
+function getElementsByTagName(element, tagName) {
+  var data = element.getElements(tagName);
+  var elList = element.getElements();
+  var i = elList.length;
+  while (i--) {
+    // (Recursive) Check each child, in document order.
+    var found = getElementsByTagName(elList[i], tagName);
+    if (found) {
+      data = data.concat(found);
+    }
+  }
+  return data;
+}
+
 // Send email with new listing information
 function sendEmail(listingInfo) {
   var footer = '<hr>' +
