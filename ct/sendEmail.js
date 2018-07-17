@@ -62,3 +62,28 @@ function processPreviousListings() {
     };
   }
 }
+// Send email with new listing information
+function sendEmail(listingInfo) {
+  var footer = '<hr>' +
+  var imageDiv = listingInfo.ImageUrl ? '<img src="' + listingInfo.ImageUrl + '" alt="' + listingInfo.Title + '" width="128">' :
+                                          '';
+  var emailTemplate = listingInfo.Description + '<br>' +
+                        listingInfo.Location + '<br>' +
+                        listingInfo.Date + '<br>' +
+                        listingInfo.Category + '<br>' +
+                        '<br>' +
+                        imageDiv +
+                        '<br><hr><br>' +
+                        'Url: <a href="' + listingInfo.Url + '" target="_blank">' + listingInfo.Url + '</a>' +
+                        '<hr>' +
+                        footer;
+  var subject = '[CT] ' + listingInfo.Title + ' (' + listingInfo.Location + ')';
+
+
+  // Get information from TotalSavings tab
+  var email = MailApp.sendEmail({
+    to: myEmail,
+    subject: subject,
+    htmlBody: emailTemplate,
+  });
+}
