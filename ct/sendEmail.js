@@ -38,12 +38,9 @@ function updateSheet() {
                                       .getSheetByName('Current');
   contextValues.sheetData = contextValues.sheet.getDataRange().getValues();
   contextValues.sheetIndex = indexSheet(contextValues.sheetData);
-  contextValues.archive = SpreadsheetApp.getActiveSpreadsheet()
-                                        .getSheetByName('Archive');
-  contextValues.archiveData = contextValues.archive.getDataRange().getValues();
-  contextValues.archiveIndex = indexSheet(contextValues.archiveData);
   processPreviousListings();
   var mainPage = getMainPage();
+  archiveExpiredItems();
 }
 
 // Figure out last 30 listings so there are no repeats
@@ -86,4 +83,26 @@ function sendEmail(listingInfo) {
     subject: subject,
     htmlBody: emailTemplate,
   });
+}
+
+// Move expired items to "Archive" sheet
+function archiveExpiredItems() {
+  // Now archive events that passed
+  var cutRange, newRange, currentItem, row;
+  var archive = SpreadsheetApp.getActiveSpreadsheet()
+                                        .getSheetByName('Archive');
+  var archiveData = archive.getDataRange().getValues();
+  var archiveIndex = indexSheet(archiveData);
+  var lastArchiveRow = numberOfRows(archiveData);
+  for (var expiredItem in contextValues.previousListings) {
+    if (contextValues.previousListings.hasOwnProperty(expiredItem)) {
+      lastArchiveRow++;
+      currentItem = contextValues.previousListings[expiredItem];
+      row = currentItem.row + 1;
+      cutRange = contextValues.sheet.getRange('A' + row + 'I' + row);
+      newRange = archive.getRange('A' + lastArchiveRow + 'I' + lastArchiveRow)
+      newRange.setValues(cutRange.getValues());
+      cutRange.deleteCells(SpreadsheetApp.Dimension.ROWS);
+    }
+  }
 }
