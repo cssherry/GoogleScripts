@@ -47,8 +47,8 @@ function updateSheet() {
   processPreviousListings();
   var mainPage = getMainPage().match(/<body[\s\S]*?<\/body>/)[0].replace(/<(no)?script[\s\S]*?<\/(no)?script>/g, '');
   var doc = Xml.parse(mainPage, true).getElement();
-  var mainList = getElementsByClassName(doc, 'list-group');
-  var items = getElementsByTagName(mainList[0], 'li');
+  var mainList = getElementsByTagName(doc, 'ul');
+  var items = getElementsByTagName(mainList[2], 'li');
   archiveExpiredItems();
 }
 
@@ -67,27 +67,13 @@ function processPreviousListings() {
     };
   }
 }
-// Work with HTML
-function getElementsByClassName(element, classToFind) {
-  var totalFound = [];
-  var currentClass = element.getAttribute('class');
-  if (currentClass && currentClass.getValue().includes(classToFind)) {
-    totalFound.push(element);
-  }
 
-  var elList = element.getElement();
-  var i = elList.length;
-  while (i--) {
-    // (Recursive) Check each child, in document order.
-    var found = getElementsByClassName(elList[i], classToFind);
-    if (found) {
-      totalFound = totalFound.concat(found);
     }
   }
 
-  return totalFound;
 }
 
+// Work with HTML
 function getElementsByTagName(element, tagName) {
   var data = element.getElements(tagName);
   var elList = element.getElements();
