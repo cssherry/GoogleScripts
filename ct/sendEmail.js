@@ -108,15 +108,15 @@ function sendEmail(listingInfo) {
   var imageDiv = listingInfo.ImageUrl ? '<img src="' + listingInfo.ImageUrl + '" alt="' + listingInfo.Title + '" width="128">' :
                                           '';
   var emailTemplate = listingInfo.Description + '<br>' +
-                        listingInfo.Location + '<br>' +
-                        listingInfo.Date + '<br>' +
-                        listingInfo.Category + '<br>' +
-                        '<br>' +
-                        imageDiv +
-                        '<br><hr><br>' +
-                        'Url: <a href="' + listingInfo.Url + '" target="_blank">' + listingInfo.Url + '</a>' +
-                        '<hr>' +
-                        footer;
+                      listingInfo.Location + '<br>' +
+                      listingInfo.Date + '<br>' +
+                      listingInfo.Category + '<br>' +
+                      '<br>' +
+                      imageDiv +
+                      '<br><hr><br>' +
+                      'Url: <a href="' + listingInfo.Url + '" target="_blank">' + listingInfo.Url + '</a>' +
+                      '<hr>' +
+                      footer;
   var subject = '[CT] ' + listingInfo.Title + ' (' + listingInfo.Location + ')';
 
 
