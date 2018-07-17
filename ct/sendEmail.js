@@ -117,6 +117,7 @@ function sendEmail() {
   var feeIdx = contextValues.sheetIndex.AdminFee;
   function getElementSection(listingInfo) {
     var imageDiv = listingInfo[imageIdx] ? '<img src="' + listingInfo[imageIdx] + '" alt="' + listingInfo[titleIdx] + '" width="128">' :
+                   '';
     return '<h3>' + listingInfo[titleIdx] + '</h3><br>' +
            listingInfo[feeIdx] + '<br>' +
            listingInfo[locationIdx] + '<br>' +
