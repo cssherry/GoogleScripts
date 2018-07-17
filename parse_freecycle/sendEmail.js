@@ -4,10 +4,12 @@ var sheetsToUpdate = [
 ];
 var sheetsToEmail = {
 };
-var searchTerms = new RegExp(' cat | pet | keyboard | vacuum | yoga | plant ');
+var searchTerms = new RegExp(' cat | pet | keyboard | yoga | plant ');
 var maxPrevious = 60;
 var contextValues = {};
 var fetchPayload = {
+  headers: {
+  },
 };
 
 /** MAIN FUNCTION
@@ -94,7 +96,7 @@ function getListing(listingId) {
     Location: Location,
     Date: currDate,
     PostedBy: PostedBy,
-  }
+  };
 
   updateCellRow(listingInfo);
 
