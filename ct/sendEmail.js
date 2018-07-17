@@ -195,7 +195,7 @@ function sendEmail() {
            imageDiv +
            '<br><br>' +
            'Url: <a href="' + listingInfo[urlIdx] + '" target="_blank">' + listingInfo[urlIdx] + '</a>' +
-           '<hr>' +
+           '<hr>';
   }
 }
 
