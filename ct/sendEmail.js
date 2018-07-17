@@ -89,21 +89,15 @@ function getElementsByTagName(element, tagName) {
 }
 
 // Send email with new listing information
-function sendEmail(listingInfo) {
+function sendEmail() {
+  // Only send if there's new items
+  if (!updated.length && !newItems.length) return;
+
   var footer = '<hr>' +
-  var imageDiv = listingInfo.ImageUrl ? '<img src="' + listingInfo.ImageUrl + '" alt="' + listingInfo.Title + '" width="128">' :
-                                          '';
-  var emailTemplate = listingInfo.Description + '<br>' +
-                      listingInfo.Location + '<br>' +
-                      listingInfo.Date + '<br>' +
-                      listingInfo.Category + '<br>' +
-                      '<br>' +
-                      imageDiv +
-                      '<br><hr><br>' +
-                      'Url: <a href="' + listingInfo.Url + '" target="_blank">' + listingInfo.Url + '</a>' +
-                      '<hr>' +
+  var emailTemplate = newItems.length ? '<hr><h2>New:<h2><br>' + newItems.forEach(getElementSection) : '';
+                      updated.length ? '<hr><h2>Updated:<h2><br>' + updated.forEach(getElementSection) : '';
                       footer;
-  var subject = '[CT] ' + listingInfo.Title + ' (' + listingInfo.Location + ')';
+  var subject = '[CT] ' + updated.length + ' Updated, ' + newItems.length + ' New ' + new Date();
 
 
   // Get information from TotalSavings tab
@@ -112,6 +106,30 @@ function sendEmail(listingInfo) {
     subject: subject,
     htmlBody: emailTemplate,
   });
+
+  // HELPER
+  var imageIdx = contextValues.sheetIndex.Image;
+  var titleIdx = contextValues.sheetIndex.Title;
+  var locationIdx = contextValues.sheetIndex.Location;
+  var dateIdx = contextValues.sheetIndex.Date;
+  var categoryIdx = contextValues.sheetIndex.Category;
+  var urlIdx = contextValues.sheetIndex.Url;
+  var feeIdx = contextValues.sheetIndex.AdminFee;
+  function getElementSection(listingInfo) {
+    var imageDiv = listingInfo[imageIdx] ? '<img src="' + listingInfo[imageIdx] + '" alt="' + listingInfo[titleIdx] + '" width="128">' :
+    return '<h3>' + listingInfo[titleIdx] + '</h3><br>' +
+           listingInfo[feeIdx] + '<br>' +
+           listingInfo[locationIdx] + '<br>' +
+           listingInfo[dateIdx] + '<br>' +
+           listingInfo[categoryIdx] + '<br>' +
+           '<br>' +
+           imageDiv +
+           '<br><br>' +
+           'Url: <a href="' + listingInfo[urlIdx] + '" target="_blank">' + listingInfo[urlIdx] + '</a>' +
+           '<hr>' +
+  }
+}
+
 }
 
 // Move expired items to "Archive" sheet
