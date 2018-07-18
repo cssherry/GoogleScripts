@@ -222,3 +222,21 @@ function archiveExpiredItems() {
     }
   }
 }
+
+// Add item information to specific cell, archiving previous value as note
+function updateCell(row, key, value) {
+  var cellColumn = contextValues.sheetIndex[key];
+  if (cellColumn !== undefined) {
+    var cellCode = NumberToLetters(cellColumn) + row;
+    var cell = contextValues.sheet.getRange(cellCode);
+    var previousMessage = cell.getValue();
+    if (previousMessage) {
+      var oldNote = cell.getNote();
+      var previousMessage = new Date() + ' overwrote: ' + previousMessage + '\n';
+      var currentNote = (oldNote ? oldNote + previousMessage : previousMessage );
+      cell.setNote(currentNote);
+    }
+
+    cell.setValue(value);
+  }
+}
