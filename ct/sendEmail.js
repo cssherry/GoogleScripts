@@ -188,7 +188,7 @@ function sendEmail() {
   var emailTemplate = newItemsText +
                       updatedItemsText +
                       footer;
-  var subject = '[CT] ' + updatedItems.length + ' Updated, ' + newItemsForUpdate.length + ' New ' + new Date().toLocaleString();
+  var subject = '[CT] *' + updatedItems.length + '* Updated || *' + newItemsForUpdate.length + '* New ' + new Date().toLocaleString();
 
 
   // Get information from TotalSavings tab
