@@ -134,7 +134,7 @@ function getColonSeparatedText(text, expression) {
 }
 
 function trimHtml(text) {
-  return text.replace(/<.*?>/g, '');
+  return text.replace(/<.*?>|&amp/g, '');
 }
 
 function trimHeader(text) {
