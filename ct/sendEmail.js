@@ -219,7 +219,7 @@ function sendEmail() {
 
 // Function that updates sheet
 function updateCellRow() {
-  // Get range by row, row length, column, column length
+  // Get range by row, column, row length, column length
   var cells = contextValues.sheet.getRange((contextValues.lastRow + 1), 1, newItemsForUpdate.length, newItemsForUpdate[0].length);
   cells.setValues(newItemsForUpdate);
 }
