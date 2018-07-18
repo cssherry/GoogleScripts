@@ -183,8 +183,10 @@ function sendEmail() {
   if (!updatedItems.length && !newItemsForUpdate.length) return;
 
   var footer = '<hr>' +
-  var emailTemplate = newItemsForUpdate.length ? '<hr><h2>New:</h2><br>' + newItemsForUpdate.map(getElementSection).join('') : '';
-                      updatedItems.length ? '<hr><h2>Updated:</h2><br>' + updatedItems.map(getElementSection).join('') : '';
+  var newItemsText = newItemsForUpdate.length ? '<hr><h2>New:</h2><br>' + newItemsForUpdate.map(getElementSection).join('') : '';
+  var updatedItemsText = updatedItems.length ? '<hr><h2>Updated:</h2><br>' + updatedItems.map(getElementSection).join('') : ''
+  var emailTemplate = newItemsText +
+                      updatedItemsText +
                       footer;
   var subject = '[CT] ' + updatedItems.length + ' Updated, ' + newItemsForUpdate.length + ' New ' + new Date().toLocaleString();
 
@@ -195,8 +197,9 @@ function sendEmail() {
     subject: subject,
     htmlBody: emailTemplate,
   });
+}
 
-  // HELPER
+function getElementSection(listingInfo) {
   var imageIdx = contextValues.sheetIndex.Image;
   var titleIdx = contextValues.sheetIndex.Title;
   var locationIdx = contextValues.sheetIndex.Location;
@@ -204,21 +207,23 @@ function sendEmail() {
   var categoryIdx = contextValues.sheetIndex.Category;
   var urlIdx = contextValues.sheetIndex.Url;
   var feeIdx = contextValues.sheetIndex.AdminFee;
-  function getElementSection(listingInfo) {
-    var imageUrl = listingInfo[imageIdx] ? getImageUrl(listingInfo[imageIdx])  : '';
-    var imageDiv = imageUrl ? '<img src="' + imageUrl + '" alt="' + listingInfo[titleIdx] + '" width="128">' :
-                   '';
-    return '<h3>' + listingInfo[titleIdx] + '</h3><br>' +
-           listingInfo[feeIdx] ? (listingInfo[feeIdx] + '<br>') : '' +
-           listingInfo[locationIdx] ? (listingInfo[locationIdx] + '<br>') : '' +
-           listingInfo[dateIdx] ? (listingInfo[dateIdx] + '<br>') : '' +
-           listingInfo[categoryIdx] ? (listingInfo[categoryIdx] + '<br>') : '' +
-           '<br>' +
-           imageDiv +
-           '<br><br>' +
-           'Url: <a href="' + listingInfo[urlIdx] + '" target="_blank">' + listingInfo[urlIdx] + '</a>' +
-           '<hr>';
-  }
+  var imageUrl = listingInfo[imageIdx] ? getImageUrl(listingInfo[imageIdx])  : '';
+  var imageDiv = imageUrl ? '<img src="' + imageUrl + '" alt="' + listingInfo[titleIdx] + '" width="128">' :
+                 '';
+  var feeDiv = listingInfo[feeIdx] ? (listingInfo[feeIdx] + '<br>') : '';
+  var locationDiv = listingInfo[locationIdx] ? (listingInfo[locationIdx] + '<br>') : '';
+  var dateDiv = listingInfo[dateIdx] ? (listingInfo[dateIdx] + '<br>') : '';
+  var categoryDiv = listingInfo[categoryIdx] ? (listingInfo[categoryIdx] + '<br>') : '';
+  return '<h3>' + listingInfo[titleIdx] + '</h3><br>' +
+         feeDiv +
+         locationDiv +
+         dateDiv +
+         categoryDiv +
+         '<br>' +
+         imageDiv +
+         '<br><br>' +
+         'Url: <a href="' + listingInfo[urlIdx] + '" target="_blank">' + listingInfo[urlIdx] + '</a>' +
+         '<hr>';
 }
 
 // Function that updates sheet
