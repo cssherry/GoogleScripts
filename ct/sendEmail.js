@@ -183,8 +183,8 @@ function sendEmail() {
   if (!updatedItems.length && !newItemsForUpdate.length) return;
 
   var footer = '<hr>' +
-  var emailTemplate = newItemsForUpdate.length ? '<hr><h2>New:<h2><br>' + newItemsForUpdate.forEach(getElementSection) : '';
-                      updatedItems.length ? '<hr><h2>Updated:<h2><br>' + updatedItems.forEach(getElementSection) : '';
+  var emailTemplate = newItemsForUpdate.length ? '<hr><h2>New:</h2><br>' + newItemsForUpdate.map(getElementSection).join('') : '';
+                      updatedItems.length ? '<hr><h2>Updated:</h2><br>' + updatedItems.map(getElementSection).join('') : '';
                       footer;
   var subject = '[CT] ' + updatedItems.length + ' Updated, ' + newItemsForUpdate.length + ' New ' + new Date().toLocaleString();
 
