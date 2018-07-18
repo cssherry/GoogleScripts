@@ -249,6 +249,7 @@ function archiveExpiredItems() {
       oldValues = cutRange.getValues();
       oldValues[0][imageIdx] = getImageUrl(contextValues.sheetData[currentItem.row][imageIdx]);
       newRange.setValues(oldValues);
+      newRange.setNotes(cutRange.getNotes());
       cutRange.deleteCells(SpreadsheetApp.Dimension.ROWS);
     }
   }
