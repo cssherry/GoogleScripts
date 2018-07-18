@@ -237,7 +237,6 @@ function archiveExpiredItems() {
   var archive = SpreadsheetApp.getActiveSpreadsheet()
                                         .getSheetByName('Archive');
   var archiveData = archive.getDataRange().getValues();
-  var archiveIndex = indexSheet(archiveData);
   var lastArchiveRow = numberOfRows(archiveData);
   var imageIdx = contextValues.sheetIndex.Image;
   for (var expiredItem in contextValues.previousListings) {
