@@ -184,7 +184,8 @@ function sendEmail() {
   var urlIdx = contextValues.sheetIndex.Url;
   var feeIdx = contextValues.sheetIndex.AdminFee;
   function getElementSection(listingInfo) {
-    var imageDiv = listingInfo[imageIdx] ? '<img src="' + listingInfo[imageIdx] + '" alt="' + listingInfo[titleIdx] + '" width="128">' :
+    var imageUrl = listingInfo[imageIdx] ? listingInfo[imageIdx].slice(0, listingInfo[imageIdx].length - 1).replace('=Image(', '')  : '';
+    var imageDiv = imageUrl ? '<img src=' + imageUrl+ ' alt="' + listingInfo[titleIdx] + '" width="128">' :
                    '';
     return '<h3>' + listingInfo[titleIdx] + '</h3><br>' +
            listingInfo[feeIdx] + '<br>' +
