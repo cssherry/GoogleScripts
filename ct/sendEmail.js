@@ -62,12 +62,19 @@ function updateSheet() {
 
 // Process previous data, including title and fee in case those change
 function processPreviousListings() {
-  contextValues.lastRow = numberOfRows(contextValues.sheetData);
-  var idIdx = contextValues.sheetIndex.Url;
   var titleIdx = contextValues.sheetIndex.Title;
+  var idIdx = contextValues.sheetIndex.Url;
   var feeIdx = contextValues.sheetIndex.AdminFee;
+  var imageIdx = contextValues.sheetIndex.Image;
+  contextValues.lastRow = numberOfRows(contextValues.sheetData, titleIdx);
   contextValues.previousListings = {};
+
+  // Also, get formula for image
+  // Get range by row, column, row length, column length
+  var cells = contextValues.sheet.getRange(1, imageIdx + 1, contextValues.lastRow);
+  var imageFormulas = cells.getFormulas();
   for (var i = 1; i < contextValues.lastRow; i++) {
+    contextValues.sheetData[i][imageIdx] = imageFormulas[i][0];
     contextValues.previousListings[contextValues.sheetData[i][idIdx]] = {
       row: i,
       title: contextValues.sheetData[i][titleIdx],
