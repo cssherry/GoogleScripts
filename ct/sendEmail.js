@@ -239,6 +239,7 @@ function updateCellRow() {
 function archiveExpiredItems() {
   // Now archive events that passed
   var cutRange, newRange, currentItem, row, oldValues;
+  var toDelete = [];
   var archive = SpreadsheetApp.getActiveSpreadsheet()
                                         .getSheetByName('Archive');
   var archiveData = archive.getDataRange().getValues();
@@ -255,9 +256,19 @@ function archiveExpiredItems() {
       oldValues[0][imageIdx] = getImageUrl(contextValues.sheetData[currentItem.row][imageIdx]);
       newRange.setValues(oldValues);
       newRange.setNotes(cutRange.getNotes());
-      cutRange.deleteCells(SpreadsheetApp.Dimension.ROWS);
+      toDelete.push({
+        range: cutRange,
+        row: row,
+      });
     }
   }
+
+  toDelete.sort(function sortByRow(a, b){
+    return b.row - a.row;
+  }).forEach(function deleteItem(rangeToDelete) {
+    rangeToDelete.range.deleteCells(SpreadsheetApp.Dimension.ROWS);
+    Utilities.sleep(200);
+  });
 }
 
 // Add item information to specific cell, archiving previous value as note
