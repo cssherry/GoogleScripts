@@ -40,8 +40,7 @@ function getMainPage() {
 
 // Main function for each sheet
 // Add to arrays for emailing out later
-var updated = [];
-var newItems = [];
+var updatedItems = [];
 var newItemsForUpdate = [];
 function updateSheet() {
   contextValues.sheet = SpreadsheetApp.getActiveSpreadsheet()
@@ -56,8 +55,9 @@ function updateSheet() {
   var mainList = getElementsByTagName(doc, 'ul');
   var items = getElementsByTagName(mainList[2], 'li');
   items.forEach(addOrUpdate);
-  updateCellRow(newItemsForUpdate);
+  updateCellRow();
   archiveExpiredItems();
+  sendEmail();
 }
 
 // Process previous data, including title and fee in case those change
@@ -86,12 +86,22 @@ function addOrUpdate(item) {
   if (itemInfo) {
     // see if there's anything to update, if not, then just delete
     var title = getTitle(item),
-        fee = getFee(htmlText);
+        fee = getFee(htmlText),
+        currentItem = [];
     if (fee !== itemInfo.fee) {
       updateCell(itemInfo.row + 1, 'AdminFee', fee);
+      currentItem[contextValues.sheetIndex.AdminFee] = fee;
     } else if (title !== itemInfo.title) {
       updateCell(itemInfo.row + 1, 'Title', title);
+      currentItem[contextValues.sheetIndex.Title] = title;
     }
+
+    if (currentItem.length) {
+      currentItem[contextValues.sheetIndex.Title] = title;
+      currentItem[contextValues.sheetIndex.Url] = title;
+      updatedItems.push(currentItem);
+    }
+
     delete contextValues.previousListings[url];
   } else {
     addNewListing(item, htmlText, url);
@@ -159,13 +169,13 @@ function getElementsByTagName(element, tagName) {
 // Send email with new listing information
 function sendEmail() {
   // Only send if there's new items
-  if (!updated.length && !newItems.length) return;
+  if (!updatedItems.length && !newItemsForUpdate.length) return;
 
   var footer = '<hr>' +
-  var emailTemplate = newItems.length ? '<hr><h2>New:<h2><br>' + newItems.forEach(getElementSection) : '';
-                      updated.length ? '<hr><h2>Updated:<h2><br>' + updated.forEach(getElementSection) : '';
+  var emailTemplate = newItemsForUpdate.length ? '<hr><h2>New:<h2><br>' + newItemsForUpdate.forEach(getElementSection) : '';
+                      updatedItems.length ? '<hr><h2>Updated:<h2><br>' + updatedItems.forEach(getElementSection) : '';
                       footer;
-  var subject = '[CT] ' + updated.length + ' Updated, ' + newItems.length + ' New ' + new Date();
+  var subject = '[CT] ' + updatedItems.length + ' Updated, ' + newItemsForUpdate.length + ' New ' + new Date();
 
 
   // Get information from TotalSavings tab
@@ -188,10 +198,10 @@ function sendEmail() {
     var imageDiv = imageUrl ? '<img src=' + imageUrl+ ' alt="' + listingInfo[titleIdx] + '" width="128">' :
                    '';
     return '<h3>' + listingInfo[titleIdx] + '</h3><br>' +
-           listingInfo[feeIdx] + '<br>' +
-           listingInfo[locationIdx] + '<br>' +
-           listingInfo[dateIdx] + '<br>' +
-           listingInfo[categoryIdx] + '<br>' +
+           listingInfo[feeIdx] ? (listingInfo[feeIdx] + '<br>') : '' +
+           listingInfo[locationIdx] ? (listingInfo[locationIdx] + '<br>') : '' +
+           listingInfo[dateIdx] ? (listingInfo[dateIdx] + '<br>') : '' +
+           listingInfo[categoryIdx] ? (listingInfo[categoryIdx] + '<br>') : '' +
            '<br>' +
            imageDiv +
            '<br><br>' +
