@@ -102,7 +102,7 @@ function addOrUpdate(item) {
 function addNewListing(item, htmlText, url) {
   var ImageUrl = getElementsByTagName(item, 'img')[0].getAttribute('src').getValue();
   var listingInfo = [];
-  listingInfo[contextValues.sheetIndex.Image] = '=Image(' + ImageUrl + ')';
+  listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl + '")';
   listingInfo[contextValues.sheetIndex.Title] = getTitle(item);
   listingInfo[contextValues.sheetIndex.AdminFee] = getFee(htmlText);
   listingInfo[contextValues.sheetIndex.Date] = getColonSeparatedText(htmlText, 'Event Date');
