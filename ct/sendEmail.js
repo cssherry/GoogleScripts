@@ -127,7 +127,7 @@ function addNewListing(item, htmlText, url) {
   listingInfo[contextValues.sheetIndex.Location] = getColonSeparatedText(htmlText, 'Location');
   listingInfo[contextValues.sheetIndex.Url] = url;
   listingInfo[contextValues.sheetIndex.EventManager] = getColonSeparatedText(htmlText, 'Event Manager');
-  listingInfo[contextValues.sheetIndex.UploadDate] = new Date().toString();
+  listingInfo[contextValues.sheetIndex.UploadDate] = new Date();
   newItemsForUpdate.push(listingInfo);
 }
 
@@ -186,7 +186,7 @@ function sendEmail() {
   var emailTemplate = newItemsForUpdate.length ? '<hr><h2>New:<h2><br>' + newItemsForUpdate.forEach(getElementSection) : '';
                       updatedItems.length ? '<hr><h2>Updated:<h2><br>' + updatedItems.forEach(getElementSection) : '';
                       footer;
-  var subject = '[CT] ' + updatedItems.length + ' Updated, ' + newItemsForUpdate.length + ' New ' + new Date();
+  var subject = '[CT] ' + updatedItems.length + ' Updated, ' + newItemsForUpdate.length + ' New ' + new Date().toLocaleString();
 
 
   // Get information from TotalSavings tab
@@ -262,7 +262,7 @@ function updateCell(row, key, value) {
     var previousMessage = cell.getValue();
     if (previousMessage) {
       var oldNote = cell.getNote();
-      var previousMessage = new Date() + ' overwrote: ' + previousMessage + '\n';
+      var previousMessage = new Date().toISOString() + ' overwrote: ' + previousMessage + '\n';
       var currentNote = (oldNote ? oldNote + previousMessage : previousMessage );
       cell.setNote(currentNote);
     }
