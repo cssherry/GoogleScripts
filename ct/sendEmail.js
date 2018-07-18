@@ -159,7 +159,7 @@ function trimHeader(text) {
 }
 
 function getImageUrl(imageFormula) {
-  return imageFormula.slice(0, imageFormula.length - 2).replace(/=image\("/i, '')
+  return imageFormula.slice(0, imageFormula.length - 2).replace(/=image\("?'?/i, '')
 }
 
 // Work with HTML
