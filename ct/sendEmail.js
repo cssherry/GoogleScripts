@@ -158,6 +158,10 @@ function trimHeader(text) {
   return text.replace(/[\s\S]*?:/, '').trim();
 }
 
+function getImageUrl(imageFormula) {
+  return imageFormula.slice(0, imageFormula.length - 2).replace('=Image("', '')
+}
+
 // Work with HTML
 function getElementsByTagName(element, tagName) {
   var data = element.getElements(tagName);
@@ -201,8 +205,8 @@ function sendEmail() {
   var urlIdx = contextValues.sheetIndex.Url;
   var feeIdx = contextValues.sheetIndex.AdminFee;
   function getElementSection(listingInfo) {
-    var imageUrl = listingInfo[imageIdx] ? listingInfo[imageIdx].slice(0, listingInfo[imageIdx].length - 1).replace('=Image(', '')  : '';
-    var imageDiv = imageUrl ? '<img src=' + imageUrl+ ' alt="' + listingInfo[titleIdx] + '" width="128">' :
+    var imageUrl = listingInfo[imageIdx] ? getImageUrl(listingInfo[imageIdx])  : '';
+    var imageDiv = imageUrl ? '<img src="' + imageUrl + '" alt="' + listingInfo[titleIdx] + '" width="128">' :
                    '';
     return '<h3>' + listingInfo[titleIdx] + '</h3><br>' +
            listingInfo[feeIdx] ? (listingInfo[feeIdx] + '<br>') : '' +
@@ -242,7 +246,7 @@ function archiveExpiredItems() {
       cutRange = contextValues.sheet.getRange('A' + row + 'I' + row);
       newRange = archive.getRange('A' + lastArchiveRow + 'I' + lastArchiveRow)
       oldValues = cutRange.getValues();
-      oldValues[imageIdx] = oldValues[imageIdx].slice(0, oldValues[imageIdx].length - 2).replace('=Image("');
+      oldValues[imageIdx] = getImageUrl(oldValues[imageIdx]);
       newRange.setValues(oldValues);
       cutRange.deleteCells(SpreadsheetApp.Dimension.ROWS);
     }
