@@ -204,12 +204,13 @@ function sendEmail() {
 // Move expired items to "Archive" sheet
 function archiveExpiredItems() {
   // Now archive events that passed
-  var cutRange, newRange, currentItem, row;
+  var cutRange, newRange, currentItem, row, oldValues;
   var archive = SpreadsheetApp.getActiveSpreadsheet()
                                         .getSheetByName('Archive');
   var archiveData = archive.getDataRange().getValues();
   var archiveIndex = indexSheet(archiveData);
   var lastArchiveRow = numberOfRows(archiveData);
+  var imageIdx = contextValues.sheetIndex.Image;
   for (var expiredItem in contextValues.previousListings) {
     if (contextValues.previousListings.hasOwnProperty(expiredItem)) {
       lastArchiveRow++;
@@ -217,7 +218,9 @@ function archiveExpiredItems() {
       row = currentItem.row + 1;
       cutRange = contextValues.sheet.getRange('A' + row + 'I' + row);
       newRange = archive.getRange('A' + lastArchiveRow + 'I' + lastArchiveRow)
-      newRange.setValues(cutRange.getValues());
+      oldValues = cutRange.getValues();
+      oldValues[imageIdx] = oldValues[imageIdx].slice(0, oldValues[imageIdx].length - 2).replace('=Image("');
+      newRange.setValues(oldValues);
       cutRange.deleteCells(SpreadsheetApp.Dimension.ROWS);
     }
   }
