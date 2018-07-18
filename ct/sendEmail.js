@@ -56,8 +56,8 @@ function updateSheet() {
   var items = getElementsByTagName(mainList[2], 'li');
   items.forEach(addOrUpdate);
   updateCellRow();
-  archiveExpiredItems();
   sendEmail();
+  archiveExpiredItems();
 }
 
 // Process previous data, including title and fee in case those change
