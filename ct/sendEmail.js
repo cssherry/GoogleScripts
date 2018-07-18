@@ -184,9 +184,20 @@ function sendEmail() {
 
   var footer = '<hr>' +
   var newItemsText = newItemsForUpdate.length ? '<hr><h2>New:</h2><br>' + newItemsForUpdate.map(getElementSection).join('') : '';
-  var updatedItemsText = updatedItems.length ? '<hr><h2>Updated:</h2><br>' + updatedItems.map(getElementSection).join('') : ''
+  var updatedItemsText = updatedItems.length ? '<hr><h2>Updated:</h2><br>' + updatedItems.map(getElementSection).join('') : '';
+  var archivedItemsText = '';
+  if (Object.keys(contextValues.previousListings).length) {
+    archivedItemsText = '<hr><h2>Archived:</h2><br>';
+    for (var showUrl in contextValues.previousListings) {
+      if (contextValues.previousListings.hasOwnProperty(showUrl)) {
+        archivedItemsText += getElementSection(contextValues.previousListings[showUrl]);
+      }
+    }
+  }
+
   var emailTemplate = newItemsText +
                       updatedItemsText +
+                      archivedItemsText +
                       footer;
   var subject = '[CT] *' + updatedItems.length + '* Updated || *' + newItemsForUpdate.length + '* New ' + new Date().toLocaleString();
 
