@@ -105,7 +105,7 @@ function addOrUpdate(item) {
 
     if (currentItem.length) {
       currentItem[contextValues.sheetIndex.Title] = title;
-      currentItem[contextValues.sheetIndex.Url] = title;
+      currentItem[contextValues.sheetIndex.Url] = url;
       updatedItems.push(currentItem);
     }
 
