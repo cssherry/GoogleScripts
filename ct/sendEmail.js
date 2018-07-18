@@ -223,6 +223,8 @@ function sendEmail() {
 
 // Function that updates sheet
 function updateCellRow() {
+  if (!newItemsForUpdate.length) return;
+
   // Get range by row, column, row length, column length
   var cells = contextValues.sheet.getRange((contextValues.lastRow + 1), 1, newItemsForUpdate.length, newItemsForUpdate[0].length);
   cells.setValues(newItemsForUpdate);
