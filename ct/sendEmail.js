@@ -106,14 +106,14 @@ function addOrUpdate(item) {
         currentItem = [];
     if (fee !== itemInfo.fee) {
       updateCell(itemInfo.row + 1, 'AdminFee', fee);
-      currentItem[contextValues.sheetIndex.AdminFee] = fee;
+      currentItem[contextValues.sheetIndex.AdminFee] = fee + '(Previously ' + itemInfo.fee + ')';
+      currentItem[contextValues.sheetIndex.Title] = title;
     } else if (title !== itemInfo.title) {
       updateCell(itemInfo.row + 1, 'Title', title);
-      currentItem[contextValues.sheetIndex.Title] = title;
+      currentItem[contextValues.sheetIndex.Title] = title + '(Previously ' + itemInfo.title + ')';
     }
 
     if (currentItem.length) {
-      currentItem[contextValues.sheetIndex.Title] = title;
       currentItem[contextValues.sheetIndex.Url] = url;
       updatedItems.push(currentItem);
     }
