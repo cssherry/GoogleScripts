@@ -74,16 +74,21 @@ function processPreviousListings() {
   var cells = contextValues.sheet.getRange(1, imageIdx + 1, contextValues.lastRow);
   var imageFormulas = cells.getFormulas();
   var previousListingObject = {};
+  var urlValue, titleValue, feeValue;
   for (var i = 1; i < contextValues.lastRow; i++) {
+    urlValue = contextValues.sheetData[i][idIdx];
+    titleValue = contextValues.sheetData[i][titleIdx];
+    feeValue = contextValues.sheetData[i][feeIdx];
     contextValues.sheetData[i][imageIdx] = imageFormulas[i][0];
     previousListingObject = {
       row: i,
-      title: contextValues.sheetData[i][titleIdx],
-      fee: contextValues.sheetData[i][feeIdx],
+      title: titleValue,
+      fee: feeValue,
     };
-    previousListingObject[titleIdx] = contextValues.sheetData[i][titleIdx];
-    previousListingObject[feeIdx] = contextValues.sheetData[i][feeIdx];
-    contextValues.previousListings[contextValues.sheetData[i][idIdx]] = previousListingObject;
+    contextValues.previousListings[idIdx] = urlValue;
+    previousListingObject[titleIdx] = titleValue;
+    previousListingObject[feeIdx] = feeValue;
+    contextValues.previousListings[urlValue] = previousListingObject;
   }
 }
 
