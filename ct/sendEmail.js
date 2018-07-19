@@ -73,13 +73,17 @@ function processPreviousListings() {
   // Get range by row, column, row length, column length
   var cells = contextValues.sheet.getRange(1, imageIdx + 1, contextValues.lastRow);
   var imageFormulas = cells.getFormulas();
+  var previousListingObject = {};
   for (var i = 1; i < contextValues.lastRow; i++) {
     contextValues.sheetData[i][imageIdx] = imageFormulas[i][0];
-    contextValues.previousListings[contextValues.sheetData[i][idIdx]] = {
+    previousListingObject = {
       row: i,
       title: contextValues.sheetData[i][titleIdx],
       fee: contextValues.sheetData[i][feeIdx],
     };
+    previousListingObject[titleIdx] = contextValues.sheetData[i][titleIdx];
+    previousListingObject[feeIdx] = contextValues.sheetData[i][feeIdx];
+    contextValues.previousListings[contextValues.sheetData[i][idIdx]] = previousListingObject;
   }
 }
 
