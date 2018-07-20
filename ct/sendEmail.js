@@ -112,10 +112,20 @@ function addOrUpdate(item) {
     if (fee !== itemInfo.fee) {
       updateCell(itemInfo.row + 1, 'AdminFee', fee);
       currentItem[contextValues.sheetIndex.AdminFee] = fee + '<br>(Previously ' + itemInfo.fee + ')';
-      currentItem[contextValues.sheetIndex.Title] = title;
-    } else if (title !== itemInfo.title) {
+    }
+
+    if (date !== itemInfo.date) {
+      updateCell(itemInfo.row + 1, 'Date', date);
+      currentItem[contextValues.sheetIndex.Date] = date + '<br>(Previously ' + itemInfo.date + ')';
+    }
+
+    if (title !== itemInfo.title) {
       updateCell(itemInfo.row + 1, 'Title', title);
       currentItem[contextValues.sheetIndex.Title] = title + '<br>(Previously ' + itemInfo.title + ')';
+    }
+
+    if (!currentItem[contextValues.sheetIndex.Title]) {
+      currentItem[contextValues.sheetIndex.Title] = title;
     }
 
     if (currentItem.length) {
