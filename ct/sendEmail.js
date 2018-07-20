@@ -85,9 +85,9 @@ function processPreviousListings() {
       title: titleValue,
       fee: feeValue,
     };
-    contextValues.previousListings[idIdx] = urlValue;
     previousListingObject[titleIdx] = titleValue;
     previousListingObject[feeIdx] = feeValue;
+    previousListingObject[idIdx] = urlValue;
     contextValues.previousListings[urlValue] = previousListingObject;
   }
 }
