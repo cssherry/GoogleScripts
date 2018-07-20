@@ -124,11 +124,11 @@ function addOrUpdate(item) {
       currentItem[contextValues.sheetIndex.Title] = title + '<br>(Previously ' + itemInfo.title + ')';
     }
 
-    if (!currentItem[contextValues.sheetIndex.Title]) {
-      currentItem[contextValues.sheetIndex.Title] = title;
-    }
-
     if (currentItem.length) {
+      if (!currentItem[contextValues.sheetIndex.Title]) {
+        currentItem[contextValues.sheetIndex.Title] = title;
+      }
+
       currentItem[contextValues.sheetIndex.Url] = url;
       updatedItems.push(currentItem);
     }
