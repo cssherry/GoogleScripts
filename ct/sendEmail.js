@@ -258,7 +258,7 @@ function updateCellRow() {
 // Move expired items to "Archive" sheet
 function archiveExpiredItems() {
   // Now archive events that passed
-  var cutRange, newRange, currentItem, row, oldValues;
+  var cutRange, newRange, currentItem, row, oldValues, oldNotes;
   var toDelete = [];
   var archive = SpreadsheetApp.getActiveSpreadsheet()
                                         .getSheetByName('Archive');
@@ -277,7 +277,9 @@ function archiveExpiredItems() {
       oldValues[0][imageIdx] = getImageUrl(contextValues.sheetData[currentItem.row][imageIdx]);
       oldValues[0].push(currentTime);
       newRange.setValues(oldValues);
-      newRange.setNotes(cutRange.getNotes());
+      oldNotes = cutRange.getNotes();
+      oldNotes[0].push(undefined);
+      newRange.setNotes(oldNotes);
       toDelete.push({
         range: cutRange,
         row: row,
