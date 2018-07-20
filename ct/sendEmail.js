@@ -278,7 +278,7 @@ function archiveExpiredItems() {
       oldValues[0].push(currentTime);
       newRange.setValues(oldValues);
       oldNotes = cutRange.getNotes();
-      oldNotes[0].push(undefined);
+      oldNotes[0].push('');
       newRange.setNotes(oldNotes);
       toDelete.push({
         range: cutRange,
