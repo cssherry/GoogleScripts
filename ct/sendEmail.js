@@ -66,6 +66,7 @@ function processPreviousListings() {
   var idIdx = contextValues.sheetIndex.Url;
   var feeIdx = contextValues.sheetIndex.AdminFee;
   var imageIdx = contextValues.sheetIndex.Image;
+  var dateIdx = contextValues.sheetIndex.Date;
   contextValues.lastRow = numberOfRows(contextValues.sheetData, titleIdx);
   contextValues.previousListings = {};
 
@@ -74,20 +75,23 @@ function processPreviousListings() {
   var cells = contextValues.sheet.getRange(1, imageIdx + 1, contextValues.lastRow);
   var imageFormulas = cells.getFormulas();
   var previousListingObject = {};
-  var urlValue, titleValue, feeValue;
+  var urlValue, titleValue, feeValue, dateValue;
   for (var i = 1; i < contextValues.lastRow; i++) {
     urlValue = contextValues.sheetData[i][idIdx];
     titleValue = contextValues.sheetData[i][titleIdx];
     feeValue = contextValues.sheetData[i][feeIdx];
+    dateValue = contextValues.sheetData[i][dateIdx];
     contextValues.sheetData[i][imageIdx] = imageFormulas[i][0];
     previousListingObject = {
       row: i,
       title: titleValue,
       fee: feeValue,
+      date: dateValue,
     };
     previousListingObject[titleIdx] = titleValue;
     previousListingObject[feeIdx] = feeValue;
     previousListingObject[idIdx] = urlValue;
+    previousListingObject[dateIdx] = dateValue;
     contextValues.previousListings[urlValue] = previousListingObject;
   }
 }
@@ -103,6 +107,7 @@ function addOrUpdate(item) {
     // see if there's anything to update, if not, then just delete
     var title = getTitle(item),
         fee = getFee(htmlText),
+        date = getDate(htmlText),
         currentItem = [];
     if (fee !== itemInfo.fee) {
       updateCell(itemInfo.row + 1, 'AdminFee', fee);
@@ -131,7 +136,7 @@ function addNewListing(item, htmlText, url) {
   listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl + '")';
   listingInfo[contextValues.sheetIndex.Title] = getTitle(item);
   listingInfo[contextValues.sheetIndex.AdminFee] = getFee(htmlText);
-  listingInfo[contextValues.sheetIndex.Date] = getColonSeparatedText(htmlText, 'Event Date');
+  listingInfo[contextValues.sheetIndex.Date] = getDate(htmlText);
   listingInfo[contextValues.sheetIndex.Category] = getColonSeparatedText(htmlText, 'Category');
   listingInfo[contextValues.sheetIndex.Location] = getColonSeparatedText(htmlText, 'Location');
   listingInfo[contextValues.sheetIndex.Url] = url;
@@ -147,6 +152,10 @@ function getTitle(item) {
 
 function getFee(htmlText) {
   return getColonSeparatedText(htmlText, 'Admin Fee');
+}
+
+function getDate(htmlText) {
+  return getColonSeparatedText(htmlText, 'Event Date');
 }
 
 function getColonSeparatedText(text, expression) {
