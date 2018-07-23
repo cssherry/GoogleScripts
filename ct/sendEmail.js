@@ -111,17 +111,17 @@ function addOrUpdate(item) {
         currentItem = [];
     if (fee !== itemInfo.fee) {
       updateCell(itemInfo.row + 1, 'AdminFee', fee);
-      currentItem[contextValues.sheetIndex.AdminFee] = fee + '<br>(Previously ' + itemInfo.fee + ')';
+      currentItem[contextValues.sheetIndex.AdminFee] = fee + '<br><em>(Previously ' + itemInfo.fee + ')</em>';
     }
 
     if (date !== itemInfo.date) {
       updateCell(itemInfo.row + 1, 'Date', date);
-      currentItem[contextValues.sheetIndex.Date] = date + '<br>(Previously ' + itemInfo.date + ')';
+      currentItem[contextValues.sheetIndex.Date] = date + '<br><em>(Previously ' + itemInfo.date + ')</em>';
     }
 
     if (title !== itemInfo.title) {
       updateCell(itemInfo.row + 1, 'Title', title);
-      currentItem[contextValues.sheetIndex.Title] = title + '<br>(Previously ' + itemInfo.title + ')';
+      currentItem[contextValues.sheetIndex.Title] = title + '<br><em>(Previously ' + itemInfo.title + ')</em>';
     }
 
     if (currentItem.length) {
