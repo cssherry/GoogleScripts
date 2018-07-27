@@ -227,7 +227,7 @@ function sendEmail() {
                       updatedItemsText +
                       archivedItemsText +
                       footer;
-  var subject = '[CT] *' + updatedItems.length + '* Updated || *' + newItemsForUpdate.length + '* New ' + new Date().toLocaleString();
+  var subject = '[CT] *' + newItemsForUpdate.length + '* New || *' + updatedItems.length + '* Updated ' + new Date().toLocaleString();
 
 
   // Get information from TotalSavings tab
