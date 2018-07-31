@@ -43,6 +43,13 @@ function getMainPage() {
 var updatedItems = [];
 var newItemsForUpdate = [];
 function updateSheet() {
+  // Only run after 8 AM or before 10 PM
+  var currentDate = new Date();
+  var currentHour = currentDate.getHours();
+  if (currentHour <= 8 || currentHour >= 22) {
+    return;
+  }
+
   contextValues.sheet = SpreadsheetApp.getActiveSpreadsheet()
                                       .getSheetByName('Current');
   contextValues.sheetData = contextValues.sheet.getDataRange().getValues();
