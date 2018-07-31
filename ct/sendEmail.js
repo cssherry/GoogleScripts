@@ -24,7 +24,7 @@ function login() {
 }
 
 // Get the main page
-function getMainPage() {
+function getMainPageCT() {
   if (!fetchPayload.cookie) {
     fetchPayload.cookie = login();
   }
@@ -58,13 +58,22 @@ function updateSheet() {
   var mainPage = getMainPage().match(/<body[\s\S]*?<\/body>/)[0]
                               .replace(/<(no)?script[\s\S]*?<\/(no)?script>/g, '')
                               .replace(/<!--|-->/g, '');
+  // Process CT Listings
+  var mainPage = cleanupHTML(getMainPageCT());
   var doc = Xml.parse(mainPage, true).getElement();
   var mainList = getElementsByTagName(doc, 'ul');
   var items = getElementsByTagName(mainList[2], 'li');
   items.forEach(addOrUpdate);
+
   updateCellRow();
   sendEmail();
   archiveExpiredItems();
+}
+
+function cleanupHTML(htmlText) {
+  return htmlText.match(/<body[\s\S]*?<\/body>/)[0]
+                 .replace(/<(no)?script[\s\S]*?<\/(no)?script>/g, '')
+                 .replace(/<!--|-->/g, '');
 }
 
 // Process previous data, including title and fee in case those change
