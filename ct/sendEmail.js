@@ -55,9 +55,20 @@ function updateSheet() {
   contextValues.sheetData = contextValues.sheet.getDataRange().getValues();
   contextValues.sheetIndex = indexSheet(contextValues.sheetData);
   processPreviousListings();
-  var mainPage = getMainPage().match(/<body[\s\S]*?<\/body>/)[0]
-                              .replace(/<(no)?script[\s\S]*?<\/(no)?script>/g, '')
-                              .replace(/<!--|-->/g, '');
+
+  // Process OTL listings
+  var otlHTML = UrlFetchApp.fetch(urls.otlMain,
+                                  {
+                                    headers : {
+                                      Cookie: fetchPayload.otlCookie,
+                                    },
+                                  });
+  var otlPage = cleanupHTML(otlHTML.getContentText());
+  var otlDoc = Xml.parse(otlPage, true).getElement();
+  var otlTable = getElementsByTagName(otlDoc, 'table')[0];
+  var otlItems = getElementsByTagName(otlTable, 'tr');
+  otlItems.forEach(addOrUpdateOtl);
+
   // Process CT Listings
   var mainPage = cleanupHTML(getMainPageCT());
   var doc = Xml.parse(mainPage, true).getElement();
@@ -113,6 +124,42 @@ function processPreviousListings() {
 }
 
 // Figure out of the page which listings are new
+function addOrUpdateOtl(item) {
+  if (item.getAttribute('class').getValue().indexOf('event-row') === -1) {
+    return;
+  }
+
+  var links = getElementsByTagName(item, 'a')
+  var aElement = links[1] || links[0];
+  var url = aElement.getAttribute('href').getValue();
+  var itemInfo = contextValues.previousListings[url];
+  if (itemInfo) {
+    delete contextValues.previousListings[url];
+  } else {
+    var htmlText = item.toXmlString();
+    var ImageElements = getElementsByTagName(item, 'img');
+    var ImageUrl = ImageElements[1].getAttribute('src').getValue();
+    if (!ImageUrl && ImageElements[0]) {
+      ImageUrl = ImageElements[0].getAttribute('src').getValue();
+    }
+    var paragraphs = getElementsByTagName(item, 'p');
+    var mainInfo = getElementsByTagName(paragraphs[0], 'span');
+
+    var listingInfo = [];
+    listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl + '")';
+    listingInfo[contextValues.sheetIndex.Title] = aElement.getText().trim();
+    listingInfo[contextValues.sheetIndex.AdminFee] = trimHeader(mainInfo[2].getText());
+    listingInfo[contextValues.sheetIndex.Date] = trimHeader(mainInfo[0].getText());
+    listingInfo[contextValues.sheetIndex.Category] = paragraphs[1].getText().trim() || '';
+    listingInfo[contextValues.sheetIndex.Location] = trimHeader(mainInfo[1].getText());
+    listingInfo[contextValues.sheetIndex.Url] = url;
+    listingInfo[contextValues.sheetIndex.EventManager] = '';
+    listingInfo[contextValues.sheetIndex.UploadDate] = new Date();
+    newItemsForUpdate.push(listingInfo);
+  }
+}
+
+
 function addOrUpdate(item) {
   // Get href
   var aElement = getElementsByTagName(item, 'a')[0];
