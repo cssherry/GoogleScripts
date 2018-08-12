@@ -56,6 +56,13 @@ function updateSheet() {
   contextValues.sheetIndex = indexSheet(contextValues.sheetData);
   processPreviousListings();
 
+  // Process CT Listings
+  var mainPage = cleanupHTML(getMainPageCT());
+  var doc = Xml.parse(mainPage, true).getElement();
+  var mainList = getElementsByTagName(doc, 'ul');
+  var items = getElementsByTagName(mainList[2], 'li');
+  items.forEach(addOrUpdate);
+
   // Process OTL listings
   var otlHTML = UrlFetchApp.fetch(urls.otlMain,
                                   {
@@ -68,13 +75,6 @@ function updateSheet() {
   var otlTable = getElementsByTagName(otlDoc, 'table')[0];
   var otlItems = getElementsByTagName(otlTable, 'tr');
   otlItems.forEach(addOrUpdateOtl);
-
-  // Process CT Listings
-  var mainPage = cleanupHTML(getMainPageCT());
-  var doc = Xml.parse(mainPage, true).getElement();
-  var mainList = getElementsByTagName(doc, 'ul');
-  var items = getElementsByTagName(mainList[2], 'li');
-  items.forEach(addOrUpdate);
 
   updateCellRow();
   sendEmail();
