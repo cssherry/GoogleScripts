@@ -152,7 +152,7 @@ function sendEmail(listingInfo) {
                         '<br>' +
                         imageDiv +
                         '<br><hr><br>' +
-                        'Email: <a href="mailto:' + listingInfo.id + '@posts.freecycle.org?subject=' + listingInfo.Title + ' posted to Freecycle" target="_blank">Reply by email</a><br>' +
+                        'Email: <a href="mailto:' + listingInfo.ID + '@posts.freecycle.org?subject=' + listingInfo.Title + ' posted to Freecycle" target="_blank">Reply by email</a><br>' +
                         'Url: <a href="' + listingInfo.PostUrl + '" target="_blank">Link</a>' +
                         '<hr>' +
                         footer;
