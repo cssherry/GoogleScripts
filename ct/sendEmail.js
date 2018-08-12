@@ -125,7 +125,8 @@ function processPreviousListings() {
 
 // Figure out of the page which listings are new
 function addOrUpdateOtl(item) {
-  if (item.getAttribute('class').getValue().indexOf('event-row') === -1) {
+  var class = item.getAttribute('class');
+  if (class && class.getValue().indexOf('event-row') === -1) {
     return;
   }
 
