@@ -131,6 +131,10 @@ function addOrUpdateOtl(item) {
   }
 
   var links = getElementsByTagName(item, 'a')
+  if (!links.length) {
+    return;
+  }
+
   var aElement = links[1] || links[0];
   var url = aElement.getAttribute('href').getValue();
   var itemInfo = contextValues.previousListings[url];
