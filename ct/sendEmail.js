@@ -38,6 +38,43 @@ function getMainPageCT() {
   return mainPage.getContentText();
 }
 
+
+// Get login cookie
+function loginFM() {
+  var postOptions = {
+    method: 'post',
+    payload: {
+      username: fetchPayload.username,
+      password: sjcl.decrypt(fetchPayload.salt, fetchPayload.passwordFm),
+      sid: fetchPayload.sid,
+      redirect: urls.fmLogin,
+    },
+    followRedirects: false,
+  };
+  var loginPage = UrlFetchApp.fetch(urls.fmLogin, postOptions);
+  var loginCode = loginPage.getResponseCode();
+  if (loginCode === 200) { //could not log in.
+    return "Couldn't login. Please make sure your username/password is correct.";
+  } else if (loginCode == 303 || loginCode == 302) {
+    return loginPage.getAllHeaders()['Set-Cookie'];
+  }
+}
+
+// Get the main page
+function getMainPageFM() {
+  if (!fetchPayload.cookieFm) {
+    fetchPayload.cookieFm = loginFM();
+  }
+
+  var mainPage = UrlFetchApp.fetch(urls.fmMain,
+                                  {
+                                    headers : {
+                                      Cookie: fetchPayload.cookieFm,
+                                    },
+                                  });
+  return mainPage.getContentText();
+}
+
 // Main function for each sheet
 // Add to arrays for emailing out later
 var updatedItems = [];
@@ -55,6 +92,20 @@ function updateSheet() {
   contextValues.sheetData = contextValues.sheet.getDataRange().getValues();
   contextValues.sheetIndex = indexSheet(contextValues.sheetData);
   processPreviousListings();
+
+  // Process FM Listings
+  var fmPage = cleanupHTML(getMainPageFM());
+
+  var errorMessage = 'You do not have the required permissions to read topics within this forum';
+  if (fmPage.indexOf(errorMessage) === -1) {
+    var fmDoc = Xml.parse(fmPage, true).getElement();
+    var fmList = getElementsByTagName(fmDoc, 'table');
+    var fmItems = getElementsByTagName(fmList[5], 'tr');
+    fmItems.forEach(addOrUpdateFm);
+  } else {
+    removeAndEmail(urls.fmDomain);
+    return;
+  }
 
   // Process CT Listings
   var mainPage = cleanupHTML(getMainPageCT());
@@ -144,6 +195,37 @@ function removeAndEmail(domain) {
     htmlBody: updateMessage
   });
 }
+
+// Figure out of the page which listings are new
+var hasPassedTopic;
+function addOrUpdateFm(item) {
+  var htmlText = item.toXmlString();
+  if (!hasPassedTopic) {
+    hasPassedTopic = htmlText.indexOf('Topics') !== -1;
+    return;
+  }
+
+  var links = getElementsByTagName(item, 'a')
+  var aElement = links[0];
+  var url = aElement.getAttribute('href').getValue().replace('.', urls.fmDomain);
+  var itemInfo = contextValues.previousListings[url];
+  if (itemInfo) {
+    delete contextValues.previousListings[url];
+  } else {
+    var listingInfo = [];
+    listingInfo[contextValues.sheetIndex.Image] = '=Image("' + urls.fmImage + '")';
+    listingInfo[contextValues.sheetIndex.Title] = aElement.getText().trim();
+    listingInfo[contextValues.sheetIndex.AdminFee] = 0;
+    listingInfo[contextValues.sheetIndex.Date] = trimHeader(mainInfo[0].getText());
+    listingInfo[contextValues.sheetIndex.Category] = 'Movie';
+    listingInfo[contextValues.sheetIndex.Location] = aElement.getAttribute('title').getValue();
+    listingInfo[contextValues.sheetIndex.Url] = url;
+    listingInfo[contextValues.sheetIndex.EventManager] = links[1].getText().trim();
+    listingInfo[contextValues.sheetIndex.UploadDate] = new Date();
+    newItemsForUpdate.push(listingInfo);
+  }
+}
+
 // Figure out of the page which listings are new
 function addOrUpdateOtl(item) {
   var class = item.getAttribute('class');
