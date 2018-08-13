@@ -38,43 +38,6 @@ function getMainPageCT() {
   return mainPage.getContentText();
 }
 
-
-// Get login cookie
-function loginFM() {
-  var postOptions = {
-    method: 'post',
-    payload: {
-      username: fetchPayload.username,
-      password: sjcl.decrypt(fetchPayload.salt, fetchPayload.passwordFm),
-      sid: fetchPayload.sid,
-      redirect: urls.fmLogin,
-    },
-    followRedirects: false,
-  };
-  var loginPage = UrlFetchApp.fetch(urls.fmLogin, postOptions);
-  var loginCode = loginPage.getResponseCode();
-  if (loginCode === 200) { //could not log in.
-    return "Couldn't login. Please make sure your username/password is correct.";
-  } else if (loginCode == 303 || loginCode == 302) {
-    return loginPage.getAllHeaders()['Set-Cookie'];
-  }
-}
-
-// Get the main page
-function getMainPageFM() {
-  if (!fetchPayload.cookieFm) {
-    fetchPayload.cookieFm = loginFM();
-  }
-
-  var mainPage = UrlFetchApp.fetch(urls.fmMain,
-                                  {
-                                    headers : {
-                                      Cookie: fetchPayload.cookieFm,
-                                    },
-                                  });
-  return mainPage.getContentText();
-}
-
 // Main function for each sheet
 // Add to arrays for emailing out later
 var updatedItems = [];
@@ -94,8 +57,13 @@ function updateSheet() {
   processPreviousListings();
 
   // Process FM Listings
-  var fmPage = cleanupHTML(getMainPageFM());
-
+  var fmHTML = UrlFetchApp.fetch(urls.fmMain,
+                                  {
+                                    headers : {
+                                      Cookie: fetchPayload.fmCookie,
+                                    },
+                                  });
+  var fmPage = cleanupHTML(fmHTML.getContentText());
   var errorMessage = 'You do not have the required permissions to read topics within this forum';
   if (fmPage.indexOf(errorMessage) === -1) {
     var fmDoc = Xml.parse(fmPage, true).getElement();
