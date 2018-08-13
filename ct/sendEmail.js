@@ -71,10 +71,17 @@ function updateSheet() {
                                     },
                                   });
   var otlPage = cleanupHTML(otlHTML.getContentText());
-  var otlDoc = Xml.parse(otlPage, true).getElement();
-  var otlTable = getElementsByTagName(otlDoc, 'table')[0];
-  var otlItems = getElementsByTagName(otlTable, 'tr');
-  otlItems.forEach(addOrUpdateOtl);
+
+  var otlError = 'On the List (OTL) Seat Filler Memberships';
+  if (otlPage.indexOf(otlError) === -1) {
+    var otlDoc = Xml.parse(otlPage, true).getElement();
+    var otlTable = getElementsByTagName(otlDoc, 'table')[0];
+    var otlItems = getElementsByTagName(otlTable, 'tr');
+    otlItems.forEach(addOrUpdateOtl);
+  } else {
+    removeAndEmail(urls.otlDomain);
+    return;
+  }
 
   updateCellRow();
   sendEmail();
@@ -123,6 +130,20 @@ function processPreviousListings() {
   }
 }
 
+function removeAndEmail(domain) {
+  for (var url in contextValues.previousListingObject) {
+    if (object.hasOwnProperty(url) && domain.indexOf(url) !== -1) {
+      delete contextValues.previousListings[url];
+    }
+  }
+
+  var updateMessage = 'Update ' + domain + ' Token';
+  var email = MailApp.sendEmail({
+    to: myEmail,
+    subject: '[CT] ' + updateMessage,
+    htmlBody: updateMessage
+  });
+}
 // Figure out of the page which listings are new
 function addOrUpdateOtl(item) {
   var class = item.getAttribute('class');
