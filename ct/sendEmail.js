@@ -108,8 +108,8 @@ function updateSheet() {
 
     var acDoc = Xml.parse(acPage, true).getElement();
     var acTable = getElementByClassName(acDoc, 'page_content')[0];
-    var cItems = getElementByClassName(acTable, 'ladderrung');
-    cItems.forEach(addOrUpdateAc);
+    var acItems = getElementByClassName(acTable, 'ladderrung');
+    acItems.forEach(addOrUpdateAc);
   } else {
     removeAndEmail(urls.acDomain);
   }
