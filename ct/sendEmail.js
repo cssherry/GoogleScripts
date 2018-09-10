@@ -347,6 +347,34 @@ function getElementsByTagName(element, tagName) {
   return data;
 }
 
+function getElementByClassName(element, className) {
+  function containsClass(element) {
+    var currClass = element.getAttribute('class');
+    if (!currClass) {
+      return false;
+    }
+
+    var currClass = currClass.getValue();
+    return currClass === className ||
+           currClass.indexOf(' ' + className) !== -1 ||
+           currClass.indexOf(className + ' ') !== -1;
+  }
+
+  var elList = element.getElements();
+  var data = elList.filter(containsClass);
+
+  var i = elList.length;
+  while (i--) {
+    // (Recursive) Check each child, in document order.
+    var found = getElementByClassName(elList[i], className);
+    if (found) {
+      data = data.concat(found);
+    }
+  }
+
+  return data;
+}
+
 // Send email with new listing information
 function sendEmail() {
   // Only send if there's new items
