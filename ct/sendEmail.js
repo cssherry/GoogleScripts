@@ -82,7 +82,7 @@ function updateSheet() {
   var mainPage = cleanupHTML(getMainPageCT());
   var doc = Xml.parse(mainPage, true).getElement();
   var mainList = getElementsByTagName(doc, 'ul');
-  var items = getElementsByTagName(mainList[2], 'li');
+  var items = getElementsByTagName(mainList[3], 'li');
   items.forEach(addOrUpdate);
 
   // Process OTL listings
