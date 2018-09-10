@@ -136,7 +136,6 @@ function updateSheet() {
     otlItems.forEach(addOrUpdateOtl);
   } else {
     removeAndEmail(urls.otlDomain);
-    return;
   }
 
   updateCellRow();
