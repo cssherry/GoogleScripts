@@ -1,4 +1,6 @@
-var contextValues = {};
+var contextValues = {
+  alreadyDeleted: {},
+};
 var fetchPayload = {
 };
 var urls = {
@@ -243,7 +245,8 @@ function addOrUpdateFm(item) {
   var itemInfo = contextValues.previousListings[url];
   if (itemInfo) {
     delete contextValues.previousListings[url];
-  } else {
+    contextValues.alreadyDeleted[url] = true;
+  } else if (!contextValues.alreadyDeleted[url]) {
     var listingInfo = [];
     listingInfo[contextValues.sheetIndex.Image] = '=Image("' + urls.fmImage + '")';
     listingInfo[contextValues.sheetIndex.Title] = aElement.getText().trim();
@@ -285,7 +288,8 @@ function addOrUpdateAc(item) {
     }
 
     delete contextValues.previousListings[url];
-  } else {
+    contextValues.alreadyDeleted[url] = true;
+  } else if (!contextValues.alreadyDeleted[url]) {
     var ImageElements = getElementByClassName(item, 'pic');
     var ImageUrl = ImageElements[1] ? urls.acDomain + ImageElements[1].getAttribute('src').getValue() : '';
     var date = getElementByClassName(item, 'dateTime')[0]
@@ -328,7 +332,8 @@ function addOrUpdateOtl(item) {
   var itemInfo = contextValues.previousListings[url];
   if (itemInfo) {
     delete contextValues.previousListings[url];
-  } else {
+    contextValues.alreadyDeleted[url] = true;
+  } else if (!contextValues.alreadyDeleted[url]) {
     var htmlText = item.toXmlString();
     var ImageElements = getElementsByTagName(item, 'img');
     var ImageUrl = ImageElements[1].getAttribute('src').getValue();
@@ -390,7 +395,8 @@ function addOrUpdate(item) {
     }
 
     delete contextValues.previousListings[url];
-  } else {
+    contextValues.alreadyDeleted[url] = true;
+  } else if (!contextValues.alreadyDeleted[url]) {
     addNewListing(item, htmlText, url);
   }
 }
