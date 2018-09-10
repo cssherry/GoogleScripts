@@ -168,7 +168,7 @@ function processPreviousListings() {
   var previousListingObject = {};
   var urlValue, titleValue, feeValue, dateValue;
   for (var i = 1; i < contextValues.lastRow; i++) {
-    urlValue = contextValues.sheetData[i][idIdx];
+    urlValue = contextValues.sheetData[i][idIdx].trim();
     titleValue = contextValues.sheetData[i][titleIdx];
     feeValue = contextValues.sheetData[i][feeIdx];
     dateValue = contextValues.sheetData[i][dateIdx];
@@ -239,7 +239,7 @@ function addOrUpdateFm(item) {
 
   var links = getElementsByTagName(item, 'a')
   var aElement = links[0];
-  var url = aElement.getAttribute('href').getValue().replace('.', urls.fmDomain);
+  var url = aElement.getAttribute('href').getValue().replace('.', urls.fmDomain).trim();
   var itemInfo = contextValues.previousListings[url];
   if (itemInfo) {
     delete contextValues.previousListings[url];
@@ -259,7 +259,7 @@ function addOrUpdateFm(item) {
 }
 
 function getACUrl(urlEnd) {
-  return urls.AcDomain + 'member/' + urlEnd;
+  return urls.AcDomain + 'member/' + urlEnd.trim();
 }
 
 function processFreeItems(item) {
@@ -324,7 +324,7 @@ function addOrUpdateOtl(item) {
   }
 
   var aElement = links[1] || links[0];
-  var url = aElement.getAttribute('href').getValue();
+  var url = aElement.getAttribute('href').getValue().trim();
   var itemInfo = contextValues.previousListings[url];
   if (itemInfo) {
     delete contextValues.previousListings[url];
@@ -356,7 +356,7 @@ function addOrUpdateOtl(item) {
 function addOrUpdate(item) {
   // Get href
   var aElement = getElementsByTagName(item, 'a')[0];
-  var url = aElement.getAttribute('href').getValue();
+  var url = aElement.getAttribute('href').getValue().trim();
   var itemInfo = contextValues.previousListings[url];
   var htmlText = item.toXmlString();
   if (itemInfo) {
