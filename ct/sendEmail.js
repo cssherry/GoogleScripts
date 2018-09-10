@@ -192,12 +192,38 @@ function removeAndEmail(domain) {
     }
   }
 
-  var updateMessage = 'Update ' + domain + ' Token';
-  var email = MailApp.sendEmail({
-    to: myEmail,
-    subject: '[CT] ' + updateMessage,
-    htmlBody: updateMessage
-  });
+  // Only send it once by storing on "Errors" sheet
+  if (!contextValues.errorSheet) {
+    contextValues.errorSheet = SpreadsheetApp.getActiveSpreadsheet()
+                                             .getSheetByName('Errors');
+    contextValues.errorData = contextValues.errorSheet.getDataRange().getValues();
+    contextValues.errorIndex = indexSheet(contextValues.errorData);
+    contextValues.lastErrorRow = numberOfRows(contextValues.errorData);
+    contextValues.errorDateIdx = contextValues.errorIndex.Date;
+    contextValues.errorSitesIdx = contextValues.errorIndex.Sites;
+  }
+
+  // If it hasn't been emailed today
+  var lastEmailedDate = contextValues.errorData[contextValues.lastErrorRow][contextValues.errorDateIdx];
+  if (lastEmailedDate.toDateString() !== new Date().toDateString()) {
+    var updateMessage = 'Update ' + domain + ' Token';
+    var email = MailApp.sendEmail({
+      to: myEmail,
+      subject: '[CT] ' + updateMessage,
+      htmlBody: updateMessage
+                 + ': https://docs.google.com/spreadsheets/d/1AC4XDCtUaCaG7O21w1GpJS59Vxt4QmTBypIjKhBR3TU/edit#gid=0',
+    });
+
+    contextValues.lastErrorRow++;
+  }
+
+  // Add current page to list of pages needing update
+  var currentData = contextValues.errorData[contextValues.lastErrorRow][contextValues.errorSitesIdx];
+  if (!currentData || currentData.indexOf(domain) === -1) {
+    contextValues.errorSheet.getRange(contextValues.lastErrorRow, 1, 1, 2);
+    currentData = currentData ? currentData + ', ' + domain : domain;
+    contextValues.errorSheet.setValues([[new Date(), currentData]]);
+  }
 }
 
 // Figure out of the page which listings are new
