@@ -9,8 +9,8 @@ function login() {
   var postOptions = {
     method: 'post',
     payload: {
-      'email': fetchPayload.email,
-      'password': sjcl.decrypt(fetchPayload.salt, fetchPayload.password),
+      email: fetchPayload.email,
+      password: sjcl.decrypt(fetchPayload.salt, fetchPayload.password),
     },
     followRedirects: false,
   };
@@ -18,7 +18,7 @@ function login() {
   var loginCode = loginPage.getResponseCode();
   if (loginCode === 200) { //could not log in.
     return "Couldn't login. Please make sure your username/password is correct.";
-  } else if (loginCode == 303 || loginCode == 302) {
+  } else if (loginCode === 303 || loginCode === 302) {
     return loginPage.getAllHeaders()['Set-Cookie'];
   }
 }
@@ -31,7 +31,7 @@ function getMainPageCT() {
 
   var mainPage = UrlFetchApp.fetch(urls.main,
                                   {
-                                    headers : {
+                                    headers: {
                                       Cookie: fetchPayload.cookie,
                                     },
                                   });
@@ -196,8 +196,8 @@ function addOrUpdateFm(item) {
 
 // Figure out of the page which listings are new
 function addOrUpdateOtl(item) {
-  var class = item.getAttribute('class');
-  if (class && class.getValue().indexOf('event-row') === -1) {
+  var className = item.getAttribute('class');
+  if (className && className.getValue().indexOf('event-row') === -1) {
     return;
   }
 
