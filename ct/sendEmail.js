@@ -79,10 +79,10 @@ function updateSheet() {
 
   // Process AC Listings
   // First, figure out which ones are free
-  var acFreeHTML = UrlFetchApp.fetch(urls.AcFree,
+  var acFreeHTML = UrlFetchApp.fetch(urls.acFree,
                                   {
                                     headers: {
-                                      Cookie: fetchPayload.AcCookie,
+                                      Cookie: fetchPayload.acCookie,
                                     },
                                   });
   var acFreePage = cleanupHTML(acFreeHTML.getContentText());
@@ -98,10 +98,10 @@ function updateSheet() {
       acFreeItem.forEach(processFreeItems);
     }
 
-    var acHTML = UrlFetchApp.fetch(urls.AcMain,
+    var acHTML = UrlFetchApp.fetch(urls.acMain,
                                     {
                                       headers: {
-                                        Cookie: fetchPayload.AcCookie,
+                                        Cookie: fetchPayload.acCookie,
                                       },
                                     });
     var acPage = cleanupHTML(acHTML.getContentText());
@@ -111,7 +111,7 @@ function updateSheet() {
     var cItems = getElementByClassName(acTable, 'ladderrung');
     cItems.forEach(addOrUpdateAc);
   } else {
-    removeAndEmail(urls.AcDomain);
+    removeAndEmail(urls.acDomain);
   }
 
   // Process CT Listings
@@ -259,7 +259,7 @@ function addOrUpdateFm(item) {
 }
 
 function getACUrl(urlEnd) {
-  return urls.AcDomain + 'member/' + urlEnd.replace(/&return=.*$/, '').trim();
+  return urls.acDomain + 'member/' + urlEnd.replace(/&return=.*$/, '').trim();
 }
 
 function processFreeItems(item) {
@@ -287,7 +287,7 @@ function addOrUpdateAc(item) {
     delete contextValues.previousListings[url];
   } else {
     var ImageElements = getElementByClassName(item, 'pic');
-    var ImageUrl = ImageElements[1] ? urls.AcDomain + ImageElements[1].getAttribute('src').getValue() : '';
+    var ImageUrl = ImageElements[1] ? urls.acDomain + ImageElements[1].getAttribute('src').getValue() : '';
     var date = getElementByClassName(item, 'dateTime')[0]
                 .getText()
                 .replace('Check dates and availability...', '')
