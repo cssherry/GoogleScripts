@@ -77,39 +77,41 @@ function updateSheet() {
   }
 **/
 
-  // Log in to AC
-  var acToken = UrlFetchApp.fetch(urls.AcLogin);
-  var headers1 = acToken.getAllHeaders();
-  acToken = acToken.getContentText().match(/type="hidden" value="(.*?)"/)[1];
-  var loginPage = UrlFetchApp.fetch(urls.AcLoginCode, {
-    headers: {
-      Cookie: headers1['Set-Cookie'],
-    },
-    method: 'post',
-    followRedirects: false,
-    payload: {
-      userName: fetchPayload.email,
-      password: sjcl.decrypt(fetchPayload.salt, fetchPayload.acPassword),
-      token: acToken,
-      'return': '',
-    },
-  });
-  var loginCode = loginPage.getResponseCode();
-  if (loginCode === 200) { //could not log in.
-    removeAndEmail(urls.AcDomain);
-  } else if (loginCode === 303 || loginCode === 302) {
-    // Process AC Listings
-    var AcHTML = UrlFetchApp.fetch(urls.AcMain,
+  // Process AC Listings
+  // First, figure out which ones are free
+  var acFreeHTML = UrlFetchApp.fetch(urls.AcFree,
+                                  {
+                                    headers: {
+                                      Cookie: fetchPayload.AcCookie,
+                                    },
+                                  });
+  var acFreePage = cleanupHTML(acFreeHTML.getContentText());
+  var acError = 'Login';
+
+  // Then, go through existing listings and update them
+  if (acFreePage.indexOf(acError) === -1) {
+    contextValues.freeAC = {};
+
+    var acFreeDoc = Xml.parse(acFreePage, true).getElement();
+    var acFreeItem = getElementByClassName(acFreeDoc, 'rushticketpane');
+    if (acFreeItem && acFreeItem.length) {
+      acFreeItem.forEach(processFreeItems);
+    }
+
+    var acHTML = UrlFetchApp.fetch(urls.AcMain,
                                     {
                                       headers: {
-                                        Cookie: loginPage.getAllHeaders()['Set-Cookie'],
+                                        Cookie: fetchPayload.AcCookie,
                                       },
                                     });
-    var AcPage = cleanupHTML(AcHTML.getContentText());
-    var AcDoc = Xml.parse(AcPage, true).getElement();
-    var AcTable = getElementByClassName(AcDoc, 'page_content')[0];
-    var AcItems = getElementByClassName(AcTable, 'ladderrung');
-    AcItems.forEach(addOrUpdateAc);
+    var acPage = cleanupHTML(acHTML.getContentText());
+
+    var acDoc = Xml.parse(acPage, true).getElement();
+    var acTable = getElementByClassName(acDoc, 'page_content')[0];
+    var cItems = getElementByClassName(acTable, 'ladderrung');
+    cItems.forEach(addOrUpdateAc);
+  } else {
+    removeAndEmail(urls.AcDomain);
   }
 
   // Process CT Listings
@@ -251,6 +253,59 @@ function addOrUpdateFm(item) {
     listingInfo[contextValues.sheetIndex.Location] = aElement.getAttribute('title').getValue();
     listingInfo[contextValues.sheetIndex.Url] = url;
     listingInfo[contextValues.sheetIndex.EventManager] = links[1].getText().trim();
+    listingInfo[contextValues.sheetIndex.UploadDate] = new Date();
+    newItemsForUpdate.push(listingInfo);
+  }
+}
+
+function getACUrl(urlEnd) {
+  return urls.AcDomain + 'member/' + urlEnd;
+}
+
+function processFreeItems(item) {
+  var freeUrl = getElementsByTagName(item, 'a')[0].getAttribute('href').getValue();
+  contextValues.freeAC[getACUrl(freeUrl)] = true;
+}
+
+// Figure out of the page which listings are new
+function addOrUpdateAc(item) {
+  var header = getElementByClassName(item, 'showtitle')
+  var aElement = getElementsByTagName(header[0], 'a')[0];
+  var title = aElement.getText().trim();
+  var url = getACUrl(aElement.getAttribute('href').getValue());
+  var itemInfo = contextValues.previousListings[url];
+  var currentItem = [];
+  if (itemInfo) {
+    if (contextValues.freeAC[url] && itemInfo[contextValues.sheetIndex.AdminFee] !== 'FREE') {
+      updateCell(itemInfo.row + 1, 'AdminFee', 'FREE');
+      currentItem[contextValues.sheetIndex.AdminFee] = 'FREE <br><em>(Previously ~£3.60)</em>';
+      currentItem[contextValues.sheetIndex.Title] = title;
+      currentItem[contextValues.sheetIndex.Url] = url;
+      updatedItems.push(currentItem);
+    }
+
+    delete contextValues.previousListings[url];
+  } else {
+    var ImageElements = getElementByClassName(item, 'pic');
+    var ImageUrl = ImageElements[1] ? urls.AcDomain + ImageElements[1].getAttribute('src').getValue() : '';
+    var date = getElementByClassName(item, 'dateTime')[0]
+                .getText()
+                .replace('Check dates and availability...', '')
+                .trim();
+
+    var venue = getElementByClassName(item, 'venue');
+    venue = trimHtml(venue[0].toXmlString()).trim();
+    var description = getElementByClassName(item, 'showdescription')[0].getText().trim();
+
+    var listingInfo = [];
+    listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl + '")';
+    listingInfo[contextValues.sheetIndex.Title] = title;
+    listingInfo[contextValues.sheetIndex.AdminFee] = contextValues.freeAC[url] ? 'FREE' : '~£3.6';
+    listingInfo[contextValues.sheetIndex.Date] = date;
+    listingInfo[contextValues.sheetIndex.Category] = description;
+    listingInfo[contextValues.sheetIndex.Location] = venue;
+    listingInfo[contextValues.sheetIndex.Url] = url;
+    listingInfo[contextValues.sheetIndex.EventManager] = '';
     listingInfo[contextValues.sheetIndex.UploadDate] = new Date();
     newItemsForUpdate.push(listingInfo);
   }
