@@ -56,6 +56,7 @@ function updateSheet() {
   contextValues.sheetIndex = indexSheet(contextValues.sheetData);
   processPreviousListings();
 
+/** NOT WORKING
   // Process FM Listings
   var fmHTML = UrlFetchApp.fetch(urls.fmMain,
                                   {
@@ -74,6 +75,8 @@ function updateSheet() {
     removeAndEmail(urls.fmDomain);
     return;
   }
+**/
+
 
   // Process CT Listings
   var mainPage = cleanupHTML(getMainPageCT());
