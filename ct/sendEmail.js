@@ -77,6 +77,40 @@ function updateSheet() {
   }
 **/
 
+  // Log in to AC
+  var acToken = UrlFetchApp.fetch(urls.AcLogin);
+  var headers1 = acToken.getAllHeaders();
+  acToken = acToken.getContentText().match(/type="hidden" value="(.*?)"/)[1];
+  var loginPage = UrlFetchApp.fetch(urls.AcLoginCode, {
+    headers: {
+      Cookie: headers1['Set-Cookie'],
+    },
+    method: 'post',
+    followRedirects: false,
+    payload: {
+      userName: fetchPayload.email,
+      password: sjcl.decrypt(fetchPayload.salt, fetchPayload.acPassword),
+      token: acToken,
+      'return': '',
+    },
+  });
+  var loginCode = loginPage.getResponseCode();
+  if (loginCode === 200) { //could not log in.
+    removeAndEmail(urls.AcDomain);
+  } else if (loginCode === 303 || loginCode === 302) {
+    // Process AC Listings
+    var AcHTML = UrlFetchApp.fetch(urls.AcMain,
+                                    {
+                                      headers: {
+                                        Cookie: loginPage.getAllHeaders()['Set-Cookie'],
+                                      },
+                                    });
+    var AcPage = cleanupHTML(AcHTML.getContentText());
+    var AcDoc = Xml.parse(AcPage, true).getElement();
+    var AcTable = getElementByClassName(AcDoc, 'page_content')[0];
+    var AcItems = getElementByClassName(AcTable, 'ladderrung');
+    AcItems.forEach(addOrUpdateAc);
+  }
 
   // Process CT Listings
   var mainPage = cleanupHTML(getMainPageCT());
