@@ -259,7 +259,7 @@ function addOrUpdateFm(item) {
 }
 
 function getACUrl(urlEnd) {
-  return urls.AcDomain + 'member/' + urlEnd.trim();
+  return urls.AcDomain + 'member/' + urlEnd.replace(/&return=.*$/, '').trim();
 }
 
 function processFreeItems(item) {
