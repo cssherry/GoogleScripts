@@ -191,7 +191,7 @@ function processPreviousListings() {
 
 function removeAndEmail(domain) {
   for (var url in contextValues.previousListingObject) {
-    if (object.hasOwnProperty(url) && domain.indexOf(url) !== -1) {
+    if (object.hasOwnProperty(url) && url.indexOf(domain) !== -1) {
       delete contextValues.previousListings[url];
     }
   }
