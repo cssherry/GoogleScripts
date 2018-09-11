@@ -208,8 +208,8 @@ function removeAndEmail(domain) {
   }
 
   // If it hasn't been emailed today
-  var lastEmailedDate = contextValues.errorData[contextValues.lastErrorRow][contextValues.errorDateIdx];
-  if (lastEmailedDate.toDateString() !== new Date().toDateString()) {
+  var lastEmailedDate = contextValues.errorData[contextValues.lastErrorRow - 1][contextValues.errorDateIdx];
+  if (!lastEmailedDate.toDateString || lastEmailedDate.toDateString() !== new Date().toDateString()) {
     var updateMessage = 'Update ' + domain + ' Token';
     var email = MailApp.sendEmail({
       to: myEmail,
@@ -222,11 +222,15 @@ function removeAndEmail(domain) {
   }
 
   // Add current page to list of pages needing update
-  var currentData = contextValues.errorData[contextValues.lastErrorRow][contextValues.errorSitesIdx];
+  if (!contextValues.errorData[contextValues.lastErrorRow - 1]) {
+    contextValues.errorData[contextValues.lastErrorRow - 1] = [];
+  }
+
+  var currentData = contextValues.errorData[contextValues.lastErrorRow - 1][contextValues.errorSitesIdx];
   if (!currentData || currentData.indexOf(domain) === -1) {
-    contextValues.errorSheet.getRange(contextValues.lastErrorRow, 1, 1, 2);
+    var cells = contextValues.errorSheet.getRange(contextValues.lastErrorRow, 1, 1, 2);
     currentData = currentData ? currentData + ', ' + domain : domain;
-    contextValues.errorSheet.setValues([[new Date(), currentData]]);
+    cells.setValues([[new Date(), currentData]]);
   }
 }
 
