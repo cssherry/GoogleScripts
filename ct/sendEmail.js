@@ -283,9 +283,13 @@ function addOrUpdateAc(item) {
   var itemInfo = contextValues.previousListings[url];
   var currentItem = [];
   if (itemInfo) {
-    if (contextValues.freeAC[url] && itemInfo[contextValues.sheetIndex.AdminFee] !== 'FREE') {
-      updateCell(itemInfo.row + 1, 'AdminFee', 'FREE');
-      currentItem[contextValues.sheetIndex.AdminFee] = 'FREE <br><em>(Previously ~£3.60)</em>';
+    var isNowFree = contextValues.freeAC[url] && itemInfo[contextValues.sheetIndex.AdminFee] !== 'FREE';
+    var isNowPaid = !contextValues.freeAC[url] && itemInfo[contextValues.sheetIndex.AdminFee] === 'FREE';
+    if (isNowFree || isNowPaid) {
+      var newFee = isNowFree ? 'FREE' : '~£3.60';
+      var oldFee = isNowFree ? '~£3.60' : 'FREE';
+      updateCell(itemInfo.row + 1, 'AdminFee', newFee);
+      currentItem[contextValues.sheetIndex.AdminFee] = newFee + ' <br><em>(Previously ' + oldFee + ')</em>';
       currentItem[contextValues.sheetIndex.Title] = title;
       currentItem[contextValues.sheetIndex.Url] = url;
       updatedItems.push(currentItem);
