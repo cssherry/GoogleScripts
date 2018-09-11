@@ -312,7 +312,7 @@ function addOrUpdateAc(item) {
     var listingInfo = [];
     listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl + '")';
     listingInfo[contextValues.sheetIndex.Title] = title;
-    listingInfo[contextValues.sheetIndex.AdminFee] = contextValues.freeAC[url] ? 'FREE' : '~£3.6';
+    listingInfo[contextValues.sheetIndex.AdminFee] = contextValues.freeAC[url] ? 'FREE' : '~£3.60';
     listingInfo[contextValues.sheetIndex.Date] = date;
     listingInfo[contextValues.sheetIndex.Category] = description;
     listingInfo[contextValues.sheetIndex.Location] = venue;
