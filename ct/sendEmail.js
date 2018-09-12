@@ -217,9 +217,9 @@ function processPreviousListings() {
 }
 
 function removeAndEmail(domain) {
-  for (var url in contextValues.previousListingObject) {
-    if (object.hasOwnProperty(url) && url.indexOf(domain) !== -1) {
-      delete contextValues.previousListings[url];
+  for (var oldUrl in contextValues.previousListingObject) {
+    if (contextValues.previousListingObject.hasOwnProperty(oldUrl) && oldUrl.indexOf(domain) !== -1) {
+      delete contextValues.previousListings[oldUrl];
     }
   }
 
