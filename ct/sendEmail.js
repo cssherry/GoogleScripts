@@ -79,6 +79,33 @@ function updateSheet() {
   }
 **/
 
+  // Log in to AC
+  var loginSfPage = UrlFetchApp.fetch(urls.sfLogin, {
+      method: 'post',
+      followRedirects: false,
+      payload: {
+        email_address: fetchPayload.email_address,
+        password: sjcl.decrypt(fetchPayload.salt, fetchPayload.sfPassword),
+      },
+    });
+  var loginSfCode = loginSfPage.getResponseCode();
+  var sfHeaders = loginSfPage.getAllHeaders();
+  if (loginSfCode === 200) { //could not log in.
+    removeAndEmail(urls.sf);
+  } else if (loginSfCode === 303 || loginSfCode === 302) {
+    fetchPayload.sfCookie = sfHeaders['Set-Cookie'];
+    // Process AC Listings
+    var sfHTML = UrlFetchApp.fetch(urls.sfMain,
+                                    {
+                                      headers: {
+                                        Cookie: fetchPayload.sfCookie,
+                                      },
+                                    });
+    var sfPage = cleanupHTML(sfHTML.getContentText());
+    var sfDoc = Xml.parse(sfPage, true).getElement();
+    getElementByClassName(sfDoc, 'showcasebox').forEach(addOrUpdateSf);
+  }
+
   // Process AC Listings
   // First, figure out which ones are free
   var acFreeHTML = UrlFetchApp.fetch(urls.acFree,
@@ -260,6 +287,45 @@ function addOrUpdateFm(item) {
     listingInfo[contextValues.sheetIndex.Location] = aElement.getAttribute('title').getValue();
     listingInfo[contextValues.sheetIndex.Url] = url;
     listingInfo[contextValues.sheetIndex.EventManager] = links[1].getText().trim();
+    listingInfo[contextValues.sheetIndex.UploadDate] = new Date();
+    newItemsForUpdate.push(listingInfo);
+  }
+}
+
+
+// Figure out of the page which listings are new
+function addOrUpdateSf(item) {
+  var aElement = getElementsByTagName(item, 'a')[0];
+  var url = aElement.getAttribute('href').getValue().trim();
+  var itemInfo = contextValues.previousListings[url];
+  if (itemInfo) {
+    delete contextValues.previousListings[url];
+    contextValues.alreadyDeleted[url] = true;
+  } else if (!contextValues.alreadyDeleted[url]) {
+    var itemHtml = item.toXmlString();
+    var ImageUrl = itemHtml.match(/background-image:url\(&quot;(http:\/\/.*\.jpg)/i);
+    var title = getElementsByTagName(item, 'h2');
+    var date = getElementByClassName(item, 'date-event');
+    var description = getElementByClassName(item, 'internal_content');
+
+    var detailPage = cleanupHTML(UrlFetchApp.fetch(url).getContentText());
+    var detailError = 'Sorry, this offer has now ended';
+    var price = '', location = '', time = '';
+    if (detailPage.indexOf(detailError) === -1) {
+      price = trimHtml(detailPage.match(/price_info_box">([\s\S]*?)<\/span>/)[1]);
+      location = trimHtml(detailPage.match(/location_td">([\s\S]*?)<\/td>/)[1]);
+      time = ' @ ' + detailPage.match(/<td>(.*:.*)<\/td>/)[1];
+    }
+
+    var listingInfo = [];
+    listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl[1] + '")';
+    listingInfo[contextValues.sheetIndex.Title] = title[0].getText().trim();
+    listingInfo[contextValues.sheetIndex.AdminFee] = price;
+    listingInfo[contextValues.sheetIndex.Date] = date[0].getText().trim() + time;
+    listingInfo[contextValues.sheetIndex.Category] = trimHtml(description[0].toXmlString());
+    listingInfo[contextValues.sheetIndex.Location] = location;
+    listingInfo[contextValues.sheetIndex.Url] = url;
+    listingInfo[contextValues.sheetIndex.EventManager] = '';
     listingInfo[contextValues.sheetIndex.UploadDate] = new Date();
     newItemsForUpdate.push(listingInfo);
   }
