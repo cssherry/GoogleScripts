@@ -303,7 +303,7 @@ function addOrUpdateSf(item) {
     contextValues.alreadyDeleted[url] = true;
   } else if (!contextValues.alreadyDeleted[url]) {
     var itemHtml = item.toXmlString();
-    var ImageUrl = itemHtml.match(/background-image:url\(&quot;(http:\/\/.*\.jpg)/i);
+    var ImageUrl = itemHtml.match(/background-image:url\(&quot;(http:\/\/.*?\.jpg)/i);
     var title = getElementsByTagName(item, 'h2');
     var date = getElementByClassName(item, 'date-event');
     var description = getElementByClassName(item, 'internal_content');
@@ -312,9 +312,11 @@ function addOrUpdateSf(item) {
     var detailError = 'Sorry, this offer has now ended';
     var price = '', location = '', time = '';
     if (detailPage.indexOf(detailError) === -1) {
-      price = trimHtml(detailPage.match(/price_info_box">([\s\S]*?)<\/span>/)[1]);
-      location = trimHtml(detailPage.match(/location_td">([\s\S]*?)<\/td>/)[1]);
-      time = ' @ ' + detailPage.match(/<td>(.*:.*)<\/td>/)[1];
+      price = detailPage.match(/price_info_box.*?>([\s\S]*?)<\/span>/);
+      location = detailPage.match(/location_td.*?>([\s\S]*?)<\/td>/);
+      price = price ? trimHtml(price[1]) : '';
+      location = location ? trimHtml(location[1]) : '';
+      time = ' @ ' + detailPage.match(/<td>(.*?:.*?)<\/td>/)[1];
     }
 
     var listingInfo = [];
