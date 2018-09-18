@@ -108,17 +108,34 @@ function updateSheet() {
 
   // Process AC Listings
   // First, figure out which ones are free
-  var acFreeHTML = UrlFetchApp.fetch(urls.acFree,
-                                  {
-                                    headers: {
-                                      Cookie: fetchPayload.acCookie,
-                                    },
-                                  });
-  var acFreePage = cleanupHTML(acFreeHTML.getContentText());
-  var acError = 'Login';
-
-  // Then, go through existing listings and update them
-  if (acFreePage.indexOf(acError) === -1) {
+  var acToken = UrlFetchApp.fetch(urls.acLogin);
+  var headers1 = acToken.getAllHeaders();
+  fetchPayload.acCookie = headers1['Set-Cookie'].join('');
+  var acToken = acToken.getContentText().match(/type="hidden" value="(.*?)"/)[1];
+  var loginAcPage = UrlFetchApp.fetch(urls.acLoginAPI, {
+      method: 'post',
+      followRedirects: false,
+      headers: {
+        Cookie: fetchPayload.acCookie,
+      },
+      payload: {
+        userName: fetchPayload.email,
+        password: sjcl.decrypt(fetchPayload.salt, fetchPayload.acPassword),
+        token: acToken,
+        'return': '',
+      },
+    });
+  var loginAcCode = loginAcPage.getResponseCode();
+  if (loginAcCode === 200) { //could not log in.
+    removeAndEmail(urls.acDomain);
+  } else if (loginAcCode === 303 || loginAcCode === 302) {
+    var acFreeHTML = UrlFetchApp.fetch(urls.acFree,
+                                    {
+                                      headers: {
+                                        Cookie: fetchPayload.acCookie,
+                                      },
+                                    });
+    var acFreePage = cleanupHTML(acFreeHTML.getContentText());
     contextValues.freeAC = {};
 
     var acFreeDoc = Xml.parse(acFreePage, true).getElement();
