@@ -1,4 +1,4 @@
-var sheetsToUpdate = ['ItemizedBudget', 'MonthlyTheater', 'Charities-notax'];
+var sheetsToUpdate = ['ItemizedBudget', 'MonthlyTheater', 'Charities-notax', '-Oxford'];
 var alertPercent = 0.01;
 var skipItems = ['Home', 'Retirement', 'Taxes', 'Savings'];
 
