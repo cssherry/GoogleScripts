@@ -45,10 +45,10 @@ function getMainPageCT() {
 var updatedItems = [];
 var newItemsForUpdate = [];
 function updateSheet() {
-  // Only run after 8 AM or before 10 PM
+  // Only run after 7 AM or before 11 PM
   var currentDate = new Date();
   var currentHour = currentDate.getHours();
-  if (currentHour <= 8 || currentHour >= 22) {
+  if (currentHour <= 7 || currentHour >= 23) {
     return;
   }
 
