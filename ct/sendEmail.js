@@ -79,7 +79,7 @@ function updateSheet() {
   }
 **/
 
-  // Log in to AC
+  // Log in to SF
   var loginSfPage = UrlFetchApp.fetch(urls.sfLogin, {
       method: 'post',
       followRedirects: false,
