@@ -337,7 +337,7 @@ function addOrUpdateSf(item) {
     }
 
     var listingInfo = [];
-    listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl[1] + '")';
+    listingInfo[contextValues.sheetIndex.Image] = '=Image("' + itemHtml && ImageUrl[1] || '' + '")';
     listingInfo[contextValues.sheetIndex.Title] = title[0].getText().trim();
     listingInfo[contextValues.sheetIndex.AdminFee] = price;
     listingInfo[contextValues.sheetIndex.Date] = date[0].getText().trim() + time;
