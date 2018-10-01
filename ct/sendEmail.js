@@ -167,23 +167,27 @@ function updateSheet() {
   var items = getElementsByTagName(mainList[3], 'li');
   items.forEach(addOrUpdate);
 
-  // Process OTL listings
-  var otlHTML = UrlFetchApp.fetch(urls.otlMain,
-                                  {
-                                    headers : {
-                                      Cookie: fetchPayload.otlCookie,
-                                    },
-                                  });
-  var otlPage = cleanupHTML(otlHTML.getContentText());
+  try {
+    // Process OTL listings
+    var otlHTML = UrlFetchApp.fetch(urls.otlMain,
+                                    {
+                                      headers : {
+                                        Cookie: fetchPayload.otlCookie,
+                                      },
+                                    });
+    var otlPage = cleanupHTML(otlHTML.getContentText());
 
-  var otlError = 'On the List (OTL) Seat Filler Memberships';
-  if (otlPage.indexOf(otlError) === -1) {
-    var otlDoc = Xml.parse(otlPage, true).getElement();
-    var otlTable = getElementsByTagName(otlDoc, 'table')[0];
-    var otlItems = getElementsByTagName(otlTable, 'tr');
-    otlItems.forEach(addOrUpdateOtl);
-  } else {
-    removeAndEmail(urls.otlDomain);
+    var otlError = 'On the List (OTL) Seat Filler Memberships';
+    if (otlPage.indexOf(otlError) === -1) {
+      var otlDoc = Xml.parse(otlPage, true).getElement();
+      var otlTable = getElementsByTagName(otlDoc, 'table')[0];
+      var otlItems = getElementsByTagName(otlTable, 'tr');
+      otlItems.forEach(addOrUpdateOtl);
+    } else {
+      removeAndEmail(urls.otlDomain);
+    }
+  } catch (e) {
+    removeAndEmail(urls.otlDomain, 'errorLoadingPage');
   }
 
   updateCellRow();
