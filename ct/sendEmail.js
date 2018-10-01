@@ -325,7 +325,7 @@ function addOrUpdateSf(item) {
     contextValues.alreadyDeleted[url] = true;
   } else if (!contextValues.alreadyDeleted[url]) {
     var itemHtml = item.toXmlString();
-    var ImageUrl = itemHtml.match(/background-image:url\(&quot;(http:\/\/.*?\.jpg)/i);
+    var ImageUrl = itemHtml.match(/background-image:url\(.*?(http:\/\/.*?\.jpg)/i);
     var title = getElementsByTagName(item, 'h2');
     var date = getElementByClassName(item, 'date-event');
     var description = getElementByClassName(item, 'internal_content');
