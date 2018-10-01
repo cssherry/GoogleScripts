@@ -233,7 +233,7 @@ function processPreviousListings() {
   }
 }
 
-function removeAndEmail(domain) {
+function removeAndEmail(domain, errorLoadingPage) {
   for (var oldUrl in contextValues.previousListings) {
     if (contextValues.previousListings.hasOwnProperty(oldUrl) && oldUrl.indexOf(domain) !== -1) {
       delete contextValues.previousListings[oldUrl];
@@ -255,6 +255,11 @@ function removeAndEmail(domain) {
   var lastEmailedDate = contextValues.errorData[contextValues.lastErrorRow - 1][contextValues.errorDateIdx];
   if (!lastEmailedDate.toDateString || lastEmailedDate.toDateString() !== new Date().toDateString()) {
     var updateMessage = 'Update ' + domain + ' Token';
+
+    if (errorLoadingPage) {
+      updateMessage = 'Error loading page for :' + domain;
+    }
+
     var email = MailApp.sendEmail({
       to: myEmail,
       subject: '[CT] ' + updateMessage,
