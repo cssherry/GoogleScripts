@@ -31,11 +31,14 @@ function updateSheet(sheetName) {
 
   var freecycleUrl = 'https://groups.freecycle.org/group/' + sheetName + '/posts/all?resultsperpage=50&include_offers=on&include_wanteds=off&include_receiveds=off&include_takens=off';
   var freecycleHTML = UrlFetchApp.fetch(freecycleUrl, fetchPayload)
-  freecycleHTML = freecycleHTML.getContentText().match(/<table[\s\S]*<\/table>/)[0];
-  var items = freecycleHTML.match(/<tr[\s\S]*?<\/tr>/g);
-  contextValues.missingItems = [];
-  items.forEach(trackIfMissing);
-  contextValues.missingItems.forEach(getListing);
+  freecycleHTML = freecycleHTML.getContentText().match(/<table[\s\S]*<\/table>/);
+  if (freecycleHTML) {
+    freecycleHTML = freecycleHTML[0]
+    var items = freecycleHTML.match(/<tr[\s\S]*?<\/tr>/g);
+    contextValues.missingItems = [];
+    items.forEach(trackIfMissing);
+    contextValues.missingItems.forEach(getListing);
+  }
 }
 
 // Figure out last 30 listings so there are no repeats
