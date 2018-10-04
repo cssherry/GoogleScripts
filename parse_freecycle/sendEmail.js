@@ -16,6 +16,15 @@ var fetchPayload = {
     Runs upon change event, ideally new row being added to ItemizedBudget Sheet
 */
 function updateAllSheets() {
+  contextValues.errorSheet = SpreadsheetApp.getActiveSpreadsheet()
+                                           .getSheetByName('Errors');
+  contextValues.errorData = contextValues.errorSheet.getDataRange().getValues();
+  contextValues.errorIndex = indexSheet(contextValues.errorData);
+  contextValues.lastErrorRow = numberOfRows(contextValues.errorData);
+  contextValues.errorUrlIdx = contextValues.errorIndex.URL;
+  contextValues.errorErrorIdx = contextValues.errorIndex.Error;
+  contextValues.errorDateIdx = contextValues.errorIndex.Date;
+
   sheetsToUpdate.forEach(updateSheet);
 }
 
@@ -30,16 +39,31 @@ function updateSheet(sheetName) {
   processPreviousListings();
 
   var freecycleUrl = 'https://groups.freecycle.org/group/' + sheetName + '/posts/all?resultsperpage=50&include_offers=on&include_wanteds=off&include_receiveds=off&include_takens=off';
-  var freecycleHTML = UrlFetchApp.fetch(freecycleUrl, fetchPayload)
-  freecycleHTML = freecycleHTML.getContentText().match(/<table[\s\S]*<\/table>/);
-  if (freecycleHTML) {
-    freecycleHTML = freecycleHTML[0]
-    var items = freecycleHTML.match(/<tr[\s\S]*?<\/tr>/g);
-    contextValues.missingItems = [];
-    items.forEach(trackIfMissing);
-    contextValues.missingItems.forEach(getListing);
+  try {
+    var freecycleHTML = UrlFetchApp.fetch(freecycleUrl, fetchPayload);
+    freecycleHTML = freecycleHTML.getContentText().match(/<table[\s\S]*<\/table>/)
+    if (freecycleHTML) {
+      freecycleHTML = freecycleHTML[0]
+      var items = freecycleHTML.match(/<tr[\s\S]*?<\/tr>/g);
+      contextValues.missingItems = [];
+      items.forEach(trackIfMissing);
+      contextValues.missingItems.forEach(getListing);
+    };
+  } catch (e) {
+    logError(e, freecycleUrl);
   }
 }
+
+function logError(e, freecycleUrl) {
+  contextValues.lastErrorRow++;
+  var cells = contextValues.errorSheet.getRange(contextValues.lastErrorRow, 1, 1, 3);
+  newRow = [];
+  newRow[contextValues.errorUrlIdx] = freecycleUrl;
+  newRow[contextValues.errorErrorIdx] = e.message + '\n' + (e.stack || '');
+  newRow[contextValues.errorDateIdx] = new Date();
+  cells.setValues([newRow]);
+}
+
 
 // Figure out last 30 listings so there are no repeats
 function processPreviousListings() {
@@ -78,16 +102,22 @@ function getListing(listingId) {
   Utilities.sleep(1000);
   contextValues.lastRow++;
   var freecycleItemUrl = 'https://groups.freecycle.org/group/' + contextValues.sheetName + '/posts/' + listingId;
-  var freecycleItemHTML = UrlFetchApp.fetch(freecycleItemUrl, fetchPayload).getContentText().match(/<section[\s\S]*<\/section>/)[0];
-  var Title = trimHeader(trimHtml(getElementByTag(freecycleItemHTML, 'h2')[2]));
-  var ImageUrl = freecycleItemHTML.match('<img.+?src=".+?"');
-  ImageUrl = ImageUrl ? ImageUrl[0].replace(/.*src=/,'') : '';
-  ImageUrl = ImageUrl.slice(1, ImageUrl.length - 1);
-  var Description = trimHtml(getElementByTag(freecycleItemHTML, 'p')[0]);
-  var Location = getColonSeparatedText(freecycleItemHTML, 'Location');
-  var currDate = getColonSeparatedText(freecycleItemHTML, 'Date');
-  // Posted by not working for some reason
-  var PostedBy = getColonSeparatedText(freecycleItemHTML, 'Posted by');
+  var Title = '', ImageUrl = '', Description = '', Location = '', currDate = '', PostedBy = '';
+  try {
+    var freecycleItemHTML = UrlFetchApp.fetch(freecycleItemUrl, fetchPayload).getContentText().match(/<section[\s\S]*<\/section>/)[0];
+    Title = trimHeader(trimHtml(getElementByTag(freecycleItemHTML, 'h2')[2]));
+    ImageUrl = freecycleItemHTML.match('<img.+?src=".+?"');
+    ImageUrl = ImageUrl ? ImageUrl[0].replace(/.*src=/,'') : '';
+    ImageUrl = ImageUrl.slice(1, ImageUrl.length - 1);
+    Description = trimHtml(getElementByTag(freecycleItemHTML, 'p')[0]);
+    var Location = getColonSeparatedText(freecycleItemHTML, 'Location');
+    var currDate = getColonSeparatedText(freecycleItemHTML, 'Date');
+    // Posted by not working for some reason
+    var PostedBy = getColonSeparatedText(freecycleItemHTML, 'Posted by');
+  } catch (e) {
+    logError(e, freecycleItemUrl);
+  }
+
   var listingInfo = {
     PostUrl: freecycleItemUrl,
     RetrievedDate: new Date(),
