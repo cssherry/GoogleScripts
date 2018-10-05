@@ -380,6 +380,11 @@ function addOrUpdateAc(item) {
   var header = getElementByClassName(item, 'showtitle')
   var aElement = getElementsByTagName(header[0], 'a')[0];
   var title = aElement.getText().trim();
+  var date = getElementByClassName(item, 'dateTime')[0]
+              .getText()
+              .replace('Check dates and availability...', '')
+              .trim();
+  var description = getElementByClassName(item, 'showdescription')[0].getText().trim();
   var url = getACUrl(aElement.getAttribute('href').getValue());
   var itemInfo = contextValues.previousListings[url];
   var currentItem = [];
@@ -391,7 +396,37 @@ function addOrUpdateAc(item) {
       var oldFee = isNowFree ? '~£3.60' : 'FREE';
       updateCell(itemInfo.row + 1, 'AdminFee', newFee);
       currentItem[contextValues.sheetIndex.AdminFee] = newFee + ' <br><em>(Previously ' + oldFee + ')</em>';
-      currentItem[contextValues.sheetIndex.Title] = title;
+    }
+
+    if (date !== itemInfo.date) {
+      updateCell(itemInfo.row + 1, 'Date', date);
+      currentItem[contextValues.sheetIndex.Date] = date + '<br><em>(Previously ' + itemInfo.date + ')</em>';
+    }
+
+    if (title !== itemInfo.title) {
+      updateCell(itemInfo.row + 1, 'Title', title);
+      currentItem[contextValues.sheetIndex.Title] = title + '<br><em>(Previously ' + itemInfo.title + ')</em>';
+    }
+
+    if (description !== itemInfo.category) {
+      updateCell(itemInfo.row + 1, 'Category', description);
+      currentItem[contextValues.sheetIndex.Category] = description + '<br><em>(Previously ' + itemInfo.category + ')</em>';
+    }
+
+    if (currentItem.length) {
+      if (!currentItem[contextValues.sheetIndex.Title]) {
+        currentItem[contextValues.sheetIndex.Title] = title;
+      }
+
+      if (!currentItem[contextValues.sheetIndex.Date]) {
+        currentItem[contextValues.sheetIndex.Date] = date;
+      }
+
+      if (!currentItem[contextValues.sheetIndex.Category]) {
+        currentItem[contextValues.sheetIndex.Category] = description;
+      }
+
+      currentItem[contextValues.sheetIndex.Location] = itemInfo.location;
       currentItem[contextValues.sheetIndex.Url] = url;
       updatedItems.push(currentItem);
     }
@@ -401,14 +436,9 @@ function addOrUpdateAc(item) {
   } else if (!contextValues.alreadyDeleted[url]) {
     var ImageElements = getElementByClassName(item, 'pic');
     var ImageUrl = ImageElements[1] ? urls.acDomain + ImageElements[1].getAttribute('src').getValue() : '';
-    var date = getElementByClassName(item, 'dateTime')[0]
-                .getText()
-                .replace('Check dates and availability...', '')
-                .trim();
 
     var venue = getElementByClassName(item, 'venue');
     venue = trimHtml(venue[0].toXmlString()).trim();
-    var description = getElementByClassName(item, 'showdescription')[0].getText().trim();
 
     var listingInfo = [];
     listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl + '")';
