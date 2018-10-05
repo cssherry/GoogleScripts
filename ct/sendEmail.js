@@ -139,7 +139,7 @@ function updateSheet() {
     contextValues.freeAC = {};
 
     var acFreeDoc = Xml.parse(acFreePage, true).getElement();
-    var acFreeItem = getElementByClassName(acFreeDoc, 'rushticketpane');
+    var acFreeItem = getElementByClassName(acFreeDoc, 'newShowPane');
     if (acFreeItem && acFreeItem.length) {
       acFreeItem.forEach(processFreeItems);
     }
@@ -371,8 +371,11 @@ function getACUrl(urlEnd) {
 }
 
 function processFreeItems(item) {
-  var freeUrl = getElementsByTagName(item, 'a')[0].getAttribute('href').getValue();
-  contextValues.freeAC[getACUrl(freeUrl)] = true;
+  var containsFreeBooking = item.toXmlString().match(/no booking fee/i);
+  if (containsFreeBooking) {
+    var freeUrl = getElementsByTagName(item, 'a')[0].getAttribute('href').getValue();
+    contextValues.freeAC[getACUrl(freeUrl)] = true;
+  }
 }
 
 // Figure out of the page which listings are new
