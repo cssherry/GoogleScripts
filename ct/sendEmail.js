@@ -190,7 +190,7 @@ function updateSheet() {
     removeAndEmail(urls.otlDomain, 'errorLoadingPage');
   }
 
-  updateCellRow();
+  addNewCellItemsRow();
   sendEmail();
   archiveExpiredItems();
 }
@@ -704,7 +704,7 @@ function getElementSection(listingInfo) {
 }
 
 // Function that updates sheet
-function updateCellRow() {
+function addNewCellItemsRow() {
   if (!newItemsForUpdate.length) return;
 
   // Get range by row, column, row length, column length
