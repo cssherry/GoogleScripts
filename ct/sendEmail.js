@@ -43,7 +43,6 @@ function getMainPageCT() {
 // Main function for each sheet
 // Add to arrays for emailing out later
 var updatedItems = [];
-var updatedCells = [];
 var newItemsForUpdate = [];
 function updateSheet() {
   // Only run after 7 AM or before 11 PM
