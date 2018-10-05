@@ -499,6 +499,12 @@ function addOrUpdate(item) {
         currentItem[contextValues.sheetIndex.Title] = title;
       }
 
+      if (!currentItem[contextValues.sheetIndex.Date]) {
+        currentItem[contextValues.sheetIndex.Date] = date;
+      }
+
+      currentItem[contextValues.sheetIndex.Category] = itemInfo.category;
+      currentItem[contextValues.sheetIndex.Location] = itemInfo.location;
       currentItem[contextValues.sheetIndex.Url] = url;
       updatedItems.push(currentItem);
     }
