@@ -55,7 +55,9 @@ function updateSheet() {
 
   contextValues.sheet = SpreadsheetApp.getActiveSpreadsheet()
                                       .getSheetByName('Current');
-  contextValues.sheetData = contextValues.sheet.getDataRange().getValues();
+  contextValues.sheetRange = contextValues.sheet.getDataRange();
+  contextValues.sheetData = contextValues.sheetRange.getValues();
+  contextValues.sheetNotes = contextValues.sheetRange.getNotes();
   contextValues.sheetIndex = indexSheet(contextValues.sheetData);
   processPreviousListings();
 
@@ -217,8 +219,7 @@ function processPreviousListings() {
 
   // Also, get formula for image
   // Get range by row, column, row length, column length
-  var cells = contextValues.sheet.getRange(1, imageIdx + 1, contextValues.lastRow);
-  var imageFormulas = cells.getFormulas();
+  var imageFormulas = contextValues.sheetRange.getFormulas();
   var previousListingObject = {};
   var urlValue, titleValue, feeValue, dateValue, categoryValue, locValue, currItem;
   for (var i = 1; i < contextValues.lastRow; i++) {
@@ -399,22 +400,22 @@ function addOrUpdateAc(item) {
     if (isNowFree || isNowPaid) {
       var newFee = isNowFree ? 'FREE' : '~£3.60';
       var oldFee = isNowFree ? '~£3.60' : 'FREE';
-      markCellForUpdate(itemInfo.row + 1, 'AdminFee', newFee);
+      markCellForUpdate(itemInfo.row, 'AdminFee', newFee);
       currentItem[contextValues.sheetIndex.AdminFee] = newFee + ' <br><em>(Previously ' + oldFee + ')</em>';
     }
 
     if (date !== itemInfo.date) {
-      markCellForUpdate(itemInfo.row + 1, 'Date', date);
+      markCellForUpdate(itemInfo.row, 'Date', date);
       currentItem[contextValues.sheetIndex.Date] = date + '<br><em>(Previously ' + itemInfo.date + ')</em>';
     }
 
     if (title !== itemInfo.title) {
-      markCellForUpdate(itemInfo.row + 1, 'Title', title);
+      markCellForUpdate(itemInfo.row, 'Title', title);
       currentItem[contextValues.sheetIndex.Title] = title + '<br><em>(Previously ' + itemInfo.title + ')</em>';
     }
 
     if (description !== itemInfo.category) {
-      markCellForUpdate(itemInfo.row + 1, 'Category', description);
+      markCellForUpdate(itemInfo.row, 'Category', description);
       currentItem[contextValues.sheetIndex.Category] = description + '<br><em>(Previously ' + itemInfo.category + ')</em>';
     }
 
@@ -515,17 +516,17 @@ function addOrUpdate(item) {
         date = getDate(htmlText),
         currentItem = [];
     if (fee !== itemInfo.fee) {
-      markCellForUpdate(itemInfo.row + 1, 'AdminFee', fee);
+      markCellForUpdate(itemInfo.row, 'AdminFee', fee);
       currentItem[contextValues.sheetIndex.AdminFee] = fee + '<br><em>(Previously ' + itemInfo.fee + ')</em>';
     }
 
     if (date !== itemInfo.date) {
-      markCellForUpdate(itemInfo.row + 1, 'Date', date);
+      markCellForUpdate(itemInfo.row, 'Date', date);
       currentItem[contextValues.sheetIndex.Date] = date + '<br><em>(Previously ' + itemInfo.date + ')</em>';
     }
 
     if (title !== itemInfo.title) {
-      markCellForUpdate(itemInfo.row + 1, 'Title', title);
+      markCellForUpdate(itemInfo.row, 'Title', title);
       currentItem[contextValues.sheetIndex.Title] = title + '<br><em>(Previously ' + itemInfo.title + ')</em>';
     }
 
@@ -756,35 +757,18 @@ function archiveExpiredItems() {
 
 // Add item information to specific cell, archiving previous value as note
 function markCellForUpdate(row, key, value) {
-  updatedCells.push({
-    row: row,
-    key: key,
-    value: value,
-  });
+  var cellColumn = contextValues.sheetIndex[key];
+  var previousMessage = contextValues.sheetData[row][cellColumn];
+  var oldNote = contextValues.sheetNotes[row][cellColumn];
+  var newNote = new Date().toISOString() + ' overwrote: ' + previousMessage + '\n';
+  var currentNote = oldNote ? (oldNote + newNote) : newNote;
+  contextValues.sheetData[row][cellColumn] = value;
+  contextValues.sheetNotes[row][cellColumn] = currentNote;
 }
 
 function updateAllCells() {
-  updatedCells.forEach(updateCurrCell);
-}
-
-// Add item information to specific cell, archiving previous value as note
-function updateCurrCell(cellToUpdate) {
-  var row = cellToUpdate.row;
-  var key = cellToUpdate.key;
-  var value = cellToUpdate.value;
-
-  var cellColumn = contextValues.sheetIndex[key];
-  if (cellColumn !== undefined) {
-    var cellCode = NumberToLetters(cellColumn) + row;
-    var cell = contextValues.sheet.getRange(cellCode);
-    var previousMessage = cell.getValue();
-    if (previousMessage) {
-      var oldNote = cell.getNote();
-      var previousMessage = new Date().toISOString() + ' overwrote: ' + previousMessage + '\n';
-      var currentNote = (oldNote ? oldNote + previousMessage : previousMessage );
-      cell.setNote(currentNote);
-    }
-
-    cell.setValue(value);
+  if (updatedItems.length) {
+    contextValues.sheetRange.setValues(contextValues.sheetData);
+    contextValues.sheetRange.setNotes(contextValues.sheetNotes);
   }
 }
