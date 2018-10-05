@@ -750,7 +750,7 @@ function archiveExpiredItems() {
     return b.row - a.row;
   }).forEach(function deleteItem(rangeToDelete) {
     rangeToDelete.range.deleteCells(SpreadsheetApp.Dimension.ROWS);
-    Utilities.sleep(200);
+    Utilities.sleep(50);
   });
 }
 
