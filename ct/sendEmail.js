@@ -43,6 +43,7 @@ function getMainPageCT() {
 // Main function for each sheet
 // Add to arrays for emailing out later
 var updatedItems = [];
+var updatedCells = [];
 var newItemsForUpdate = [];
 function updateSheet() {
   // Only run after 7 AM or before 11 PM
@@ -192,6 +193,7 @@ function updateSheet() {
 
   addNewCellItemsRow();
   sendEmail();
+  updateAllCells();
   archiveExpiredItems();
 }
 
@@ -397,22 +399,22 @@ function addOrUpdateAc(item) {
     if (isNowFree || isNowPaid) {
       var newFee = isNowFree ? 'FREE' : '~£3.60';
       var oldFee = isNowFree ? '~£3.60' : 'FREE';
-      updateCell(itemInfo.row + 1, 'AdminFee', newFee);
+      markCellForUpdate(itemInfo.row + 1, 'AdminFee', newFee);
       currentItem[contextValues.sheetIndex.AdminFee] = newFee + ' <br><em>(Previously ' + oldFee + ')</em>';
     }
 
     if (date !== itemInfo.date) {
-      updateCell(itemInfo.row + 1, 'Date', date);
+      markCellForUpdate(itemInfo.row + 1, 'Date', date);
       currentItem[contextValues.sheetIndex.Date] = date + '<br><em>(Previously ' + itemInfo.date + ')</em>';
     }
 
     if (title !== itemInfo.title) {
-      updateCell(itemInfo.row + 1, 'Title', title);
+      markCellForUpdate(itemInfo.row + 1, 'Title', title);
       currentItem[contextValues.sheetIndex.Title] = title + '<br><em>(Previously ' + itemInfo.title + ')</em>';
     }
 
     if (description !== itemInfo.category) {
-      updateCell(itemInfo.row + 1, 'Category', description);
+      markCellForUpdate(itemInfo.row + 1, 'Category', description);
       currentItem[contextValues.sheetIndex.Category] = description + '<br><em>(Previously ' + itemInfo.category + ')</em>';
     }
 
@@ -513,17 +515,17 @@ function addOrUpdate(item) {
         date = getDate(htmlText),
         currentItem = [];
     if (fee !== itemInfo.fee) {
-      updateCell(itemInfo.row + 1, 'AdminFee', fee);
+      markCellForUpdate(itemInfo.row + 1, 'AdminFee', fee);
       currentItem[contextValues.sheetIndex.AdminFee] = fee + '<br><em>(Previously ' + itemInfo.fee + ')</em>';
     }
 
     if (date !== itemInfo.date) {
-      updateCell(itemInfo.row + 1, 'Date', date);
+      markCellForUpdate(itemInfo.row + 1, 'Date', date);
       currentItem[contextValues.sheetIndex.Date] = date + '<br><em>(Previously ' + itemInfo.date + ')</em>';
     }
 
     if (title !== itemInfo.title) {
-      updateCell(itemInfo.row + 1, 'Title', title);
+      markCellForUpdate(itemInfo.row + 1, 'Title', title);
       currentItem[contextValues.sheetIndex.Title] = title + '<br><em>(Previously ' + itemInfo.title + ')</em>';
     }
 
@@ -753,7 +755,24 @@ function archiveExpiredItems() {
 }
 
 // Add item information to specific cell, archiving previous value as note
-function updateCell(row, key, value) {
+function markCellForUpdate(row, key, value) {
+  updatedCells.push({
+    row: row,
+    key: key,
+    value: value,
+  });
+}
+
+function updateAllCells() {
+  updatedCells.forEach(updateCurrCell);
+}
+
+// Add item information to specific cell, archiving previous value as note
+function updateCurrCell(cellToUpdate) {
+  var row = cellToUpdate.row;
+  var key = cellToUpdate.key;
+  var value = cellToUpdate.value;
+
   var cellColumn = contextValues.sheetIndex[key];
   if (cellColumn !== undefined) {
     var cellCode = NumberToLetters(cellColumn) + row;
