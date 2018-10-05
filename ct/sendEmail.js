@@ -208,6 +208,8 @@ function processPreviousListings() {
   var feeIdx = contextValues.sheetIndex.AdminFee;
   var imageIdx = contextValues.sheetIndex.Image;
   var dateIdx = contextValues.sheetIndex.Date;
+  var categoryIdx = contextValues.sheetIndex.Category;
+  var locIdx = contextValues.sheetIndex.Location;
   contextValues.lastRow = numberOfRows(contextValues.sheetData, titleIdx);
   contextValues.previousListings = {};
 
@@ -216,18 +218,23 @@ function processPreviousListings() {
   var cells = contextValues.sheet.getRange(1, imageIdx + 1, contextValues.lastRow);
   var imageFormulas = cells.getFormulas();
   var previousListingObject = {};
-  var urlValue, titleValue, feeValue, dateValue;
+  var urlValue, titleValue, feeValue, dateValue, categoryValue, locValue, currItem;
   for (var i = 1; i < contextValues.lastRow; i++) {
-    urlValue = contextValues.sheetData[i][idIdx].trim();
-    titleValue = contextValues.sheetData[i][titleIdx];
-    feeValue = contextValues.sheetData[i][feeIdx];
-    dateValue = contextValues.sheetData[i][dateIdx];
-    contextValues.sheetData[i][imageIdx] = imageFormulas[i][0];
+    currItem = contextValues.sheetData[i];
+    urlValue = currItem[idIdx].trim();
+    titleValue = currItem[titleIdx];
+    feeValue = currItem[feeIdx];
+    dateValue = currItem[dateIdx];
+    categoryValue = currItem[categoryIdx];
+    locValue = currItem[locIdx];
+    currItem[imageIdx] = imageFormulas[i][0];
     previousListingObject = {
       row: i,
       title: titleValue,
       fee: feeValue,
       date: dateValue,
+      category: categoryValue,
+      location: locValue,
     };
     previousListingObject[titleIdx] = titleValue;
     previousListingObject[feeIdx] = feeValue;
