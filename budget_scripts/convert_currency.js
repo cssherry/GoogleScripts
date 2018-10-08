@@ -534,15 +534,20 @@ function updateCell(sheetName, cellCode, _note, _message, _overwrite) {
   }
 }
 
+// Faster isNan
+function myIsNaN(val) {
+	return !(val <= 0) && !(val > 0);
+}
+
 // Evaluate
 function evaluate(cellValue) {
   if (cellValue instanceof Array) {
     var i, j, currValue;
     for (i in cellValue) {
-      for (j in cellValue[i]) {
-        currValue = cellValue[i][j];
-        if (currValue && isNaN(currValue) && currValue.match) {
-          cellValue[i][j] = eval(currValue);
+      //for (j in cellValue[i]) {
+        currValue = cellValue[i][0];
+        if (currValue && myIsNaN(currValue) && currValue.match) {
+          cellValue[i][0] = eval(currValue);
         }
       }
     }
