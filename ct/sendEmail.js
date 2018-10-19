@@ -408,12 +408,18 @@ function addOrUpdateAc(item) {
       currentItem[contextValues.sheetIndex.Date] = date + '<br><em>(Previously ' + itemInfo.date + ')</em>';
     }
 
-    if (title !== itemInfo.title) {
+    if (title !== itemInfo.title &&
+        title !== "'" + itemInfo.title &&
+        title !== "'" + itemInfo.title + "'" &&
+        title !== itemInfo.title + "'") {
       markCellForUpdate(itemInfo.row, 'Title', title);
       currentItem[contextValues.sheetIndex.Title] = title + '<br><em>(Previously ' + itemInfo.title + ')</em>';
     }
 
-    if (description !== itemInfo.category) {
+    if (description !== itemInfo.category &&
+        description !== "'" + itemInfo.category &&
+        description !== "'" + itemInfo.category + "'" &&
+        description !== itemInfo.category + "'" ) {
       markCellForUpdate(itemInfo.row, 'Category', description);
       currentItem[contextValues.sheetIndex.Category] = description + '<br><em>(Previously ' + itemInfo.category + ')</em>';
     }
@@ -524,7 +530,10 @@ function addOrUpdate(item) {
       currentItem[contextValues.sheetIndex.Date] = date + '<br><em>(Previously ' + itemInfo.date + ')</em>';
     }
 
-    if (title !== itemInfo.title) {
+    if (title !== itemInfo.title &&
+        title !== "'" + itemInfo.title &&
+        title !== "'" + itemInfo.title + "'" &&
+        title !== itemInfo.title + "'") {
       markCellForUpdate(itemInfo.row, 'Title', title);
       currentItem[contextValues.sheetIndex.Title] = title + '<br><em>(Previously ' + itemInfo.title + ')</em>';
     }
