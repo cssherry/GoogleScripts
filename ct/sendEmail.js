@@ -213,7 +213,7 @@ function processPreviousListings() {
   var dateIdx = contextValues.sheetIndex.Date;
   var categoryIdx = contextValues.sheetIndex.Category;
   var locIdx = contextValues.sheetIndex.Location;
-  contextValues.lastRow = numberOfRows(contextValues.sheetData, titleIdx);
+  contextValues.lastRow = contextValues.sheetData.length;
   contextValues.previousListings = {};
 
   // Also, get formula for image
@@ -259,7 +259,7 @@ function removeAndEmail(domain, errorLoadingPage) {
                                              .getSheetByName('Errors');
     contextValues.errorData = contextValues.errorSheet.getDataRange().getValues();
     contextValues.errorIndex = indexSheet(contextValues.errorData);
-    contextValues.lastErrorRow = numberOfRows(contextValues.errorData);
+    contextValues.lastErrorRow = contextValues.errorData.length;
     contextValues.errorDateIdx = contextValues.errorIndex.Date;
     contextValues.errorSitesIdx = contextValues.errorIndex.Sites;
   }
@@ -722,7 +722,7 @@ function archiveExpiredItems() {
   var archive = SpreadsheetApp.getActiveSpreadsheet()
                                         .getSheetByName('Archive');
   var archiveData = archive.getDataRange().getValues();
-  var lastArchiveRow = numberOfRows(archiveData);
+  var lastArchiveRow = archiveData.length;
   var imageIdx = contextValues.sheetIndex.Image;
   var currentTime = new Date();
   for (var expiredItem in contextValues.previousListings) {
