@@ -4,7 +4,7 @@ var sheetsToUpdate = [
 ];
 var sheetsToEmail = {
 };
-var searchTerms = new RegExp(' cat | pet | keyboard | yoga | plant | shredder | knee');
+var searchTerms = new RegExp(' cat | pet | keyboard | yoga | plant | hairdryer | knee');
 var maxPrevious = 60;
 var contextValues = {};
 var fetchPayload = {
