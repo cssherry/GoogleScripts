@@ -224,25 +224,28 @@ function processPreviousListings() {
   for (var i = 1; i < contextValues.lastRow; i++) {
     currItem = contextValues.sheetData[i];
     urlValue = currItem[idIdx].trim();
-    titleValue = currItem[titleIdx];
-    feeValue = currItem[feeIdx];
-    dateValue = currItem[dateIdx];
-    categoryValue = currItem[categoryIdx];
-    locValue = currItem[locIdx];
-    currItem[imageIdx] = imageFormulas[i][0];
-    previousListingObject = {
-      row: i,
-      title: titleValue,
-      fee: feeValue,
-      date: dateValue,
-      category: categoryValue,
-      location: locValue,
-    };
-    previousListingObject[titleIdx] = titleValue;
-    previousListingObject[feeIdx] = feeValue;
-    previousListingObject[idIdx] = urlValue;
-    previousListingObject[dateIdx] = dateValue;
-    contextValues.previousListings[urlValue] = previousListingObject;
+    if (urlValue) {
+      titleValue = currItem[titleIdx];
+      feeValue = currItem[feeIdx];
+      dateValue = currItem[dateIdx];
+      categoryValue = currItem[categoryIdx];
+      locValue = currItem[locIdx];
+      currItem[imageIdx] = imageFormulas[i][0];
+      previousListingObject = {
+        row: i,
+        title: titleValue,
+        fee: feeValue,
+        date: dateValue,
+        category: categoryValue,
+        location: locValue,
+        rating: currItem[ratingIdx],
+      };
+      previousListingObject[titleIdx] = titleValue;
+      previousListingObject[feeIdx] = feeValue;
+      previousListingObject[idIdx] = urlValue;
+      previousListingObject[dateIdx] = dateValue;
+      contextValues.previousListings[urlValue] = previousListingObject;
+    }
   }
 }
 
