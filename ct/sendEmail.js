@@ -313,9 +313,14 @@ function addOrUpdateFm(item) {
     delete contextValues.previousListings[url];
     contextValues.alreadyDeleted[url] = true;
   } else if (!contextValues.alreadyDeleted[url]) {
+    var title = aElement.getText().trim();
+    if (!title) {
+      return;
+    }
+
     var listingInfo = [];
     listingInfo[contextValues.sheetIndex.Image] = '=Image("' + urls.fmImage + '")';
-    listingInfo[contextValues.sheetIndex.Title] = aElement.getText().trim();
+    listingInfo[contextValues.sheetIndex.Title] = title;
     listingInfo[contextValues.sheetIndex.AdminFee] = 0;
     listingInfo[contextValues.sheetIndex.Date] = trimHeader(mainInfo[0].getText());
     listingInfo[contextValues.sheetIndex.Category] = 'Movie';
@@ -340,6 +345,11 @@ function addOrUpdateSf(item) {
     var itemHtml = item.toXmlString();
     var ImageUrl = itemHtml.match(/background-image:url\(.*?(http:\/\/.*?\.jpg)/i);
     var title = getElementsByTagName(item, 'h2');
+    title = title[0].getText().trim();
+    if (!title) {
+      return;
+    }
+
     var date = getElementByClassName(item, 'date-event');
     var description = getElementByClassName(item, 'internal_content');
 
@@ -356,7 +366,7 @@ function addOrUpdateSf(item) {
 
     var listingInfo = [];
     listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ((ImageUrl && ImageUrl[1]) || '') + '")';
-    listingInfo[contextValues.sheetIndex.Title] = title[0].getText().trim();
+    listingInfo[contextValues.sheetIndex.Title] = title;
     listingInfo[contextValues.sheetIndex.AdminFee] = price;
     listingInfo[contextValues.sheetIndex.Date] = date[0].getText().trim() + time;
     listingInfo[contextValues.sheetIndex.Category] = trimHtml(description[0].toXmlString());
@@ -385,6 +395,9 @@ function addOrUpdateAc(item) {
   var header = getElementByClassName(item, 'showtitle')
   var aElement = getElementsByTagName(header[0], 'a')[0];
   var title = aElement.getText().trim();
+  if (!title) {
+    return;
+  }
   var date = getElementByClassName(item, 'dateTime')[0]
               .getText()
               .replace('Check dates and availability...', '')
@@ -494,8 +507,14 @@ function addOrUpdateOtl(item) {
     var mainInfo = getElementsByTagName(paragraphs[0], 'span');
 
     var listingInfo = [];
+    var title = aElement.getText().trim();
+
+    if (!title) {
+      return;
+    }
+
     listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl + '")';
-    listingInfo[contextValues.sheetIndex.Title] = aElement.getText().trim();
+    listingInfo[contextValues.sheetIndex.Title] = title;
     listingInfo[contextValues.sheetIndex.AdminFee] = trimHeader(mainInfo[2].getText());
     listingInfo[contextValues.sheetIndex.Date] = trimHeader(mainInfo[0].getText());
     listingInfo[contextValues.sheetIndex.Category] = paragraphs[1].getText().trim() || '';
@@ -564,8 +583,14 @@ function addOrUpdate(item) {
 function addNewListing(item, htmlText, url) {
   var ImageUrl = getElementsByTagName(item, 'img')[0].getAttribute('src').getValue();
   var listingInfo = [];
+  var title = getTitle(item);
+
+  if (!title) {
+    return;
+  }
+
   listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl + '")';
-  listingInfo[contextValues.sheetIndex.Title] = getTitle(item);
+  listingInfo[contextValues.sheetIndex.Title] = title;
   listingInfo[contextValues.sheetIndex.AdminFee] = getFee(htmlText);
   listingInfo[contextValues.sheetIndex.Date] = getDate(htmlText);
   listingInfo[contextValues.sheetIndex.Category] = getColonSeparatedText(htmlText, 'Category');
@@ -735,7 +760,7 @@ function archiveExpiredItems() {
   var imageIdx = contextValues.sheetIndex.Image;
   var currentTime = new Date();
   for (var expiredItem in contextValues.previousListings) {
-    if (contextValues.previousListings.hasOwnProperty(expiredItem)) {
+    if (contextValues.previousListings.hasOwnProperty(expiredItem) && expiredItem) {
       lastArchiveRow++;
       currentItem = contextValues.previousListings[expiredItem];
       row = currentItem.row + 1;
