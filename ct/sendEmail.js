@@ -90,33 +90,6 @@ function updateSheet() {
   }
 **/
 
-  // Log in to SF
-  var loginSfPage = UrlFetchApp.fetch(urls.sfLogin, {
-      method: 'post',
-      followRedirects: false,
-      payload: {
-        email_address: fetchPayload.email_address,
-        password: sjcl.decrypt(fetchPayload.salt, fetchPayload.sfPassword),
-      },
-    });
-  var loginSfCode = loginSfPage.getResponseCode();
-  var sfHeaders = loginSfPage.getAllHeaders();
-  if (loginSfCode === 200) { //could not log in.
-    removeAndEmail(urls.sf);
-  } else if (loginSfCode === 303 || loginSfCode === 302) {
-    fetchPayload.sfCookie = sfHeaders['Set-Cookie'];
-    // Process AC Listings
-    var sfHTML = UrlFetchApp.fetch(urls.sfMain,
-                                    {
-                                      headers: {
-                                        Cookie: fetchPayload.sfCookie,
-                                      },
-                                    });
-    var sfPage = cleanupHTML(sfHTML.getContentText());
-    var sfDoc = Xml.parse(sfPage, true).getElement();
-    getElementByClassName(sfDoc, 'showcasebox').forEach(addOrUpdateSf);
-  }
-
   // Process AC Listings
   // First, figure out which ones are free
   var acToken = UrlFetchApp.fetch(urls.acLogin);
@@ -140,6 +113,29 @@ function updateSheet() {
   if (loginAcCode === 200) { //could not log in.
     removeAndEmail(urls.acDomain);
   } else if (loginAcCode === 303 || loginAcCode === 302) {
+    // Only get ratings once a day
+    var currentHour = currentDate.getHours();
+    if (currentHour >= 23) {
+      contextValues.ratingMin = contextValues.ratingData.length + 1;
+      var acReviewString = UrlFetchApp.fetch(urls.acReviews,
+                                      {
+                                        headers: {
+                                          Cookie: fetchPayload.acCookie,
+                                        },
+                                      });
+      var ratingItems = acReviewString.getContentText().match(/<table.*?>[\s\S]*?<\/table>/g);
+      ratingItems.forEach(processRatingItem);
+      var firstRow = contextValues.ratingMin;
+      var arrayIdx = firstRow - 1;
+      var rowLength = contextValues.ratingData.length - arrayIdx;
+      var columnLength = contextValues.ratingData[0].length;
+      var updateRange = contextValues.ratingSheet.getRange(firstRow, 1, rowLength, columnLength);
+      updateRange.setValues(contextValues.ratingData.slice(arrayIdx));
+      updateRange.setNotes(contextValues.ratingNotes.slice(arrayIdx));
+      return;
+    }
+
+    // Process free items
     var acFreeHTML = UrlFetchApp.fetch(urls.acFree,
                                     {
                                       headers: {
@@ -169,6 +165,33 @@ function updateSheet() {
     acItems.forEach(addOrUpdateAc);
   } else {
     removeAndEmail(urls.acDomain);
+  }
+
+  // Log in to SF
+  var loginSfPage = UrlFetchApp.fetch(urls.sfLogin, {
+      method: 'post',
+      followRedirects: false,
+      payload: {
+        email_address: fetchPayload.email_address,
+        password: sjcl.decrypt(fetchPayload.salt, fetchPayload.sfPassword),
+      },
+    });
+  var loginSfCode = loginSfPage.getResponseCode();
+  var sfHeaders = loginSfPage.getAllHeaders();
+  if (loginSfCode === 200) { //could not log in.
+    removeAndEmail(urls.sf);
+  } else if (loginSfCode === 303 || loginSfCode === 302) {
+    fetchPayload.sfCookie = sfHeaders['Set-Cookie'];
+    // Process AC Listings
+    var sfHTML = UrlFetchApp.fetch(urls.sfMain,
+                                    {
+                                      headers: {
+                                        Cookie: fetchPayload.sfCookie,
+                                      },
+                                    });
+    var sfPage = cleanupHTML(sfHTML.getContentText());
+    var sfDoc = Xml.parse(sfPage, true).getElement();
+    getElementByClassName(sfDoc, 'showcasebox').forEach(addOrUpdateSf);
   }
 
   // Process CT Listings
@@ -406,10 +429,81 @@ function processFreeItems(item) {
 }
 
 function processOldRatings(ratingData, idx) {
-  contextValues.ratings[ratingData[contextValues.ratingIndex.FullTitle]] = idx;
+  contextValues.ratings[ratingData[contextValues.ratingIndex.URL]] = idx;
   contextValues.ratings[ratingData[contextValues.ratingIndex.Title]] = ratingData;
 }
 
+function processRatingItem(item) {
+  var fullTitleIdx = contextValues.ratingIndex.FullTitle;
+  var titleIdx = contextValues.ratingIndex.Title;
+  var locationIdx = contextValues.ratingIndex.Location;
+  var ratingIdx = contextValues.ratingIndex.Rating;
+  var numberReviewsIdx = contextValues.ratingIndex.NumberReviews;
+  var urlIdx = contextValues.ratingIndex.URL;
+  var addedIdx = contextValues.ratingIndex.AddedDate;
+
+  var data = [];
+  var noteArray;
+  var url = item.match(/<a href="(.*?)"/);
+  if (url) {
+    url = getACUrl(url[1]);
+    var rowIdx = contextValues.ratings[url];
+    var rating = item.match(/<img /g);
+    rating = rating ? rating.length : 0;
+    var numberReviews = item.match(/see\s+(\d*)\s+review/i);
+    if (numberReviews) {
+      numberReviews = +numberReviews[1];
+    }
+
+    var fullTitle = item.match(/<h3>(.*?)<\/h3>/);
+    if (fullTitle) {
+      fullTitle = fullTitle[1];
+    }
+
+    if (rowIdx !== undefined) {
+      data = contextValues.ratingData[rowIdx];
+      noteArray = contextValues.ratingNotes[rowIdx];
+      var updated = false;
+
+      if (rating !== data[ratingIdx]) {
+        noteArray[ratingIdx] = new Date().toISOString() + ' overwrote: ' + data[ratingIdx] + '\n' + noteArray[ratingIdx];
+        data[ratingIdx] = rating;
+        updated = true;
+      }
+
+      if (numberReviews !== data[numberReviewsIdx]) {
+        noteArray[numberReviewsIdx] = new Date().toISOString() + ' overwrote: ' + data[numberReviewsIdx] + '\n' + noteArray[numberReviewsIdx];
+        data[numberReviewsIdx] = numberReviews;
+        updated = true;
+      }
+
+      if (updated === true) {
+        contextValues.ratingMin = Math.min(rowIdx + 1, contextValues.ratingMin);
+      }
+    } else {
+      var ratingTitle = fullTitle.split(/\s+at\s+/);
+      var title = ratingTitle[0];
+      var location = ratingTitle[1];
+
+      data[fullTitleIdx] = fullTitle;
+      data[titleIdx] = cleanupTitle(title);
+      data[locationIdx] = location;
+      data[ratingIdx] = rating;
+      data[numberReviewsIdx] = numberReviews;
+      data[urlIdx] = url;
+      data[addedIdx] = new Date();
+      noteArray = [];
+      for (var i = 0; i < data.length;) noteArray[i++] = '';
+
+      var currIdx = contextValues.ratingNotes.length;
+      contextValues.ratings[url] = currIdx;
+      contextValues.ratings[data[titleIdx]] = currIdx;
+    }
+
+    contextValues.ratingNotes.push(noteArray);
+    contextValues.ratingData.push(data);
+  }
+}
 
 function cleanupTitle(title) {
   return title.replace(/\s+\(.*?\)\s*$/i, '');
@@ -499,6 +593,10 @@ function addOrUpdateAc(item) {
 
       if (!currentItem[contextValues.sheetIndex.Category]) {
         currentItem[contextValues.sheetIndex.Category] = description;
+      }
+
+      if (!currentItem[contextValues.sheetIndex.Rating]) {
+        currentItem[contextValues.sheetIndex.Rating] = rating;
       }
 
       currentItem[contextValues.sheetIndex.Location] = itemInfo.location;
@@ -626,6 +724,10 @@ function addOrUpdate(item) {
 
       if (!currentItem[contextValues.sheetIndex.Date]) {
         currentItem[contextValues.sheetIndex.Date] = date;
+      }
+
+      if (!currentItem[contextValues.sheetIndex.Rating]) {
+        currentItem[contextValues.sheetIndex.Rating] = rating;
       }
 
       currentItem[contextValues.sheetIndex.Category] = itemInfo.category;
