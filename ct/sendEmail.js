@@ -48,7 +48,7 @@ function updateSheet() {
   // Only run after 7 AM or before 11 PM
   var currentDate = new Date();
   var currentHour = currentDate.getHours();
-  if (currentHour <= 7 || currentHour >= 23) {
+  if (currentHour <= 7 || currentHour > 23) {
     return;
   }
 
