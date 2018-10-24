@@ -60,6 +60,15 @@ function updateSheet() {
   contextValues.sheetIndex = indexSheet(contextValues.sheetData);
   processPreviousListings();
 
+  contextValues.ratings = {};
+  contextValues.ratingSheet = SpreadsheetApp.getActiveSpreadsheet()
+                                            .getSheetByName('Ratings');
+  contextValues.ratingRange = contextValues.ratingSheet.getDataRange();
+  contextValues.ratingData = contextValues.ratingRange.getValues();
+  contextValues.ratingNotes = contextValues.ratingRange.getNotes();
+  contextValues.ratingIndex = indexSheet(contextValues.ratingData);
+  contextValues.ratingData.forEach(processOldRatings);
+
 /** NOT WORKING
   // Process FM Listings
   var fmHTML = UrlFetchApp.fetch(urls.fmMain,
@@ -213,6 +222,7 @@ function processPreviousListings() {
   var dateIdx = contextValues.sheetIndex.Date;
   var categoryIdx = contextValues.sheetIndex.Category;
   var locIdx = contextValues.sheetIndex.Location;
+  var ratingIdx = contextValues.sheetIndex.Rating;
   contextValues.lastRow = contextValues.sheetData.length;
   contextValues.previousListings = {};
 
@@ -324,6 +334,7 @@ function addOrUpdateFm(item) {
     var listingInfo = [];
     listingInfo[contextValues.sheetIndex.Image] = '=Image("' + urls.fmImage + '")';
     listingInfo[contextValues.sheetIndex.Title] = title;
+    listingInfo[contextValues.sheetIndex.Rating] = getRating(title);
     listingInfo[contextValues.sheetIndex.AdminFee] = 0;
     listingInfo[contextValues.sheetIndex.Date] = trimHeader(mainInfo[0].getText());
     listingInfo[contextValues.sheetIndex.Category] = 'Movie';
@@ -370,6 +381,7 @@ function addOrUpdateSf(item) {
     var listingInfo = [];
     listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ((ImageUrl && ImageUrl[1]) || '') + '")';
     listingInfo[contextValues.sheetIndex.Title] = title;
+    listingInfo[contextValues.sheetIndex.Rating] = getRating(title);
     listingInfo[contextValues.sheetIndex.AdminFee] = price;
     listingInfo[contextValues.sheetIndex.Date] = date[0].getText().trim() + time;
     listingInfo[contextValues.sheetIndex.Category] = trimHtml(description[0].toXmlString());
@@ -393,6 +405,18 @@ function processFreeItems(item) {
   }
 }
 
+function processOldRatings(ratingData, idx) {
+  contextValues.ratings[ratingData[contextValues.ratingIndex.FullTitle]] = idx;
+  contextValues.ratings[ratingData[contextValues.ratingIndex.Title]] = ratingData;
+}
+
+
+function getRating(title) {
+  return contextValues.ratings[title] ?
+               contextValues.ratings[title][contextValues.ratingIndex.Rating] :
+               '';
+}
+
 // Figure out of the page which listings are new
 function addOrUpdateAc(item) {
   var header = getElementByClassName(item, 'showtitle')
@@ -401,6 +425,8 @@ function addOrUpdateAc(item) {
   if (!title) {
     return;
   }
+
+  var rating = getRating(title);
   var date = getElementByClassName(item, 'dateTime')[0]
               .getText()
               .replace('Check dates and availability...', '')
@@ -433,6 +459,11 @@ function addOrUpdateAc(item) {
         title !== itemInfo.title + '"') {
       markCellForUpdate(itemInfo.row, 'Title', title);
       currentItem[contextValues.sheetIndex.Title] = title + '<br><em>(Previously ' + itemInfo.title + ')</em>';
+    }
+
+    if (rating !== itemInfo.rating) {
+      markCellForUpdate(itemInfo.row, 'Rating', rating);
+      currentItem[contextValues.sheetIndex.Rating] = rating + '<br><em>(Previously ' + itemInfo.rating + ')</em>';
     }
 
     if (description !== itemInfo.category &&
@@ -476,6 +507,7 @@ function addOrUpdateAc(item) {
     var listingInfo = [];
     listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl + '")';
     listingInfo[contextValues.sheetIndex.Title] = title;
+    listingInfo[contextValues.sheetIndex.Rating] = getRating(title);
     listingInfo[contextValues.sheetIndex.AdminFee] = contextValues.freeAC[url] ? 'FREE' : '~£3.60';
     listingInfo[contextValues.sheetIndex.Date] = date;
     listingInfo[contextValues.sheetIndex.Category] = description;
@@ -524,6 +556,7 @@ function addOrUpdateOtl(item) {
 
     listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl + '")';
     listingInfo[contextValues.sheetIndex.Title] = title;
+    listingInfo[contextValues.sheetIndex.Rating] = getRating(title);
     listingInfo[contextValues.sheetIndex.AdminFee] = trimHeader(mainInfo[2].getText());
     listingInfo[contextValues.sheetIndex.Date] = trimHeader(mainInfo[0].getText());
     listingInfo[contextValues.sheetIndex.Category] = paragraphs[1].getText().trim() || '';
@@ -545,6 +578,7 @@ function addOrUpdate(item) {
   if (itemInfo) {
     // see if there's anything to update, if not, then just delete
     var title = getTitle(item),
+        rating = getRating(title),
         fee = getFee(htmlText),
         date = getDate(htmlText),
         currentItem = [];
@@ -556,6 +590,11 @@ function addOrUpdate(item) {
     if (date !== itemInfo.date) {
       markCellForUpdate(itemInfo.row, 'Date', date);
       currentItem[contextValues.sheetIndex.Date] = date + '<br><em>(Previously ' + itemInfo.date + ')</em>';
+    }
+
+    if (rating !== itemInfo.rating) {
+      markCellForUpdate(itemInfo.row, 'Rating', rating);
+      currentItem[contextValues.sheetIndex.Rating] = rating + '<br><em>(Previously ' + itemInfo.rating + ')</em>';
     }
 
     if (title !== itemInfo.title &&
@@ -603,6 +642,7 @@ function addNewListing(item, htmlText, url) {
 
   listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl + '")';
   listingInfo[contextValues.sheetIndex.Title] = title;
+  listingInfo[contextValues.sheetIndex.Rating] = getRating(title);
   listingInfo[contextValues.sheetIndex.AdminFee] = getFee(htmlText);
   listingInfo[contextValues.sheetIndex.Date] = getDate(htmlText);
   listingInfo[contextValues.sheetIndex.Category] = getColonSeparatedText(htmlText, 'Category');
@@ -727,6 +767,7 @@ function sendEmail() {
 function getElementSection(listingInfo) {
   var imageIdx = contextValues.sheetIndex.Image;
   var titleIdx = contextValues.sheetIndex.Title;
+  var ratingIdx = contextValues.sheetIndex.Rating;
   var locationIdx = contextValues.sheetIndex.Location;
   var dateIdx = contextValues.sheetIndex.Date;
   var categoryIdx = contextValues.sheetIndex.Category;
@@ -735,11 +776,12 @@ function getElementSection(listingInfo) {
   var imageUrl = listingInfo[imageIdx] ? getImageUrl(listingInfo[imageIdx])  : '';
   var imageDiv = imageUrl ? '<img src="' + imageUrl + '" alt="' + listingInfo[titleIdx] + '" width="128">' :
                  '';
+  var rating = listingInfo[ratingIdx] ? ' <small>' + listingInfo[ratingIdx] + '/5</small>' : '';
   var feeDiv = listingInfo[feeIdx] ? (listingInfo[feeIdx] + '<br>') : '';
   var locationDiv = listingInfo[locationIdx] ? (listingInfo[locationIdx] + '<br>') : '';
   var dateDiv = listingInfo[dateIdx] ? (listingInfo[dateIdx] + '<br>') : '';
   var categoryDiv = listingInfo[categoryIdx] ? (listingInfo[categoryIdx] + '<br>') : '';
-  return '<h3>' + listingInfo[titleIdx] + '</h3><br>' +
+  return '<h3>' + listingInfo[titleIdx] + rating + '</h3><br>' +
          feeDiv +
          locationDiv +
          dateDiv +
