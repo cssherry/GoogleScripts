@@ -959,11 +959,14 @@ function archiveExpiredItems() {
 function markCellForUpdate(row, key, value) {
   var cellColumn = contextValues.sheetIndex[key];
   var previousMessage = contextValues.sheetData[row][cellColumn];
-  var oldNote = contextValues.sheetNotes[row][cellColumn];
-  var newNote = new Date().toISOString() + ' overwrote: ' + previousMessage + '\n';
-  var currentNote = oldNote ? (oldNote + newNote) : newNote;
+  if (previousMessage) {
+    var oldNote = contextValues.sheetNotes[row][cellColumn];
+    var newNote = new Date().toISOString() + ' overwrote: ' + previousMessage + '\n';
+    var currentNote = oldNote ? (oldNote + newNote) : newNote;
+    contextValues.sheetNotes[row][cellColumn] = currentNote;
+  }
+
   contextValues.sheetData[row][cellColumn] = value;
-  contextValues.sheetNotes[row][cellColumn] = currentNote;
 }
 
 function updateAllCells() {
