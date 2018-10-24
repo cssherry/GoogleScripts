@@ -422,11 +422,17 @@ function addOrUpdateAc(item) {
   var header = getElementByClassName(item, 'showtitle')
   var aElement = getElementsByTagName(header[0], 'a')[0];
   var title = aElement.getText().trim();
+  var soldOut = getElementByClassName(item, 'soldOut');
+
   if (!title) {
     return;
   }
 
   var rating = getRating(title);
+  if (soldOut.length) {
+    title += ' (SOLD OUT)';
+  }
+
   var date = getElementByClassName(item, 'dateTime')[0]
               .getText()
               .replace('Check dates and availability...', '')
