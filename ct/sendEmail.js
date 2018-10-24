@@ -411,9 +411,14 @@ function processOldRatings(ratingData, idx) {
 }
 
 
+function cleanupTitle(title) {
+  return title.replace(/\s+\(.*?\)\s*$/i, '');
+}
+
 function getRating(title) {
+  title = cleanupTitle(title);
   return contextValues.ratings[title] ?
-               contextValues.ratings[title][contextValues.ratingIndex.Rating] :
+         contextValues.ratings[title][contextValues.ratingIndex.Rating] :
                '';
 }
 
