@@ -429,8 +429,8 @@ function processFreeItems(item) {
 }
 
 function processOldRatings(ratingData, idx) {
-  contextValues.ratings[ratingData[contextValues.ratingIndex.URL]] = idx;
-  contextValues.ratings[ratingData[contextValues.ratingIndex.Title]] = ratingData;
+  contextValues.ratings[ratingData[contextValues.ratingIndex.URL].toLowerCase()] = idx;
+  contextValues.ratings[cleanupTitle(ratingData[contextValues.ratingIndex.Title])] = ratingData;
 }
 
 function processRatingItem(item) {
@@ -446,7 +446,7 @@ function processRatingItem(item) {
   var noteArray;
   var url = item.match(/<a href="(.*?)"/);
   if (url) {
-    url = getACUrl(url[1]);
+    url = getACUrl(url[1]).toLowerCase();
     var rowIdx = contextValues.ratings[url];
     var rating = item.match(/<img /g);
     rating = rating ? rating.length : 0;
@@ -506,7 +506,7 @@ function processRatingItem(item) {
 }
 
 function cleanupTitle(title) {
-  return title.replace(/\s+\(.*?\)\s*$/i, '');
+  return title.replace(/\s*\(.*\)\s*$/i, '').toLowerCase().replace(/\s\s*/, ' ');
 }
 
 function getRating(title) {
