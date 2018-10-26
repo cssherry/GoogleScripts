@@ -68,6 +68,8 @@ function updateSheet() {
   contextValues.ratingNotes = contextValues.ratingRange.getNotes();
   contextValues.ratingIndex = indexSheet(contextValues.ratingData);
   contextValues.ratingData.forEach(processOldRatings);
+  // // Remove duplicates
+  // contextValues.ratingRange.setValues(contextValues.ratingData);
 
 /** NOT WORKING
   // Process FM Listings
@@ -428,7 +430,26 @@ function processFreeItems(item) {
   }
 }
 
+function arraysEqual(arr1, arr2) {
+    if(arr1.length !== arr2.length)
+        return false;
+    for(var i = arr1.length; i--;) {
+        if(arr1[i] !== arr2[i])
+            return false;
+    }
+
+    return true;
+}
+
 function processOldRatings(ratingData, idx) {
+  // // Remove duplicates
+  // var oldData = contextValues.ratings[ratingData[contextValues.ratingIndex.URL]];
+  // // if (oldData && arraysEqual(ratingData, contextValues.ratingData[oldData])) {
+  // if (oldData) {
+  //   for (var i = 0; i < ratingData.length;) ratingData[i++] = '';
+  //   return;
+  // }
+
   contextValues.ratings[ratingData[contextValues.ratingIndex.URL]] = idx;
   contextValues.ratings[cleanupTitle(ratingData[contextValues.ratingIndex.Title])] = ratingData;
 }
