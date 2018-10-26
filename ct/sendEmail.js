@@ -568,7 +568,7 @@ function addOrUpdateAc(item) {
 
     if (rating !== itemInfo.rating) {
       markCellForUpdate(itemInfo.row, 'Rating', rating);
-      currentItem[contextValues.sheetIndex.Rating] = rating + '<br><em>(Previously ' + itemInfo.rating + ')</em>';
+      currentItem[contextValues.sheetIndex.Rating] = rating + '<em>(Previously ' + itemInfo.rating + ')</em>';
     }
 
     if (description !== itemInfo.category &&
@@ -703,7 +703,7 @@ function addOrUpdate(item) {
 
     if (rating !== itemInfo.rating) {
       markCellForUpdate(itemInfo.row, 'Rating', rating);
-      currentItem[contextValues.sheetIndex.Rating] = rating + '<br><em>(Previously ' + itemInfo.rating + ')</em>';
+      currentItem[contextValues.sheetIndex.Rating] = rating + '<em>(Previously ' + itemInfo.rating + ')</em>';
     }
 
     if (title !== itemInfo.title &&
