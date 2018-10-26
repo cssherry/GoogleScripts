@@ -446,6 +446,7 @@ function processRatingItem(item) {
   var noteArray;
   var url = item.match(/<a href="(.*?)"/);
   if (url) {
+    url = getACUrl(url[1]);
     var rowIdx = contextValues.ratings[url];
     var rating = item.match(/<img /g);
     rating = rating ? rating.length : 0;
