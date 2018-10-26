@@ -505,7 +505,7 @@ function processRatingItem(item) {
 }
 
 function cleanupTitle(title) {
-  return title.replace(/\s*\(.*\)\s*$/i, '').toLowerCase().replace(/\s\s*/, ' ');
+  return String(title).replace(/\s*\(.*\)\s*$/i, '').toLowerCase().replace(/\s\s*/, ' ');
 }
 
 function getRating(title) {
