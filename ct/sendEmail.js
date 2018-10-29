@@ -566,7 +566,7 @@ function getRating(title) {
   title = cleanupTitle(title);
   return contextValues.ratings[title] ?
          contextValues.ratings[title][contextValues.ratingIndex.Rating] :
-               '';
+         '';
 }
 
 // Figure out of the page which listings are new
