@@ -48,7 +48,7 @@ function updateSheet() {
   // Only run after 7 AM or before 11 PM
   var currentDate = new Date();
   var currentHour = currentDate.getHours();
-  if (currentHour <= 7 || currentHour > 23) {
+  if (currentHour < 6 || currentHour >= 23) {
     return;
   }
 
@@ -117,7 +117,7 @@ function updateSheet() {
   } else if (loginAcCode === 303 || loginAcCode === 302) {
     // Only get ratings once a day
     var currentHour = currentDate.getHours();
-    if (currentHour >= 23) {
+    if (currentHour <= 6) {
       contextValues.ratingMin = contextValues.ratingData.length + 1;
       var acReviewString = UrlFetchApp.fetch(urls.acReviews,
                                       {
@@ -126,6 +126,8 @@ function updateSheet() {
                                         },
                                       });
       var ratingItems = acReviewString.getContentText().match(/<table.*?>[\s\S]*?<\/table>/g);
+      contextValues.newRatings = [];
+      contextValues.updatedRatings = [];
       ratingItems.forEach(processRatingItem);
       var firstRow = contextValues.ratingMin;
       var arrayIdx = firstRow - 1;
@@ -134,6 +136,26 @@ function updateSheet() {
       var updateRange = contextValues.ratingSheet.getRange(firstRow, 1, rowLength, columnLength);
       updateRange.setValues(contextValues.ratingData.slice(arrayIdx));
       updateRange.setNotes(contextValues.ratingNotes.slice(arrayIdx));
+      // It's nice to have email of updates
+
+      var ratingMessage = '';
+      if (contextValues.newRatings.length) {
+        ratingMessage = '<h2>New Ratings</h2>' +
+                        contextValues.newRatings.join('<hr><br>') + '<hr>';
+      }
+
+      if (contextValues.updatedRatings.length) {
+        ratingMessage += '<h2>Updated Ratings</h2>' +
+                        contextValues.updatedRatings.join('<hr><br>') + '<hr>';
+      }
+
+      MailApp.sendEmail({
+        to: myEmail,
+        subject: '[CT] New Ratings (' + contextValues.newRatings.length +
+                 ') | Updated Ratings (' + contextValues.updatedRatings.length + ')',
+        htmlBody: ratingMessage +
+                  'Link: https://docs.google.com/spreadsheets/d/1AC4XDCtUaCaG7O21w1GpJS59Vxt4QmTBypIjKhBR3TU/edit#gid=0',
+      });
       return;
     }
 
@@ -484,27 +506,30 @@ function processRatingItem(item) {
     if (rowIdx !== undefined) {
       data = contextValues.ratingData[rowIdx];
       noteArray = contextValues.ratingNotes[rowIdx];
-      var updated = false;
+      var updated = [];
 
       if (rating !== data[ratingIdx]) {
+        updated.push('Rating: ' + rating + '/5<em>(Previously ' + data[ratingIdx] + '/5)</em>');
         noteArray[ratingIdx] = new Date().toISOString() + ' overwrote: ' + data[ratingIdx] + '\n' + noteArray[ratingIdx];
         data[ratingIdx] = rating;
-        updated = true;
       }
 
       if (numberReviews !== data[numberReviewsIdx]) {
+        updated.push('NumberReviews: ' + numberReviews + '<em>(Previously ' + data[numberReviewsIdx] + ')</em>');
         noteArray[numberReviewsIdx] = new Date().toISOString() + ' overwrote: ' + data[numberReviewsIdx] + '\n' + noteArray[numberReviewsIdx];
         data[numberReviewsIdx] = numberReviews;
-        updated = true;
       }
 
-      if (updated === true) {
+      if (updated.length) {
+        updated.push('url: ' + url);
+        contextValues.updatedRatings.push('<h4>' + fullTitle + '</h4>' + updated.join('<br>'));
         contextValues.ratingMin = Math.min(rowIdx + 1, contextValues.ratingMin);
       }
     } else {
       var ratingTitle = fullTitle.split(/\s+at\s+/);
       var title = ratingTitle[0];
       var location = ratingTitle[1];
+      var newItems = [];
 
       data[fullTitleIdx] = fullTitle;
       data[titleIdx] = cleanupTitle(title);
@@ -519,10 +544,13 @@ function processRatingItem(item) {
       var currIdx = contextValues.ratingNotes.length;
       contextValues.ratings[url] = currIdx;
       contextValues.ratings[data[titleIdx]] = currIdx;
-    }
+      contextValues.ratingNotes.push(noteArray);
+      contextValues.ratingData.push(data);
 
-    contextValues.ratingNotes.push(noteArray);
-    contextValues.ratingData.push(data);
+      newItems.push('NumberReviews: ' + numberReviews)
+      newItems.push('url: ' + url)
+      contextValues.newRatings.push('<h4>' + fullTitle + '<small>' + rating + '/5</small></h4>' + newItems.join('<br>'));
+    }
   }
 }
 
