@@ -984,8 +984,8 @@ function archiveExpiredItems() {
       lastArchiveRow++;
       currentItem = contextValues.previousListings[expiredItem];
       row = currentItem.row + 1;
-      cutRange = contextValues.sheet.getRange('A' + row + ':I' + row);
-      newRange = archive.getRange('A' + lastArchiveRow + ':J' + lastArchiveRow)
+      cutRange = contextValues.sheet.getRange('A' + row + ':J' + row);
+      newRange = archive.getRange('A' + lastArchiveRow + ':K' + lastArchiveRow)
       oldValues = cutRange.getValues();
       oldValues[0][imageIdx] = getImageUrl(contextValues.sheetData[currentItem.row][imageIdx]);
       oldValues[0].push(currentTime);
