@@ -555,7 +555,11 @@ function processRatingItem(item) {
 }
 
 function cleanupTitle(title) {
-  return String(title).replace(/\s*\(.*\)\s*$/i, '').toLowerCase().replace(/\s\s*/, ' ');
+  try {
+    return title.replace(/\s*\(.*\)\s*$/i, '').replace(/\s\s*/, ' ').toLowerCase();
+  } catch (e) {
+    return title;
+  }
 }
 
 function getRating(title) {
