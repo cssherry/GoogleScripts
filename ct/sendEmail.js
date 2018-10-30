@@ -549,7 +549,7 @@ function processRatingItem(item) {
 
       newItems.push('NumberReviews: ' + numberReviews)
       newItems.push('url: ' + url)
-      contextValues.newRatings.push('<h4>' + fullTitle + '<small>' + rating + '/5</small></h4>' + newItems.join('<br>'));
+      contextValues.newRatings.push('<h4>' + fullTitle + '  <small>' + rating + '/5</small></h4>' + newItems.join('<br>'));
     }
   }
 }
