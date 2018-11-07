@@ -141,7 +141,7 @@ function runOnChange() {
       scriptInfo.data[scriptLength][promptIdIdx] = promptId;
       scriptInfo.data[scriptLength][currRoundIdx] = scriptInfo.data[scriptLength][scriptInfo.index.defaultRounds];
       title = newPrompt[promptInfo.index.Prompt];
-      text = '';
+      text = newPrompt[promptInfo.index.Category] + ': ' + newPrompt[promptInfo.index.Source] + '\n\n';
 
       // Create an overview event for the last writing prompt
       var overviewTitle = lastEvent.getTitle().replace(RegExp('^' + latestEventPrefix), 'Final: ');
