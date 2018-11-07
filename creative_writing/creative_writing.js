@@ -76,6 +76,7 @@ function runOnChange() {
   var eventIdIdx = submissionInfo.index.EventName;
   var calendarEventIdx = submissionInfo.index.CalendarEventId;
   var textIdx = submissionInfo.index.Text;
+  var wordsIdx = submissionInfo.index.Words;
   var editedDateIdx = submissionInfo.index.EditedDate;
   var submissionInfoNeedsUpdating = false;
   var lastSubmissionIdx = submissionInfo.data.length;
@@ -254,8 +255,14 @@ function runOnChange() {
     var currText = currRow[textIdx];
     if (eventDescription !== currText) {
       submissionInfoNeedsUpdating = true;
+
+      // Update text
       submissionInfo.note[currIdx][textIdx] += (new Date().toLocaleString() + ' overwrote:\n' + currRow[textIdx] + '\n');
       currRow[textIdx] = eventDescription;
+
+      // Update word count
+      submissionInfo.note[currIdx][wordsIdx] += (new Date().toLocaleString() + ' overwrote:\n' + currRow[wordsIdx] + '\n');
+      currRow[wordsIdx] = getWordCount(eventDescription);
 
       if (currRow[editedDateIdx]) {
         submissionInfo.note[currIdx][editedDateIdx] += (new Date().toLocaleString() + ' overwrote:\n' + currRow[editedDateIdx] + '\n');
@@ -318,6 +325,7 @@ function runOnChange() {
     newRow[calendarEventIdx] = event.getId();
     newRow[submissionInfo.index.CreatedDate] = new Date();
     newRow[textIdx] = text;
+    newRow[wordsIdx] = getWordCount(text);
     lastSubmissionIdx++;
     var cells = submissionInfo.sheet.getRange(lastSubmissionIdx, 1, 1, newRow.length);
     cells.setValues([newRow])
@@ -370,6 +378,10 @@ function changeDate(dateObj, change) {
 
 function getTitlePrefix(promptId, currentNumber) {
   return promptId + '.' + currentNumber + ':';
+}
+
+function getWordCount(text) {
+  return text.match(/\b(\w+)\b/g).length;
 }
 
 /**
