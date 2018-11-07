@@ -71,6 +71,7 @@ function runOnChange() {
 
   // Get submission information
   var submissionInfo = getSheetInformation('Submission', true);
+  var emailIdx = participantInfo.index.Email;
   var subPromptId = submissionInfo.index.PromptID;
   var subCurrNumIdx = submissionInfo.index.CurrentNumber;
   var eventIdIdx = submissionInfo.index.EventName;
@@ -109,7 +110,6 @@ function runOnChange() {
     var participantInfo = getSheetInformation('Participants');
     var numberParticipants = participantInfo.data.length;
     var nextParticipantIdx = newCurrNumberTotal % numberParticipants || numberParticipants;
-    var emailIdx = participantInfo.index.Email;
     var nextParticipantRow = participantInfo.data[nextParticipantIdx];
     var guest = nextParticipantRow[emailIdx];
 
@@ -276,6 +276,20 @@ function runOnChange() {
 
         if (lastEvent.getDescription() !== eventDescription) {
           lastEvent.setDescription(eventDescription);
+        } else {
+          // Send email to user letting them now their current contribution and how many words they wrote
+          var splitByDays = eventDescription.split('------');
+          var wordsWrote = getWordCount(splitByDays[splitByDays.length - 1]);
+          MailApp.sendEmail({
+            to: currRow[emailIdx],
+            subject: '[CreativeWriting] Thanks for writing ' + wordsWrote + ' words today! (' + currRow[editedDateIdx].toDateString() + ')',
+            body: 'Prompt:\n\n' + promptPrefix + '\n\n' +
+                  eventDescription +
+                  '\n\nNew Count: ' + wordsWrote +
+                  '\n\nTotal Count: ' + currRow[wordsIdx] +
+                  '\n\n---------' +
+                  'Link: ' + writingSpreadsheetUrl,
+          });
         }
       } else {
         // If older event was edited, cascade changes
