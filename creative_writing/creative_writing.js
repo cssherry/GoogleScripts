@@ -71,7 +71,7 @@ function runOnChange() {
 
   // Get submission information
   var submissionInfo = getSheetInformation('Submission', true);
-  var emailIdx = participantInfo.index.Email;
+  var emailIdx = submissionInfo.index.ParticipantEmail;
   var subPromptId = submissionInfo.index.PromptID;
   var subCurrNumIdx = submissionInfo.index.CurrentNumber;
   var eventIdIdx = submissionInfo.index.EventName;
@@ -108,10 +108,11 @@ function runOnChange() {
 
     // Figure out next guest
     var participantInfo = getSheetInformation('Participants');
-    var numberParticipants = participantInfo.data.length;
+    var partEmailIdx = participantInfo.index.Email;
+    var numberParticipants = participantInfo.data.length - 1;
     var nextParticipantIdx = newCurrNumberTotal % numberParticipants || numberParticipants;
     var nextParticipantRow = participantInfo.data[nextParticipantIdx];
-    var guest = nextParticipantRow[emailIdx];
+    var guest = nextParticipantRow[partEmailIdx];
 
     // Set correct time for nextStartTime
     nextStartTime.setHours(nextParticipantRow[participantInfo.index.BestTimeUK]);
@@ -149,7 +150,7 @@ function runOnChange() {
       var allParts = [];
 
       for (var i = 1; i < participantInfo.data.length; i++) {
-        allParts.push([participantInfo.data[i][emailIdx]]);
+        allParts.push([participantInfo.data[i][partEmailIdx]]);
       }
 
       createEventAndNewRow(overviewTitle, lastEvent.getDescription(), nextStartTime, allParts.join(','), true);
@@ -272,12 +273,14 @@ function runOnChange() {
 
       if (eventTitle.indexOf(latestEventPrefix) === 0) {
         lastEvent = writingCalendar.getEventById(eventId);
-        lastEvent.setAllDayDate(lastEvent.getStartTime());
 
         if (lastEvent.getDescription() !== eventDescription) {
+          // Don't process last event if it's just cascading update
           lastEvent.setDescription(eventDescription);
+          lastEvent = undefined;
         } else {
           // Send email to user letting them now their current contribution and how many words they wrote
+          lastEvent.setAllDayDate(lastEvent.getStartTime());
           var splitByDays = eventDescription.split('------');
           var wordsWrote = getWordCount(splitByDays[splitByDays.length - 1]);
           MailApp.sendEmail({
