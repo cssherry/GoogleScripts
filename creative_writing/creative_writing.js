@@ -71,6 +71,10 @@ function runOnChange() {
 
   // Get submission information
   var submissionInfo = getSheetInformation('Submission', true);
+  var subPromptId = submissionInfo.index.PromptID;
+  var subCurrNumIdx = submissionInfo.index.CurrentNumber;
+  var eventIdIdx = submissionInfo.index.EventName;
+  var calendarEventIdx = submissionInfo.index.CalendarEventId;
   var textIdx = submissionInfo.index.Text;
   var editedDateIdx = submissionInfo.index.EditedDate;
   var submissionInfoNeedsUpdating = false;
@@ -169,9 +173,14 @@ function runOnChange() {
    */
   function processSubmissions() {
     submissionInfo.eventNameToRow = {};
-    var eventIdIdx = submissionInfo.index.EventName;
+    submissionInfo.titlePrefixToRow = {};
     for (var i = 1; i < submissionInfo.data.length; i++) {
       submissionInfo.eventNameToRow[submissionInfo.data[i][eventIdIdx]] = i;
+
+      var titlePrefix = getTitlePrefix(submissionInfo.data[i][subPromptId],
+                                       submissionInfo.data[i][subCurrNumIdx]);
+
+      submissionInfo.titlePrefixToRow[titlePrefix] = submissionInfo.data[i];
     }
   }
 
@@ -259,6 +268,21 @@ function runOnChange() {
       if (eventTitle.indexOf(latestEventPrefix) === 0) {
         lastEvent = writingCalendar.getEventById(eventId);
         lastEvent.setAllDayDate(lastEvent.getStartTime());
+
+        if (lastEvent.getDescription() !== eventDescription) {
+          lastEvent.setDescription(eventDescription);
+        }
+      } else {
+        // If older event was edited, cascade changes
+        var currPromptId = currRow[subPromptId];
+        var nextNumber = currRow[subCurrNumIdx] + 1;
+        var nextRow = submissionInfo.titlePrefixToRow[getTitlePrefix(currPromptId, nextNumber)];
+        var text = nextRow && nextRow[textIdx];
+        var changedText = nextRow && text.replace(currText, eventDescription);
+
+        if (text !== changedText) {
+          updateEventIfChanged(nextRow[calendarEventIdx], nextRow[eventIdIdx], changedText);
+        }
       }
     }
   }
@@ -290,9 +314,12 @@ function runOnChange() {
     for (var i = 0; i < submissionInfo.data[0].length;) newRow[i++] = '';
 
     newRow[submissionInfo.index.ParticipantEmail] = guests;
-    newRow[submissionInfo.index.EventName] = title;
+    newRow[subPromptId] = scriptInfo.data[scriptLength][promptIdIdx];
+    newRow[subCurrNumIdx] = scriptInfo.data[scriptLength][currNumberIdx];
+    newRow[eventIdIdx] = title;
+    newRow[calendarEventIdx] = event.getId();
     newRow[submissionInfo.index.CreatedDate] = new Date();
-    newRow[submissionInfo.index.Text] = text;
+    newRow[textIdx] = text;
     lastSubmissionIdx++;
     var cells = submissionInfo.sheet.getRange(lastSubmissionIdx, 1, 1, newRow.length);
     cells.setValues([newRow])
