@@ -258,7 +258,7 @@ function runOnChange() {
       submissionInfoNeedsUpdating = true;
 
       // Update text
-      submissionInfo.note[currIdx][textIdx] += (new Date().toLocaleString() + ' overwrote:\n' + currRow[textIdx] + '\n');
+      submissionInfo.note[currIdx][textIdx] += ('\n===================\n' + new Date().toLocaleString() + ' overwrote:\n' + currRow[textIdx] + '\n');
       currRow[textIdx] = eventDescription;
 
       // Update word count
