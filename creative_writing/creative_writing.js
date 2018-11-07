@@ -225,10 +225,8 @@ function runOnChange() {
           var event = events.items[i];
           if (event.status === 'cancelled') {
             console.log('Event id %s was cancelled.', event.id);
-          } else if (event.start.date) {
-            // All-day event.
-            updateEventIfChanged(event.id, event.summary, event.description, true)
           } else {
+            // All-day event if event.start.date
             // Events that don't last all day; they have defined start times.
             updateEventIfChanged(event.id, event.summary, event.description)
           }
@@ -249,7 +247,7 @@ function runOnChange() {
    * If the event starts with latestEventPrefix, save as lastEvent
    * and make the event all-day
   */
-  function updateEventIfChanged(eventId, eventTitle, eventDescription, isAllDay) {
+  function updateEventIfChanged(eventId, eventTitle, eventDescription) {
     // Check to see if description changed
     var currIdx = submissionInfo.eventNameToRow[eventTitle];
     var currRow = submissionInfo.data[currIdx];
