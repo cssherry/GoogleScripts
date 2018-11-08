@@ -282,7 +282,12 @@ function runOnChange() {
           // Send email to user letting them now their current contribution and how many words they wrote
           lastEvent.setAllDayDate(lastEvent.getStartTime());
           var splitByDays = eventDescription.split('------');
-          var wordsWrote = getWordCount(splitByDays[splitByDays.length - 1]);
+          var wordsWrote, currIdx = splitByDays.length - 1;
+          while (!wordsWrote && currIdx >= 0) {
+            wordsWrote = getWordCount(splitByDays[currIdx]);
+            currIdx--;
+          }
+
           MailApp.sendEmail({
             to: currRow[emailIdx],
             subject: '[CreativeWriting] Thanks for writing ' + wordsWrote + ' words today! (' + currRow[editedDateIdx].toDateString() + ')',
@@ -398,7 +403,8 @@ function getTitlePrefix(promptId, currentNumber) {
 }
 
 function getWordCount(text) {
-  return text.match(/\b(\w+)\b/g).length;
+  var matches = text.match(/\b(\w+)\b/g) || '';
+  return matches.length;
 }
 
 /**
