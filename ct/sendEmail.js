@@ -308,7 +308,7 @@ function removeAndEmail(domain, errorLoadingPage) {
     var updateMessage = 'Update ' + domain + ' Token';
 
     if (errorLoadingPage) {
-      updateMessage = 'Error loading page for :' + domain;
+      updateMessage = 'Error loading page for :' + domain + ' (' + errorLoadingPage + ')';
     }
 
     var email = MailApp.sendEmail({
