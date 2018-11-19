@@ -309,7 +309,7 @@ function runOnChange() {
           MailApp.sendEmail({
             to: currRow[emailIdx],
             subject: '[CreativeWriting] Thanks for writing ' + wordsWrote + ' words today! (' + currRow[editedDateIdx].toDateString() + ')',
-            body: 'Prompt:\n\n' + lastEvent.getTitle() + '\n\n' +
+            body: 'Prompt:\n\n' + lastEvent.getTitle() + '\n==================\n' +
                   eventDescription +
                   '\n\nNew Count: ' + wordsWrote +
                   '\n\nTotal Count: ' + currRow[wordsIdx] +
