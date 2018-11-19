@@ -783,17 +783,18 @@ function getImageUrl(imageFormula) {
 }
 
 // Work with HTML
-function getElementsByTagName(element, tagName) {
+function getElementsByTagName(element, tagName, onlyFirstLevel) {
   var data = element.getElements(tagName);
   var elList = element.getElements();
   var i = elList.length;
-  while (i--) {
+  while (i-- && (!onlyFirstLevel || !data.length)) {
     // (Recursive) Check each child, in document order.
     var found = getElementsByTagName(elList[i], tagName);
     if (found) {
       data = data.concat(found);
     }
   }
+
   return data;
 }
 
