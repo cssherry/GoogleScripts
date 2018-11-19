@@ -192,6 +192,46 @@ function updateSheet() {
     removeAndEmail(urls.acDomain);
   }
 
+  try {
+    // Process PBP listings
+    var pbpHTML = UrlFetchApp.fetch(urls.pbpShows,
+                                    {
+                                      headers : {
+                                        Cookie: fetchPayload.pbpCookie,
+                                      },
+                                    });
+    var pbpPage = cleanupHTML(pbpHTML.getContentText());
+
+    var pbpError = 'images/EnquiryBlue.jpg';
+    if (pbpPage.indexOf(pbpError) === -1) {
+      var pbpDoc = Xml.parse(pbpPage, true).getElement();
+      var pbpTable = getElementsByTagName(pbpDoc, 'table');
+      for (var i = 0; i < pbpTable.length; i++) {
+        if (pbpTable[i].getAttribute('width').getValue() === '80%') {
+          pbpTable = pbpTable[i];
+        }
+      }
+
+      if (pbpTable.length) {
+        removeAndEmail(urls.pbpDomain, 'noTableExists');
+      }
+
+      var pbpItems = getElementsByTagName(pbpTable, 'tr', 'onlyFirstLevel');
+      contextValues.pbpByUrl = {};
+      pbpItems.forEach(processPBP);
+
+      for (var currPbpItem in contextValues.pbpByUrl) {
+        if (contextValues.pbpByUrl.hasOwnProperty(currPbpItem)) {
+          addOrUpdatePbPItem(contextValues.pbpByUrl[currPbpItem]);
+        }
+      }
+    } else {
+      removeAndEmail(urls.pbpDomain);
+    }
+  } catch (e) {
+    removeAndEmail(urls.pbpDomain, 'errorLoadingPage');
+  }
+
   // Log in to SF
   var loginSfPage = UrlFetchApp.fetch(urls.sfLogin, {
       method: 'post',
@@ -332,6 +372,102 @@ function removeAndEmail(domain, errorLoadingPage) {
     currentData = currentData ? currentData + ', ' + domain : domain;
     cells.setValues([[new Date(), currentData]]);
   }
+}
+
+// Process PBP rows -- pretty complicated because everything is nested tables
+function processPBP(rowEl) {
+  var rowString = rowEl.toXmlString();
+  var pbpId = getPbpId(rowString);
+  if (!pbpId) {
+    return;
+  }
+
+  var url = getFullPbpUrl(pbpId);
+
+  // If this already exists, get location, time, and picture
+  if (contextValues.pbpByUrl[url]) {
+    getLocationTimePicture(rowEl, rowString, contextValues.pbpByUrl[url]);
+  } else {
+    var title = trimHtml(rowString).trim();
+    contextValues.pbpByUrl[url] = [];
+    contextValues.pbpByUrl[url][contextValues.sheetIndex.Url] = url;
+    contextValues.pbpByUrl[url][contextValues.sheetIndex.Title] = title;
+    contextValues.pbpByUrl[url][contextValues.sheetIndex.Rating] = getRating(title);
+  }
+}
+
+function addOrUpdatePbPItem(pbpItem) {
+  var url = pbpItem[contextValues.sheetIndex.Url];
+  var itemInfo = contextValues.previousListings[url];
+  if (itemInfo) {
+    var currentItem = [];
+    var date = pbpItem[contextValues.sheetIndex.Date];
+    var title = pbpItem[contextValues.sheetIndex.Title];
+
+    if (date !== itemInfo.date) {
+      markCellForUpdate(itemInfo.row, 'Date', date);
+      currentItem[contextValues.sheetIndex.Date] = date + '<br><em>(Previously ' + itemInfo.date + ')</em>';
+    }
+
+    if (title !== itemInfo.title &&
+        title !== "'" + itemInfo.title &&
+        title !== "'" + itemInfo.title + "'" &&
+        title !== itemInfo.title + "'" &&
+        title !== '"' + itemInfo.title &&
+        title !== '"' + itemInfo.title + '"' &&
+        title !== itemInfo.title + '"') {
+      markCellForUpdate(itemInfo.row, 'Title', title);
+      currentItem[contextValues.sheetIndex.Title] = title + '<br><em>(Previously ' + itemInfo.title + ')</em>';
+    }
+
+    if (currentItem.length) {
+      if (!currentItem[contextValues.sheetIndex.Title]) {
+        currentItem[contextValues.sheetIndex.Title] = title;
+      }
+
+      if (!currentItem[contextValues.sheetIndex.Date]) {
+        currentItem[contextValues.sheetIndex.Date] = date;
+      }
+
+      if (!currentItem[contextValues.sheetIndex.Rating]) {
+        currentItem[contextValues.sheetIndex.Rating] = rating;
+      }
+
+      currentItem[contextValues.sheetIndex.Location] = itemInfo.location;
+      currentItem[contextValues.sheetIndex.Url] = url;
+      updatedItems.push(currentItem);
+    }
+
+    delete contextValues.previousListings[url];
+    contextValues.alreadyDeleted[url] = true;
+  } else if (!contextValues.alreadyDeleted[url]) {
+    pbpItem[contextValues.sheetIndex.AdminFee] = '~£2';
+    pbpItem[contextValues.sheetIndex.Category] = '';
+    pbpItem[contextValues.sheetIndex.EventManager] = '';
+    pbpItem[contextValues.sheetIndex.UploadDate] = new Date();
+    newItemsForUpdate.push(pbpItem);
+  }
+}
+
+function getLocationTimePicture(rowEl, rowString, elData) {
+  var columns = getElementsByTagName(rowEl, 'td', 'onlyFirstLevel');
+  var ImageUrl = getElementsByTagName(columns[0], 'img')[0].getAttribute('src').getValue();
+  var location = trimHtml(columns[0].toXmlString()).trim();
+  var date = trimHtml(columns[1].toXmlString().replace('</td>', '\n')).trim();
+  elData[contextValues.sheetIndex.Image] = '=Image("' + getFullPbpUrl(ImageUrl) + '")';
+  elData[contextValues.sheetIndex.Date] = date;
+  elData[contextValues.sheetIndex.Location] = location;
+}
+
+function getPbpId(rowString) {
+  var idMatch = rowString.match(/<a .*?href="(show.php\?cn=\d*?)".*?>/);
+  if (idMatch) {
+    return idMatch[1];
+  }
+}
+
+function getFullPbpUrl(locationString) {
+  return urls.pbpDomain + '/' + locationString;
 }
 
 // Figure out of the page which listings are new
