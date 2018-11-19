@@ -499,7 +499,7 @@ function processRatingItem(item) {
 
       if (updated.length) {
         updated.push('url: ' + url);
-        contextValues.updatedRatings.push('<h4>' + fullTitle + '</h4>' + updated.join('<br>'));
+        contextValues.updatedRatings.push('<h4>' + fullTitle + '  <small>' + rating + '/5</small></h4>' + updated.join('<br>'));
         contextValues.ratingMin = Math.min(rowIdx + 1, contextValues.ratingMin);
       }
     } else {
