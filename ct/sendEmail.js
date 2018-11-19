@@ -669,9 +669,9 @@ function processRatingItem(item) {
 }
 
 function cleanupTitle(title) {
-  try {
+  if (title.replace) {
     return title.replace(/\s*\(.*\)\s*$/i, '').replace(/\s\s*/, ' ').toLowerCase();
-  } catch (e) {
+  } else {
     return title;
   }
 }
