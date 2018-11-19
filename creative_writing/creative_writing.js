@@ -17,11 +17,13 @@ function checkDaysProgress() {
   var promptId = scriptInfo.data[scriptInfo.data.length - 1][scriptInfo.index.PromptID]
   var currentNumber = scriptInfo.data[scriptInfo.data.length - 1][scriptInfo.index.CurrentNumber]
   var promptPrefix = getTitlePrefix(promptId, currentNumber);
-  var promptEvent, currEvent;
+  var promptEvent, currEvent, currEventTitle;
 
   for (var i = 0; i < events.length; i++) {
     currEvent = events[i];
-    if (currEvent.getTitle().indexOf(promptPrefix) === 0) {
+    currEventTitle = currEvent.getTitle();
+    if (currEventTitle.indexOf(promptPrefix) === 0) {
+      // Move out yesterday's event if it's not all-day
       promptEvent = currEvent;
       if (!promptEvent.isAllDayEvent()) {
         var startTime = promptEvent.getStartTime();
@@ -29,20 +31,36 @@ function checkDaysProgress() {
         changeDate(startTime, 1);
         changeDate(endTime, 1);
         promptEvent.setTime(startTime, endTime);
-      }
-    }
-  }
 
-  // If there's no event to be moved, something is wrong. Send email
-  if (!promptEvent) {
-    MailApp.sendEmail({
-      to: myEmail,
-      subject: '[CreativeWriting] Error at the end of the day',
-      body: 'Did not find event for prompt #' + promptPrefix +
-            ' on ' + searchDate.toLocaleString() +
-            '\n\n---------' +
-            'Link: ' + writingSpreadsheetUrl,
-    });
+        MailApp.sendEmail({
+          to: myEmail,
+          subject: '[CreativeWriting] Event moved to next day',
+          body: 'Event moved to next day for #' + promptPrefix +
+                ' (' + currEventTitle + ') originally on ' +
+                searchDate.toLocaleString() +
+                ', moved to ' + startTime.toLocaleString() +
+                '\n\n---------' +
+                'Link: ' + writingSpreadsheetUrl,
+        });
+      }
+    } else if (currEventTitle.indexOf('Final:') === 0) {
+      // If it's the finale -- give it 1 day to be updated, then send it out to everyone!
+      var participantInfo = getSheetInformation('Participants');
+      var partEmailIdx = participantInfo.index.Email;
+      var allParts = [];
+
+      for (var i = 1; i < participantInfo.data.length; i++) {
+        allParts.push([participantInfo.data[i][partEmailIdx]]);
+      }
+
+      MailApp.sendEmail({
+        to: allParts.join(',') + ',' + scriptInfo.data[scriptInfo.index.AdditionalEmails],
+        subject: '[CreativeWriting] ' + currEventTitle,
+        body: currEvent.getDescription() +
+              '\n\n---------' +
+              'Link: ' + writingSpreadsheetUrl,
+      });
+    }
   }
 }
 
