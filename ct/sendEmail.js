@@ -3,46 +3,15 @@ var contextValues = {
 };
 
 var fetchPayload = {
-};
 
-var urls = {
-};
 
-// Get login cookie
-function login() {
-  var postOptions = {
-    method: 'post',
-    payload: {
-      email: fetchPayload.email,
-      password: sjcl.decrypt(fetchPayload.salt, fetchPayload.password),
-    },
-    followRedirects: false,
-  };
-  var loginPage = UrlFetchApp.fetch(urls.login, postOptions);
-  var loginCode = loginPage.getResponseCode();
-  if (loginCode === 200) { //could not log in.
-    return "Couldn't login. Please make sure your username/password is correct.";
-  } else if (loginCode === 303 || loginCode === 302) {
-    return loginPage.getAllHeaders()['Set-Cookie'];
-  }
-}
 
-// Get the main page
-function getMainPageCT() {
-  if (!fetchPayload.cookie) {
-    fetchPayload.cookie = login();
-  }
 
-  var mainPage = UrlFetchApp.fetch(urls.main,
-                                  {
-                                    headers: {
-                                      Cookie: fetchPayload.cookie,
-                                    },
-                                  });
-  return mainPage.getContentText();
-}
 
+// =====================================
 // Main function for each sheet
+// =====================================
+
 // Add to arrays for emailing out later
 var updatedItems = [];
 var newItemsForUpdate = [];
@@ -92,9 +61,46 @@ function updateSheet() {
     removeAndEmail(urls.fmDomain);
     return;
   }
+
+  // Figure out of the page which listings are new
+  var hasPassedTopic;
+  function addOrUpdateFm(item) {
+    var htmlText = item.toXmlString();
+    if (!hasPassedTopic) {
+      hasPassedTopic = htmlText.indexOf('Topics') !== -1;
+      return;
+    }
+
+    var links = getElementsByTagName(item, 'a')
+    var aElement = links[0];
+    var title = aElement.getText().trim();
+    if (!title) {
+      return;
+    }
+
+    var url = aElement.getAttribute('href').getValue().replace('.', urls.fmDomain).trim();
+    var itemInfo = contextValues.previousListings[url];
+    if (itemInfo) {
+      checkRatingAndDeletePreviousListing(itemInfo, url, [], title);
+    } else if (!contextValues.alreadyDeleted[url]) {
+      var listingInfo = [];
+      listingInfo[contextValues.sheetIndex.Image] = '=Image("' + urls.fmImage + '")';
+      listingInfo[contextValues.sheetIndex.Title] = title;
+      listingInfo[contextValues.sheetIndex.Rating] = getRating(title);
+      listingInfo[contextValues.sheetIndex.AdminFee] = 0;
+      listingInfo[contextValues.sheetIndex.Date] = trimHeader(mainInfo[0].getText());
+      listingInfo[contextValues.sheetIndex.Category] = 'Movie';
+      listingInfo[contextValues.sheetIndex.Location] = aElement.getAttribute('title').getValue();
+      listingInfo[contextValues.sheetIndex.Url] = url;
+      listingInfo[contextValues.sheetIndex.EventManager] = links[1].getText().trim();
+      listingInfo[contextValues.sheetIndex.UploadDate] = new Date();
+      newItemsForUpdate.push(listingInfo);
+    }
+  }
 **/
 
-  // Process AC Listings
+  // --------------------------------------------
+  // RATING MANAGEMENT LISTINGS
   // First, figure out which ones are free
   var acToken = UrlFetchApp.fetch(urls.acLogin);
   var headers1 = acToken.getAllHeaders();
@@ -155,12 +161,13 @@ function updateSheet() {
         to: myEmail,
         subject: '[CT] New Ratings (' + contextValues.newRatings.length +
                  ') | Updated Ratings (' + contextValues.updatedRatings.length + ')',
-        htmlBody: ratingMessage +
-                  'Link: https://docs.google.com/spreadsheets/d/1AC4XDCtUaCaG7O21w1GpJS59Vxt4QmTBypIjKhBR3TU/edit#gid=0',
+        htmlBody: ratingMessage
       });
       return;
     }
 
+    // --------------------------------------------
+    // AC LISTINGS
     // Process free items
     var acFreeHTML = UrlFetchApp.fetch(urls.acFree,
                                     {
@@ -177,6 +184,7 @@ function updateSheet() {
       acFreeItem.forEach(processFreeItems);
     }
 
+    // Process new items
     var acHTML = UrlFetchApp.fetch(urls.acMain,
                                     {
                                       headers: {
@@ -193,6 +201,8 @@ function updateSheet() {
     removeAndEmail(urls.acDomain);
   }
 
+  // --------------------------------------------
+  // PBP LISTINGS
   try {
     // Process PBP listings
     var pbpHTML = UrlFetchApp.fetch(urls.pbpShows,
@@ -233,6 +243,8 @@ function updateSheet() {
     removeAndEmail(urls.pbpDomain, 'errorLoadingPage');
   }
 
+  // --------------------------------------------
+  // SF LISTINGS
   // Log in to SF
   var loginSfPage = UrlFetchApp.fetch(urls.sfLogin, {
       method: 'post',
@@ -260,12 +272,13 @@ function updateSheet() {
     getElementByClassName(sfDoc, 'showcasebox').forEach(addOrUpdateSf);
   }
 
-  // Process CT Listings
+  // --------------------------------------------
+  // CT LISTINGS
   var mainPage = cleanupHTML(getMainPageCT());
   var doc = Xml.parse(mainPage, true).getElement();
   var mainList = getElementsByTagName(doc, 'ul');
   var items = getElementsByTagName(mainList[3], 'li');
-  items.forEach(addOrUpdate);
+  items.forEach(addOrUpdateCT);
 
   addNewCellItemsRow();
   sendEmail();
@@ -273,12 +286,11 @@ function updateSheet() {
   archiveExpiredItems();
 }
 
-function cleanupHTML(htmlText) {
-  return htmlText.match(/<body[\s\S]*?<\/body>/)[0]
-                 .replace(/<(no)?script[\s\S]*?<\/(no)?script>/g, '')
-                 .replace(/<!--|-->/g, '');
-}
+// =====================================
+// PROCESSING HELPER FUNCTIONS
+// =====================================
 
+// --------------------------------------------
 // Process previous data, including title and fee in case those change
 function processPreviousListings() {
   var titleIdx = contextValues.sheetIndex.Title;
@@ -325,222 +337,8 @@ function processPreviousListings() {
   }
 }
 
-function removeAndEmail(domain, specificErrorMessage) {
-  specificErrorMessage = specificErrorMessage || '';
-
-  for (var oldUrl in contextValues.previousListings) {
-    if (contextValues.previousListings.hasOwnProperty(oldUrl) && oldUrl.indexOf(domain) !== -1) {
-      delete contextValues.previousListings[oldUrl];
-    }
-  }
-
-  // Only send it once by storing on "Errors" sheet
-  if (!contextValues.errorSheet) {
-    contextValues.errorSheet = SpreadsheetApp.getActiveSpreadsheet()
-                                             .getSheetByName('Errors');
-    contextValues.errorData = contextValues.errorSheet.getDataRange().getValues();
-    contextValues.errorIndex = indexSheet(contextValues.errorData);
-    contextValues.lastErrorRow = contextValues.errorData.length;
-    contextValues.errorDateIdx = contextValues.errorIndex.Date;
-    contextValues.errorSitesIdx = contextValues.errorIndex.Sites;
-  }
-
-  // If it hasn't been emailed today
-  var lastEmailedDate = contextValues.errorData[contextValues.lastErrorRow - 1][contextValues.errorDateIdx];
-  if (specificErrorMessage || !lastEmailedDate.toDateString || lastEmailedDate.toDateString() !== new Date().toDateString()) {
-    var updateMessage = 'Update ' + domain + ' Token';
-
-    if (specificErrorMessage) {
-      updateMessage = 'Error loading page for :' + domain + ' (' + specificErrorMessage + ')';
-    }
-
-    var email = MailApp.sendEmail({
-      to: myEmail,
-      subject: '[CT] ' + updateMessage,
-      htmlBody: updateMessage
-                 + ': https://docs.google.com/spreadsheets/d/1AC4XDCtUaCaG7O21w1GpJS59Vxt4QmTBypIjKhBR3TU/edit#gid=0',
-    });
-
-    contextValues.lastErrorRow++;
-  }
-
-  // Add current page to list of pages needing update
-  if (!contextValues.errorData[contextValues.lastErrorRow - 1]) {
-    contextValues.errorData[contextValues.lastErrorRow - 1] = [];
-  }
-
-  var currentData = contextValues.errorData[contextValues.lastErrorRow - 1][contextValues.errorSitesIdx];
-  if (specificErrorMessage || !currentData || currentData.indexOf(domain) === -1) {
-    var cells = contextValues.errorSheet.getRange(contextValues.lastErrorRow, 1, 1, 3);
-    currentData = currentData ? currentData + ', ' + domain : domain;
-    cells.setValues([[new Date(), currentData, specificErrorMessage || 'updateToken']]);
-  }
-}
-
-// Process PBP rows -- pretty complicated because everything is nested tables
-function processPBP(rowEl) {
-  var rowString = rowEl.toXmlString();
-  var pbpId = getPbpId(rowString);
-  if (!pbpId) {
-    return;
-  }
-
-  var url = getFullPbpUrl(pbpId);
-
-  // If this already exists, get location, time, and picture
-  if (contextValues.pbpByUrl[url]) {
-    getLocationTimePicture(rowEl, rowString, contextValues.pbpByUrl[url]);
-  } else {
-    var title = trimHtml(rowString).trim();
-    contextValues.pbpByUrl[url] = [];
-    contextValues.pbpByUrl[url][contextValues.sheetIndex.Url] = url;
-    contextValues.pbpByUrl[url][contextValues.sheetIndex.Title] = title;
-    contextValues.pbpByUrl[url][contextValues.sheetIndex.Rating] = getRating(title);
-  }
-}
-
-function addOrUpdatePbPItem(pbpItem) {
-  var url = pbpItem[contextValues.sheetIndex.Url];
-  var itemInfo = contextValues.previousListings[url];
-  if (itemInfo) {
-    var currentItem = [];
-    var date = pbpItem[contextValues.sheetIndex.Date];
-    var title = pbpItem[contextValues.sheetIndex.Title];
-
-    if (date !== itemInfo.date) {
-      markCellForUpdate(itemInfo.row, 'Date', date);
-      currentItem[contextValues.sheetIndex.Date] = boldWord(date) + '<br><em>(Previously ' + boldWord(itemInfo.date) + ')</em>';
-    }
-
-    checkRatingAndDeletePreviousListing(itemInfo, url, currentItem, title);
-  } else if (!contextValues.alreadyDeleted[url]) {
-    pbpItem[contextValues.sheetIndex.AdminFee] = '~£2';
-    pbpItem[contextValues.sheetIndex.Category] = '';
-    pbpItem[contextValues.sheetIndex.EventManager] = '';
-    pbpItem[contextValues.sheetIndex.UploadDate] = new Date();
-    newItemsForUpdate.push(pbpItem);
-  }
-}
-
-function getLocationTimePicture(rowEl, rowString, elData) {
-  var columns = getElementsByTagName(rowEl, 'td', 'onlyFirstLevel');
-  var ImageUrl = getElementsByTagName(columns[0], 'img')[0].getAttribute('src').getValue();
-  var location = trimHtml(columns[0].toXmlString()).trim();
-  var date = trimHtml(columns[1].toXmlString())
-              .replace(/\bpm/ig, 'PM;\n')
-              .replace(/\bam/ig, 'AM;\n')
-              .trim();
-  elData[contextValues.sheetIndex.Image] = '=Image("' + getFullPbpUrl(ImageUrl) + '")';
-  elData[contextValues.sheetIndex.Date] = date;
-  elData[contextValues.sheetIndex.Location] = location;
-}
-
-function getPbpId(rowString) {
-  var idMatch = rowString.match(/<a .*?href="(show.php\?cn=\d*?)".*?>/);
-  if (idMatch) {
-    return idMatch[1];
-  }
-}
-
-function getFullPbpUrl(locationString) {
-  return urls.pbpDomain + '/' + locationString;
-}
-
-// Figure out of the page which listings are new
-var hasPassedTopic;
-function addOrUpdateFm(item) {
-  var htmlText = item.toXmlString();
-  if (!hasPassedTopic) {
-    hasPassedTopic = htmlText.indexOf('Topics') !== -1;
-    return;
-  }
-
-  var links = getElementsByTagName(item, 'a')
-  var aElement = links[0];
-  var title = aElement.getText().trim();
-  if (!title) {
-    return;
-  }
-
-  var url = aElement.getAttribute('href').getValue().replace('.', urls.fmDomain).trim();
-  var itemInfo = contextValues.previousListings[url];
-  if (itemInfo) {
-    checkRatingAndDeletePreviousListing(itemInfo, url, [], title);
-  } else if (!contextValues.alreadyDeleted[url]) {
-    var listingInfo = [];
-    listingInfo[contextValues.sheetIndex.Image] = '=Image("' + urls.fmImage + '")';
-    listingInfo[contextValues.sheetIndex.Title] = title;
-    listingInfo[contextValues.sheetIndex.Rating] = getRating(title);
-    listingInfo[contextValues.sheetIndex.AdminFee] = 0;
-    listingInfo[contextValues.sheetIndex.Date] = trimHeader(mainInfo[0].getText());
-    listingInfo[contextValues.sheetIndex.Category] = 'Movie';
-    listingInfo[contextValues.sheetIndex.Location] = aElement.getAttribute('title').getValue();
-    listingInfo[contextValues.sheetIndex.Url] = url;
-    listingInfo[contextValues.sheetIndex.EventManager] = links[1].getText().trim();
-    listingInfo[contextValues.sheetIndex.UploadDate] = new Date();
-    newItemsForUpdate.push(listingInfo);
-  }
-}
-
-
-// Figure out of the page which listings are new
-function addOrUpdateSf(item) {
-  var title = getElementsByTagName(item, 'h2');
-  title = title[0].getText().trim();
-  if (!title) {
-    return;
-  }
-
-  var aElement = getElementsByTagName(item, 'a')[0];
-  var url = aElement.getAttribute('href').getValue().trim();
-  var itemInfo = contextValues.previousListings[url];
-  if (itemInfo) {
-    checkRatingAndDeletePreviousListing(itemInfo, url, [], title);
-  } else if (!contextValues.alreadyDeleted[url]) {
-    var itemHtml = item.toXmlString();
-    var ImageUrl = itemHtml.match(/background-image:url\(.*?(http:\/\/.*?\.jpg)/i);
-
-    var date = getElementByClassName(item, 'date-event');
-    var description = getElementByClassName(item, 'internal_content');
-
-    var detailPage = cleanupHTML(UrlFetchApp.fetch(url).getContentText());
-    var detailError = 'Sorry, this offer has now ended';
-    var price = '', location = '', time = '';
-    if (detailPage.indexOf(detailError) === -1) {
-      price = detailPage.match(/price_info_box.*?>([\s\S]*?)<\/span>/);
-      location = detailPage.match(/location_td.*?>([\s\S]*?)<\/td>/);
-      price = price ? trimHtml(price[1]) : '';
-      location = location ? trimHtml(location[1]) : '';
-      time = ' @ ' + detailPage.match(/<td>(.*?:.*?)<\/td>/)[1];
-    }
-
-    var listingInfo = [];
-    listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ((ImageUrl && ImageUrl[1]) || '') + '")';
-    listingInfo[contextValues.sheetIndex.Title] = title;
-    listingInfo[contextValues.sheetIndex.Rating] = getRating(title);
-    listingInfo[contextValues.sheetIndex.AdminFee] = price;
-    listingInfo[contextValues.sheetIndex.Date] = date[0].getText().trim() + time;
-    listingInfo[contextValues.sheetIndex.Category] = trimHtml(description[0].toXmlString());
-    listingInfo[contextValues.sheetIndex.Location] = location;
-    listingInfo[contextValues.sheetIndex.Url] = url;
-    listingInfo[contextValues.sheetIndex.EventManager] = '';
-    listingInfo[contextValues.sheetIndex.UploadDate] = new Date();
-    newItemsForUpdate.push(listingInfo);
-  }
-}
-
-function getACUrl(urlEnd) {
-  return urls.acDomain + 'member/' + urlEnd.replace(/&return=.*$/, '').trim();
-}
-
-function processFreeItems(item) {
-  var containsFreeBooking = item.toXmlString().match(/no booking fee/i);
-  if (containsFreeBooking) {
-    var freeUrl = getElementsByTagName(item, 'a')[0].getAttribute('href').getValue();
-    contextValues.freeAC[getACUrl(freeUrl)] = true;
-  }
-}
-
+// --------------------------------------------
+// Rating Management Helpers
 function arraysEqual(arr1, arr2) {
     if(arr1.length !== arr2.length)
         return false;
@@ -643,76 +441,8 @@ function processRatingItem(item) {
   }
 }
 
-function cleanupTitle(title) {
-  if (title.replace) {
-    return title.replace(/\s*\(.*\)\s*$/i, '').replace(/\s\s*/, ' ').toLowerCase();
-  } else {
-    return title;
-  }
-}
-
-function getRating(title) {
-  title = cleanupTitle(title);
-  const currItem = contextValues.ratings[title];
-  return currItem ?
-         currItem[contextValues.ratingIndex.Rating] + '/5 (' +
-            currItem[contextValues.ratingIndex.NumberReviews] + ' reviews)' :
-         '';
-}
-
-function emailRatingIfRatingChanged(newRating, oldRating, emailInfo) {
-  const replaceRegex = /\(.*reviews\)/;
-  if (newRating.replace(replaceRegex, '') !== oldRating.replace(replaceRegex, '')) {
-    emailInfo[contextValues.sheetIndex.Rating] = boldWord(newRating) + '<em>(Previously ' + boldWord(oldRating) + ')</em>';
-  }
-}
-
-function checkRatingAndDeletePreviousListing(itemInfo, url, currentItem, title) {
-  var rating = getRating(title);
-
-  if (title !== itemInfo.title &&
-      title !== "'" + itemInfo.title &&
-      title !== "'" + itemInfo.title + "'" &&
-      title !== itemInfo.title + "'" &&
-      title !== '"' + itemInfo.title &&
-      title !== '"' + itemInfo.title + '"' &&
-      title !== itemInfo.title + '"') {
-    markCellForUpdate(itemInfo.row, 'Title', title);
-    currentItem[contextValues.sheetIndex.Title] = boldWord(title) + '<br><em>(Previously ' + boldWord(itemInfo.title) + ')</em>';
-  }
-
-  if (rating !== itemInfo.rating) {
-    markCellForUpdate(itemInfo.row, 'Rating', rating);
-    emailRatingIfRatingChanged(rating, itemInfo.rating, currentItem);
-  }
-
-  if (currentItem.length) {
-    if (!currentItem[contextValues.sheetIndex.Title]) {
-      currentItem[contextValues.sheetIndex.Title] = title;
-    }
-
-    if (!currentItem[contextValues.sheetIndex.Date]) {
-      currentItem[contextValues.sheetIndex.Date] = itemInfo.date;
-    }
-
-    if (!currentItem[contextValues.sheetIndex.Rating]) {
-      currentItem[contextValues.sheetIndex.Rating] = rating;
-    }
-
-    if (!currentItem[contextValues.sheetIndex.Category]) {
-      currentItem[contextValues.sheetIndex.Category] = itemInfo.category;
-    }
-
-
-    currentItem[contextValues.sheetIndex.Location] = itemInfo.location;
-    currentItem[contextValues.sheetIndex.Url] = url;
-    updatedItems.push(currentItem);
-  }
-
-  delete contextValues.previousListings[url];
-  contextValues.alreadyDeleted[url] = true;
-}
-
+// --------------------------------------------
+// AC Helpers
 // Figure out of the page which listings are new
 function addOrUpdateAc(item) {
   var header = getElementByClassName(item, 'showtitle')
@@ -825,7 +555,175 @@ function addOrUpdateAc(item) {
   }
 }
 
-function addOrUpdate(item) {
+function getACUrl(urlEnd) {
+  return urls.acDomain + 'member/' + urlEnd.replace(/&return=.*$/, '').trim();
+}
+
+function processFreeItems(item) {
+  var containsFreeBooking = item.toXmlString().match(/no booking fee/i);
+  if (containsFreeBooking) {
+    var freeUrl = getElementsByTagName(item, 'a')[0].getAttribute('href').getValue();
+    contextValues.freeAC[getACUrl(freeUrl)] = true;
+  }
+}
+
+// --------------------------------------------
+// PbP Helpers
+// Process PBP rows -- pretty complicated because everything is nested tables
+function processPBP(rowEl) {
+  var rowString = rowEl.toXmlString();
+  var pbpId = getPbpId(rowString);
+  if (!pbpId) {
+    return;
+  }
+
+  var url = getFullPbpUrl(pbpId);
+
+  // If this already exists, get location, time, and picture
+  if (contextValues.pbpByUrl[url]) {
+    getLocationTimePicture(rowEl, rowString, contextValues.pbpByUrl[url]);
+  } else {
+    var title = trimHtml(rowString).trim();
+    contextValues.pbpByUrl[url] = [];
+    contextValues.pbpByUrl[url][contextValues.sheetIndex.Url] = url;
+    contextValues.pbpByUrl[url][contextValues.sheetIndex.Title] = title;
+    contextValues.pbpByUrl[url][contextValues.sheetIndex.Rating] = getRating(title);
+  }
+}
+
+function addOrUpdatePbPItem(pbpItem) {
+  var url = pbpItem[contextValues.sheetIndex.Url];
+  var itemInfo = contextValues.previousListings[url];
+  if (itemInfo) {
+    var currentItem = [];
+    var date = pbpItem[contextValues.sheetIndex.Date];
+    var title = pbpItem[contextValues.sheetIndex.Title];
+
+    if (date !== itemInfo.date) {
+      markCellForUpdate(itemInfo.row, 'Date', date);
+      currentItem[contextValues.sheetIndex.Date] = boldWord(date) + '<br><em>(Previously ' + boldWord(itemInfo.date) + ')</em>';
+    }
+
+    checkRatingAndDeletePreviousListing(itemInfo, url, currentItem, title);
+  } else if (!contextValues.alreadyDeleted[url]) {
+    pbpItem[contextValues.sheetIndex.AdminFee] = '~£2';
+    pbpItem[contextValues.sheetIndex.Category] = '';
+    pbpItem[contextValues.sheetIndex.EventManager] = '';
+    pbpItem[contextValues.sheetIndex.UploadDate] = new Date();
+    newItemsForUpdate.push(pbpItem);
+  }
+}
+
+function getLocationTimePicture(rowEl, rowString, elData) {
+  var columns = getElementsByTagName(rowEl, 'td', 'onlyFirstLevel');
+  var ImageUrl = getElementsByTagName(columns[0], 'img')[0].getAttribute('src').getValue();
+  var location = trimHtml(columns[0].toXmlString()).trim();
+  var date = trimHtml(columns[1].toXmlString())
+              .replace(/\bpm/ig, 'PM;\n')
+              .replace(/\bam/ig, 'AM;\n')
+              .trim();
+  elData[contextValues.sheetIndex.Image] = '=Image("' + getFullPbpUrl(ImageUrl) + '")';
+  elData[contextValues.sheetIndex.Date] = date;
+  elData[contextValues.sheetIndex.Location] = location;
+}
+
+function getPbpId(rowString) {
+  var idMatch = rowString.match(/<a .*?href="(show.php\?cn=\d*?)".*?>/);
+  if (idMatch) {
+    return idMatch[1];
+  }
+}
+
+function getFullPbpUrl(locationString) {
+  return urls.pbpDomain + '/' + locationString;
+}
+
+// --------------------------------------------
+// SF Helpers
+// Figure out if the page which listings are new
+function addOrUpdateSf(item) {
+  var title = getElementsByTagName(item, 'h2');
+  title = title[0].getText().trim();
+  if (!title) {
+    return;
+  }
+
+  var aElement = getElementsByTagName(item, 'a')[0];
+  var url = aElement.getAttribute('href').getValue().trim();
+  var itemInfo = contextValues.previousListings[url];
+  if (itemInfo) {
+    checkRatingAndDeletePreviousListing(itemInfo, url, [], title);
+  } else if (!contextValues.alreadyDeleted[url]) {
+    var itemHtml = item.toXmlString();
+    var ImageUrl = itemHtml.match(/background-image:url\(.*?(http:\/\/.*?\.jpg)/i);
+
+    var date = getElementByClassName(item, 'date-event');
+    var description = getElementByClassName(item, 'internal_content');
+
+    var detailPage = cleanupHTML(UrlFetchApp.fetch(url).getContentText());
+    var detailError = 'Sorry, this offer has now ended';
+    var price = '', location = '', time = '';
+    if (detailPage.indexOf(detailError) === -1) {
+      price = detailPage.match(/price_info_box.*?>([\s\S]*?)<\/span>/);
+      location = detailPage.match(/location_td.*?>([\s\S]*?)<\/td>/);
+      price = price ? trimHtml(price[1]) : '';
+      location = location ? trimHtml(location[1]) : '';
+      time = ' @ ' + detailPage.match(/<td>(.*?:.*?)<\/td>/)[1];
+    }
+
+    var listingInfo = [];
+    listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ((ImageUrl && ImageUrl[1]) || '') + '")';
+    listingInfo[contextValues.sheetIndex.Title] = title;
+    listingInfo[contextValues.sheetIndex.Rating] = getRating(title);
+    listingInfo[contextValues.sheetIndex.AdminFee] = price;
+    listingInfo[contextValues.sheetIndex.Date] = date[0].getText().trim() + time;
+    listingInfo[contextValues.sheetIndex.Category] = trimHtml(description[0].toXmlString());
+    listingInfo[contextValues.sheetIndex.Location] = location;
+    listingInfo[contextValues.sheetIndex.Url] = url;
+    listingInfo[contextValues.sheetIndex.EventManager] = '';
+    listingInfo[contextValues.sheetIndex.UploadDate] = new Date();
+    newItemsForUpdate.push(listingInfo);
+  }
+}
+
+// --------------------------------------------
+// CT Helpers
+// Get CT login cookie
+function loginCT() {
+  var postOptions = {
+    method: 'post',
+    payload: {
+      email: fetchPayload.email,
+      password: sjcl.decrypt(fetchPayload.salt, fetchPayload.password),
+    },
+    followRedirects: false,
+  };
+  var loginPage = UrlFetchApp.fetch(urls.login, postOptions);
+  var loginCode = loginPage.getResponseCode();
+  if (loginCode === 200) { //could not log in.
+    return "Couldn't login. Please make sure your username/password is correct.";
+  } else if (loginCode === 303 || loginCode === 302) {
+    return loginPage.getAllHeaders()['Set-Cookie'];
+  }
+}
+
+// Get the main CT page
+function getMainPageCT() {
+  if (!fetchPayload.cookie) {
+    fetchPayload.cookie = loginCT();
+  }
+
+  var mainPage = UrlFetchApp.fetch(urls.main,
+                                  {
+                                    headers: {
+                                      Cookie: fetchPayload.cookie,
+                                    },
+                                  });
+  return mainPage.getContentText();
+}
+
+// Updates or calls add new listing
+function addOrUpdateCT(item) {
   // Get href
   var aElement = getElementsByTagName(item, 'a')[0];
   var url = aElement.getAttribute('href').getValue().trim();
@@ -833,10 +731,10 @@ function addOrUpdate(item) {
   var htmlText = item.toXmlString();
   if (itemInfo) {
     // see if there's anything to update, if not, then just delete
-    var title = getTitle(item),
+    var title = getTitleCT(item),
         rating = getRating(title),
-        fee = getFee(htmlText),
-        date = getDate(htmlText),
+        fee = getFeeCT(htmlText),
+        date = getDateCT(htmlText),
         currentItem = [];
     if (fee !== itemInfo.fee) {
       markCellForUpdate(itemInfo.row, 'AdminFee', fee);
@@ -850,15 +748,15 @@ function addOrUpdate(item) {
 
     checkRatingAndDeletePreviousListing(itemInfo, url, currentItem, title);
   } else if (!contextValues.alreadyDeleted[url]) {
-    addNewListing(item, htmlText, url);
+    addNewListingCT(item, htmlText, url);
   }
 }
 
-// Get listing full page
-function addNewListing(item, htmlText, url) {
+// Process CT
+function addNewListingCT(item, htmlText, url) {
   var ImageUrl = getElementsByTagName(item, 'img')[0].getAttribute('src').getValue();
   var listingInfo = [];
-  var title = getTitle(item);
+  var title = getTitleCT(item);
 
   if (!title) {
     return;
@@ -867,30 +765,30 @@ function addNewListing(item, htmlText, url) {
   listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl + '")';
   listingInfo[contextValues.sheetIndex.Title] = title;
   listingInfo[contextValues.sheetIndex.Rating] = getRating(title);
-  listingInfo[contextValues.sheetIndex.AdminFee] = getFee(htmlText);
-  listingInfo[contextValues.sheetIndex.Date] = getDate(htmlText);
-  listingInfo[contextValues.sheetIndex.Category] = getColonSeparatedText(htmlText, 'Category');
-  listingInfo[contextValues.sheetIndex.Location] = getColonSeparatedText(htmlText, 'Location');
+  listingInfo[contextValues.sheetIndex.AdminFee] = getFeeCT(htmlText);
+  listingInfo[contextValues.sheetIndex.Date] = getDateCT(htmlText);
+  listingInfo[contextValues.sheetIndex.Category] = getColonSeparatedTextCT(htmlText, 'Category');
+  listingInfo[contextValues.sheetIndex.Location] = getColonSeparatedTextCT(htmlText, 'Location');
   listingInfo[contextValues.sheetIndex.Url] = url;
-  listingInfo[contextValues.sheetIndex.EventManager] = getColonSeparatedText(htmlText, 'Event Manager');
+  listingInfo[contextValues.sheetIndex.EventManager] = getColonSeparatedTextCT(htmlText, 'Event Manager');
   listingInfo[contextValues.sheetIndex.UploadDate] = new Date();
   newItemsForUpdate.push(listingInfo);
 }
 
 // Parse with text
-function getTitle(item) {
+function getTitleCT(item) {
   return getElementsByTagName(getElementsByTagName(item, 'h4')[0], 'a')[0].getText().trim();
 }
 
-function getFee(htmlText) {
-  return getColonSeparatedText(htmlText, 'Admin Fee');
+function getFeeCT(htmlText) {
+  return getColonSeparatedTextCT(htmlText, 'Admin Fee');
 }
 
-function getDate(htmlText) {
-  return getColonSeparatedText(htmlText, 'Event Date');
+function getDateCT(htmlText) {
+  return getColonSeparatedTextCT(htmlText, 'Event Date');
 }
 
-function getColonSeparatedText(text, expression) {
+function getColonSeparatedTextCT(text, expression) {
   var regexExpr = new RegExp(expression + '\\s*:[\\s\\S]*?</p>', 'im');
   var match = text.match(regexExpr);
   if (match) {
@@ -899,6 +797,221 @@ function getColonSeparatedText(text, expression) {
 
   return 'None';
 }
+
+// --------------------------------------------
+// Function that updates sheet
+function addNewCellItemsRow() {
+  if (!newItemsForUpdate.length) return;
+
+  // Get range by row, column, row length, column length
+  var cells = contextValues.sheet.getRange((contextValues.lastRow + 1), 1, newItemsForUpdate.length, newItemsForUpdate[0].length);
+  cells.setValues(newItemsForUpdate);
+}
+
+// --------------------------------------------
+// Send email with new listing information
+function sendEmail() {
+  // Only send if there's new items
+  if (!updatedItems.length && !newItemsForUpdate.length) return;
+
+  var footer = '<hr>' +
+  var newItemsText = newItemsForUpdate.length ? '<hr><h2>New:</h2><br>' + newItemsForUpdate.map(getElementSection).join('') : '';
+  var updatedItemsText = updatedItems.length ? '<hr><h2>Updated:</h2><br>' + updatedItems.map(getElementSection).join('') : '';
+  var archivedItemsText = '';
+  if (Object.keys(contextValues.previousListings).length) {
+    archivedItemsText = '<hr><h2>Archived:</h2><br>';
+    for (var showUrl in contextValues.previousListings) {
+      if (contextValues.previousListings.hasOwnProperty(showUrl)) {
+        archivedItemsText += getElementSection(contextValues.previousListings[showUrl]);
+      }
+    }
+  }
+
+  var emailTemplate = newItemsText +
+                      updatedItemsText +
+                      archivedItemsText +
+                      footer;
+  var subject = '[CT] *' + newItemsForUpdate.length + '* New || *' + updatedItems.length + '* Updated ' + new Date().toLocaleString();
+
+
+  // Get information from TotalSavings tab
+  var email = MailApp.sendEmail({
+    to: myEmail,
+    subject: subject,
+    htmlBody: emailTemplate,
+  });
+}
+
+// --------------------------------------------
+// Updates spreadsheet
+function updateAllCells() {
+  if (updatedItems.length) {
+    contextValues.sheetRange.setValues(contextValues.sheetData);
+    contextValues.sheetRange.setNotes(contextValues.sheetNotes);
+  }
+}
+
+// --------------------------------------------
+// Archives deleted items
+function archiveExpiredItems() {
+  // Now archive events that passed
+  var cutRange, newRange, currentItem, row, oldValues, oldNotes;
+  var toDelete = [];
+  var archive = SpreadsheetApp.getActiveSpreadsheet()
+                                        .getSheetByName('Archive');
+  var archiveData = archive.getDataRange().getValues();
+  var lastArchiveRow = archiveData.length;
+  var imageIdx = contextValues.sheetIndex.Image;
+  var currentTime = new Date();
+  for (var expiredItem in contextValues.previousListings) {
+    if (contextValues.previousListings.hasOwnProperty(expiredItem) && expiredItem) {
+      lastArchiveRow++;
+      currentItem = contextValues.previousListings[expiredItem];
+      row = currentItem.row + 1;
+      cutRange = contextValues.sheet.getRange('A' + row + ':J' + row);
+      newRange = archive.getRange('A' + lastArchiveRow + ':K' + lastArchiveRow)
+      oldValues = cutRange.getValues();
+      oldValues[0][imageIdx] = getImageUrl(contextValues.sheetData[currentItem.row][imageIdx]);
+      oldValues[0].push(currentTime);
+      newRange.setValues(oldValues);
+      oldNotes = cutRange.getNotes();
+      oldNotes[0].push('');
+      newRange.setNotes(oldNotes);
+      toDelete.push({
+        range: cutRange,
+        row: row,
+      });
+    }
+  }
+
+  toDelete.sort(function sortByRow(a, b){
+    return b.row - a.row;
+  }).forEach(function deleteItem(rangeToDelete) {
+    rangeToDelete.range.deleteCells(SpreadsheetApp.Dimension.ROWS);
+    Utilities.sleep(50);
+  });
+}
+
+// =====================================
+// GENERAL HELPER FUNCTIONS
+// =====================================
+
+function getRating(title) {
+  title = cleanupTitle(title);
+  const currItem = contextValues.ratings[title];
+  return currItem ?
+         currItem[contextValues.ratingIndex.Rating] + '/5 (' +
+            currItem[contextValues.ratingIndex.NumberReviews] + ' reviews)' :
+         '';
+}
+
+function emailRatingIfRatingChanged(newRating, oldRating, emailInfo) {
+  const replaceRegex = /\(.*reviews\)/;
+  if (newRating.replace(replaceRegex, '') !== oldRating.replace(replaceRegex, '')) {
+    emailInfo[contextValues.sheetIndex.Rating] = boldWord(newRating) + '<em>(Previously ' + boldWord(oldRating) + ')</em>';
+  }
+}
+
+function checkRatingAndDeletePreviousListing(itemInfo, url, currentItem, title) {
+  var rating = getRating(title);
+
+  if (title !== itemInfo.title &&
+      title !== "'" + itemInfo.title &&
+      title !== "'" + itemInfo.title + "'" &&
+      title !== itemInfo.title + "'" &&
+      title !== '"' + itemInfo.title &&
+      title !== '"' + itemInfo.title + '"' &&
+      title !== itemInfo.title + '"') {
+    markCellForUpdate(itemInfo.row, 'Title', title);
+    currentItem[contextValues.sheetIndex.Title] = boldWord(title) + '<br><em>(Previously ' + boldWord(itemInfo.title) + ')</em>';
+  }
+
+  if (rating !== itemInfo.rating) {
+    markCellForUpdate(itemInfo.row, 'Rating', rating);
+    emailRatingIfRatingChanged(rating, itemInfo.rating, currentItem);
+  }
+
+  if (currentItem.length) {
+    if (!currentItem[contextValues.sheetIndex.Title]) {
+      currentItem[contextValues.sheetIndex.Title] = title;
+    }
+
+    if (!currentItem[contextValues.sheetIndex.Date]) {
+      currentItem[contextValues.sheetIndex.Date] = itemInfo.date;
+    }
+
+    if (!currentItem[contextValues.sheetIndex.Rating]) {
+      currentItem[contextValues.sheetIndex.Rating] = rating;
+    }
+
+    if (!currentItem[contextValues.sheetIndex.Category]) {
+      currentItem[contextValues.sheetIndex.Category] = itemInfo.category;
+    }
+
+
+    currentItem[contextValues.sheetIndex.Location] = itemInfo.location;
+    currentItem[contextValues.sheetIndex.Url] = url;
+    updatedItems.push(currentItem);
+  }
+
+  delete contextValues.previousListings[url];
+  contextValues.alreadyDeleted[url] = true;
+}
+
+function removeAndEmail(domain, specificErrorMessage) {
+  specificErrorMessage = specificErrorMessage || '';
+
+  for (var oldUrl in contextValues.previousListings) {
+    if (contextValues.previousListings.hasOwnProperty(oldUrl) && oldUrl.indexOf(domain) !== -1) {
+      delete contextValues.previousListings[oldUrl];
+    }
+  }
+
+  // Only send it once by storing on "Errors" sheet
+  if (!contextValues.errorSheet) {
+    contextValues.errorSheet = SpreadsheetApp.getActiveSpreadsheet()
+                                             .getSheetByName('Errors');
+    contextValues.errorData = contextValues.errorSheet.getDataRange().getValues();
+    contextValues.errorIndex = indexSheet(contextValues.errorData);
+    contextValues.lastErrorRow = contextValues.errorData.length;
+    contextValues.errorDateIdx = contextValues.errorIndex.Date;
+    contextValues.errorSitesIdx = contextValues.errorIndex.Sites;
+  }
+
+  // If it hasn't been emailed today
+  var lastEmailedDate = contextValues.errorData[contextValues.lastErrorRow - 1][contextValues.errorDateIdx];
+  if (specificErrorMessage || !lastEmailedDate.toDateString || lastEmailedDate.toDateString() !== new Date().toDateString()) {
+    var updateMessage = 'Update ' + domain + ' Token';
+
+    if (specificErrorMessage) {
+      updateMessage = 'Error loading page for :' + domain + ' (' + specificErrorMessage + ')';
+    }
+
+    var email = MailApp.sendEmail({
+      to: myEmail,
+      subject: '[CT] ' + updateMessage,
+      htmlBody: updateMessage
+    });
+
+    contextValues.lastErrorRow++;
+  }
+
+  // Add current page to list of pages needing update
+  if (!contextValues.errorData[contextValues.lastErrorRow - 1]) {
+    contextValues.errorData[contextValues.lastErrorRow - 1] = [];
+  }
+
+  var currentData = contextValues.errorData[contextValues.lastErrorRow - 1][contextValues.errorSitesIdx];
+  if (specificErrorMessage || !currentData || currentData.indexOf(domain) === -1) {
+    var cells = contextValues.errorSheet.getRange(contextValues.lastErrorRow, 1, 1, 3);
+    currentData = currentData ? currentData + ', ' + domain : domain;
+    cells.setValues([[new Date(), currentData, specificErrorMessage || 'updateToken']]);
+  }
+}
+
+// =====================================
+// HTML HELPER FUNCTIONS
+// =====================================
 
 function trimHtml(text) {
   return text.replace(/<.*?>|&amp|\n|\r/g, '');
@@ -956,39 +1069,6 @@ function getElementByClassName(element, className) {
   return data;
 }
 
-// Send email with new listing information
-function sendEmail() {
-  // Only send if there's new items
-  if (!updatedItems.length && !newItemsForUpdate.length) return;
-
-  var footer = '<hr>' +
-  var newItemsText = newItemsForUpdate.length ? '<hr><h2>New:</h2><br>' + newItemsForUpdate.map(getElementSection).join('') : '';
-  var updatedItemsText = updatedItems.length ? '<hr><h2>Updated:</h2><br>' + updatedItems.map(getElementSection).join('') : '';
-  var archivedItemsText = '';
-  if (Object.keys(contextValues.previousListings).length) {
-    archivedItemsText = '<hr><h2>Archived:</h2><br>';
-    for (var showUrl in contextValues.previousListings) {
-      if (contextValues.previousListings.hasOwnProperty(showUrl)) {
-        archivedItemsText += getElementSection(contextValues.previousListings[showUrl]);
-      }
-    }
-  }
-
-  var emailTemplate = newItemsText +
-                      updatedItemsText +
-                      archivedItemsText +
-                      footer;
-  var subject = '[CT] *' + newItemsForUpdate.length + '* New || *' + updatedItems.length + '* Updated ' + new Date().toLocaleString();
-
-
-  // Get information from TotalSavings tab
-  var email = MailApp.sendEmail({
-    to: myEmail,
-    subject: subject,
-    htmlBody: emailTemplate,
-  });
-}
-
 function getElementSection(listingInfo) {
   var imageIdx = contextValues.sheetIndex.Image;
   var titleIdx = contextValues.sheetIndex.Title;
@@ -1018,53 +1098,10 @@ function getElementSection(listingInfo) {
          '<hr>';
 }
 
-// Function that updates sheet
-function addNewCellItemsRow() {
-  if (!newItemsForUpdate.length) return;
-
-  // Get range by row, column, row length, column length
-  var cells = contextValues.sheet.getRange((contextValues.lastRow + 1), 1, newItemsForUpdate.length, newItemsForUpdate[0].length);
-  cells.setValues(newItemsForUpdate);
-}
-
-// Move expired items to "Archive" sheet
-function archiveExpiredItems() {
-  // Now archive events that passed
-  var cutRange, newRange, currentItem, row, oldValues, oldNotes;
-  var toDelete = [];
-  var archive = SpreadsheetApp.getActiveSpreadsheet()
-                                        .getSheetByName('Archive');
-  var archiveData = archive.getDataRange().getValues();
-  var lastArchiveRow = archiveData.length;
-  var imageIdx = contextValues.sheetIndex.Image;
-  var currentTime = new Date();
-  for (var expiredItem in contextValues.previousListings) {
-    if (contextValues.previousListings.hasOwnProperty(expiredItem) && expiredItem) {
-      lastArchiveRow++;
-      currentItem = contextValues.previousListings[expiredItem];
-      row = currentItem.row + 1;
-      cutRange = contextValues.sheet.getRange('A' + row + ':J' + row);
-      newRange = archive.getRange('A' + lastArchiveRow + ':K' + lastArchiveRow)
-      oldValues = cutRange.getValues();
-      oldValues[0][imageIdx] = getImageUrl(contextValues.sheetData[currentItem.row][imageIdx]);
-      oldValues[0].push(currentTime);
-      newRange.setValues(oldValues);
-      oldNotes = cutRange.getNotes();
-      oldNotes[0].push('');
-      newRange.setNotes(oldNotes);
-      toDelete.push({
-        range: cutRange,
-        row: row,
-      });
-    }
-  }
-
-  toDelete.sort(function sortByRow(a, b){
-    return b.row - a.row;
-  }).forEach(function deleteItem(rangeToDelete) {
-    rangeToDelete.range.deleteCells(SpreadsheetApp.Dimension.ROWS);
-    Utilities.sleep(50);
-  });
+function cleanupHTML(htmlText) {
+  return htmlText.match(/<body[\s\S]*?<\/body>/)[0]
+                 .replace(/<(no)?script[\s\S]*?<\/(no)?script>/g, '')
+                 .replace(/<!--|-->/g, '');
 }
 
 // Add item information to specific cell, archiving previous value as note
@@ -1081,10 +1118,11 @@ function markCellForUpdate(row, key, value) {
   contextValues.sheetData[row][cellColumn] = value;
 }
 
-function updateAllCells() {
-  if (updatedItems.length) {
-    contextValues.sheetRange.setValues(contextValues.sheetData);
-    contextValues.sheetRange.setNotes(contextValues.sheetNotes);
+function cleanupTitle(title) {
+  if (title.replace) {
+    return title.replace(/\s*\(.*\)\s*$/i, '').replace(/\s\s*/, ' ').toLowerCase();
+  } else {
+    return title;
   }
 }
 
