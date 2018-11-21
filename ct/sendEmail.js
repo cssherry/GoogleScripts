@@ -409,7 +409,7 @@ function addOrUpdatePbPItem(pbpItem) {
 
     if (date !== itemInfo.date) {
       markCellForUpdate(itemInfo.row, 'Date', date);
-      currentItem[contextValues.sheetIndex.Date] = date + '<br><em>(Previously ' + itemInfo.date + ')</em>';
+      currentItem[contextValues.sheetIndex.Date] = boldWord(date) + '<br><em>(Previously ' + boldWord(itemInfo.date) + ')</em>';
     }
 
     checkRatingAndDeletePreviousListing(itemInfo, url, currentItem, title);
@@ -598,13 +598,13 @@ function processRatingItem(item) {
       var updated = [];
 
       if (rating !== data[ratingIdx]) {
-        updated.push('Rating: ' + rating + '<em>(Previously ' + data[ratingIdx] + ')</em>');
+        updated.push('Rating: ' + boldWord(rating) + '<em>(Previously ' + boldWord(data[ratingIdx]) + ')</em>');
         noteArray[ratingIdx] = new Date().toISOString() + ' overwrote: ' + data[ratingIdx] + '\n' + noteArray[ratingIdx];
         data[ratingIdx] = rating;
       }
 
       if (numberReviews !== data[numberReviewsIdx]) {
-        updated.push('NumberReviews: ' + numberReviews + '<em>(Previously ' + data[numberReviewsIdx] + ')</em>');
+        updated.push('NumberReviews: ' + boldWord(numberReviews) + '<em>(Previously ' + boldWord(data[numberReviewsIdx]) + ')</em>');
         noteArray[numberReviewsIdx] = new Date().toISOString() + ' overwrote: ' + data[numberReviewsIdx] + '\n' + noteArray[numberReviewsIdx];
         data[numberReviewsIdx] = numberReviews;
       }
@@ -663,7 +663,7 @@ function getRating(title) {
 function emailRatingIfRatingChanged(newRating, oldRating, emailInfo) {
   const replaceRegex = /\(.*reviews\)/;
   if (newRating.replace(replaceRegex, '') !== oldRating.replace(replaceRegex, '')) {
-    emailInfo[contextValues.sheetIndex.Rating] = newRating + '<em>(Previously ' + oldRating + ')</em>';
+    emailInfo[contextValues.sheetIndex.Rating] = boldWord(newRating) + '<em>(Previously ' + boldWord(oldRating) + ')</em>';
   }
 }
 
@@ -678,7 +678,7 @@ function checkRatingAndDeletePreviousListing(itemInfo, url, currentItem, title) 
       title !== '"' + itemInfo.title + '"' &&
       title !== itemInfo.title + '"') {
     markCellForUpdate(itemInfo.row, 'Title', title);
-    currentItem[contextValues.sheetIndex.Title] = title + '<br><em>(Previously ' + itemInfo.title + ')</em>';
+    currentItem[contextValues.sheetIndex.Title] = boldWord(title) + '<br><em>(Previously ' + boldWord(itemInfo.title) + ')</em>';
   }
 
   if (rating !== itemInfo.rating) {
@@ -744,12 +744,12 @@ function addOrUpdateAc(item) {
       var newFee = isNowFree ? 'FREE' : '~£3.60';
       var oldFee = isNowFree ? '~£3.60' : 'FREE';
       markCellForUpdate(itemInfo.row, 'AdminFee', newFee);
-      currentItem[contextValues.sheetIndex.AdminFee] = newFee + ' <br><em>(Previously ' + oldFee + ')</em>';
+      currentItem[contextValues.sheetIndex.AdminFee] = boldWord(newFee) + ' <br><em>(Previously ' + boldWord(oldFee) + ')</em>';
     }
 
     if (date !== itemInfo.date) {
       markCellForUpdate(itemInfo.row, 'Date', date);
-      currentItem[contextValues.sheetIndex.Date] = date + '<br><em>(Previously ' + itemInfo.date + ')</em>';
+      currentItem[contextValues.sheetIndex.Date] = boldWord(date) + '<br><em>(Previously ' + boldWord(itemInfo.date) + ')</em>';
     }
 
     if (title !== itemInfo.title &&
@@ -760,7 +760,7 @@ function addOrUpdateAc(item) {
         title !== '"' + itemInfo.title + '"' &&
         title !== itemInfo.title + '"') {
       markCellForUpdate(itemInfo.row, 'Title', title);
-      currentItem[contextValues.sheetIndex.Title] = title + '<br><em>(Previously ' + itemInfo.title + ')</em>';
+      currentItem[contextValues.sheetIndex.Title] = boldWord(title) + '<br><em>(Previously ' + boldWord(itemInfo.title) + ')</em>';
     }
 
     if (rating !== itemInfo.rating) {
@@ -776,7 +776,7 @@ function addOrUpdateAc(item) {
         description !== '"' + itemInfo.category + '"' &&
         description !== itemInfo.category + '"') {
       markCellForUpdate(itemInfo.row, 'Category', description);
-      currentItem[contextValues.sheetIndex.Category] = description + '<br><em>(Previously ' + itemInfo.category + ')</em>';
+      currentItem[contextValues.sheetIndex.Category] = boldWord(description) + '<br><em>(Previously ' + boldWord(itemInfo.category) + ')</em>';
     }
 
     if (currentItem.length) {
@@ -840,12 +840,12 @@ function addOrUpdate(item) {
         currentItem = [];
     if (fee !== itemInfo.fee) {
       markCellForUpdate(itemInfo.row, 'AdminFee', fee);
-      currentItem[contextValues.sheetIndex.AdminFee] = fee + '<br><em>(Previously ' + itemInfo.fee + ')</em>';
+      currentItem[contextValues.sheetIndex.AdminFee] = boldWord(fee) + '<br><em>(Previously ' + iboldWord(temInfo.fee) + ')</em>';
     }
 
     if (date !== itemInfo.date) {
       markCellForUpdate(itemInfo.row, 'Date', date);
-      currentItem[contextValues.sheetIndex.Date] = date + '<br><em>(Previously ' + itemInfo.date + ')</em>';
+      currentItem[contextValues.sheetIndex.Date] = boldWord(date) + '<br><em>(Previously ' + boldWord(itemInfo.date) + ')</em>';
     }
 
     checkRatingAndDeletePreviousListing(itemInfo, url, currentItem, title);
@@ -1086,4 +1086,8 @@ function updateAllCells() {
     contextValues.sheetRange.setValues(contextValues.sheetData);
     contextValues.sheetRange.setNotes(contextValues.sheetNotes);
   }
+}
+
+function boldWord(word) {
+  return '<b>' + word + '</b>';
 }
