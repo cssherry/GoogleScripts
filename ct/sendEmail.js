@@ -926,7 +926,7 @@ function getRating(title) {
 }
 
 function emailRatingIfRatingChanged(newRating, oldRating, emailInfo) {
-  var replaceRegex = /\(.*reviews\)/;
+  var replaceRegex = /\/.*/;
   if (newRating.replace(replaceRegex, '') !== oldRating.replace(replaceRegex, '')) {
     emailInfo[contextValues.sheetIndex.Rating] = boldWord(newRating) + '<em>(Previously ' + boldWord(oldRating) + ')</em>';
   }
