@@ -325,7 +325,9 @@ function processPreviousListings() {
   }
 }
 
-function removeAndEmail(domain, errorLoadingPage) {
+function removeAndEmail(domain, specificErrorMessage) {
+  specificErrorMessage = specificErrorMessage || '';
+
   for (var oldUrl in contextValues.previousListings) {
     if (contextValues.previousListings.hasOwnProperty(oldUrl) && oldUrl.indexOf(domain) !== -1) {
       delete contextValues.previousListings[oldUrl];
@@ -345,11 +347,11 @@ function removeAndEmail(domain, errorLoadingPage) {
 
   // If it hasn't been emailed today
   var lastEmailedDate = contextValues.errorData[contextValues.lastErrorRow - 1][contextValues.errorDateIdx];
-  if (!lastEmailedDate.toDateString || lastEmailedDate.toDateString() !== new Date().toDateString()) {
+  if (specificErrorMessage || !lastEmailedDate.toDateString || lastEmailedDate.toDateString() !== new Date().toDateString()) {
     var updateMessage = 'Update ' + domain + ' Token';
 
-    if (errorLoadingPage) {
-      updateMessage = 'Error loading page for :' + domain + ' (' + errorLoadingPage + ')';
+    if (specificErrorMessage) {
+      updateMessage = 'Error loading page for :' + domain + ' (' + specificErrorMessage + ')';
     }
 
     var email = MailApp.sendEmail({
@@ -368,10 +370,10 @@ function removeAndEmail(domain, errorLoadingPage) {
   }
 
   var currentData = contextValues.errorData[contextValues.lastErrorRow - 1][contextValues.errorSitesIdx];
-  if (!currentData || currentData.indexOf(domain) === -1) {
-    var cells = contextValues.errorSheet.getRange(contextValues.lastErrorRow, 1, 1, 2);
+  if (specificErrorMessage || !currentData || currentData.indexOf(domain) === -1) {
+    var cells = contextValues.errorSheet.getRange(contextValues.lastErrorRow, 1, 1, 3);
     currentData = currentData ? currentData + ', ' + domain : domain;
-    cells.setValues([[new Date(), currentData]]);
+    cells.setValues([[new Date(), currentData, specificErrorMessage || 'updateToken']]);
   }
 }
 
