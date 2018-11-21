@@ -1,3 +1,4 @@
+var startHour = 6; // This is the hour ratings will be calculated
 var contextValues = {
   alreadyDeleted: {},
 };
@@ -19,7 +20,7 @@ function updateSheet() {
   // Only run after 7 AM or before 11 PM
   var currentDate = new Date();
   var currentHour = currentDate.getHours();
-  if (currentHour < 6 || currentHour >= 23) {
+  if (currentHour < startHour || currentHour >= 23) {
     return;
   }
 
@@ -123,9 +124,10 @@ function updateSheet() {
   if (loginAcCode === 200) { //could not log in.
     removeAndEmail(urls.acDomain);
   } else if (loginAcCode === 303 || loginAcCode === 302) {
-    // Only get ratings once a day
-    var currentHour = currentDate.getHours();
-    if (currentHour <= 6) {
+    // Only get ratings once a day or whenever we're not getting new events
+    var isFirstRun = currentHour <= startHour;
+    var lastIdx = contextValues.sheetData[0].length - 1;
+    if (isFirstRun || currentHour % contextValues.sheetData[0][lastIdx] !== 0) {
       contextValues.ratingMin = contextValues.ratingData.length + 1;
       var acReviewString = UrlFetchApp.fetch(urls.acReviews,
                                       {
@@ -157,13 +159,16 @@ function updateSheet() {
                         contextValues.updatedRatings.join('<hr><br>') + '<hr>';
       }
 
-      MailApp.sendEmail({
-        to: myEmail,
-        subject: '[CT] New Ratings (' + contextValues.newRatings.length +
-                 ') | Updated Ratings (' + contextValues.updatedRatings.length + ')',
-        htmlBody: ratingMessage
-                    + 'Link: ' + spreadsheetURL,
-      });
+      if (isFirstRun) {
+        MailApp.sendEmail({
+          to: myEmail,
+          subject: '[CT] New Ratings (' + contextValues.newRatings.length +
+                   ') | Updated Ratings (' + contextValues.updatedRatings.length + ')',
+          htmlBody: ratingMessage
+                      + 'Link: ' + spreadsheetURL,
+        });
+      }
+
       return;
     }
 
