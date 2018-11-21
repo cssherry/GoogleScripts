@@ -43,6 +43,15 @@ function updateSheet() {
   // // Remove duplicates
   // contextValues.ratingRange.setValues(contextValues.ratingData);
 
+  // Get ratings for location
+  contextValues.locationRatings = {};
+  contextValues.locationRatingData = SpreadsheetApp.getActiveSpreadsheet()
+                                                   .getSheetByName('ratingAnalysis')
+                                                   .getDataRange()
+                                                   .getValues();
+  contextValues.locationRatingIndex = indexSheet(contextValues.locationRatingData);
+  contextValues.locationRatingData.forEach(processOldLocationRatings);
+
 /** NOT WORKING
   // Process FM Listings
   var fmHTML = UrlFetchApp.fetch(urls.fmMain,
@@ -313,6 +322,7 @@ function processPreviousListings() {
   var imageIdx = contextValues.sheetIndex.Image;
   var dateIdx = contextValues.sheetIndex.Date;
   var categoryIdx = contextValues.sheetIndex.Category;
+  var locationRatingIdx = contextValues.sheetIndex.LocationRating;
   var locIdx = contextValues.sheetIndex.Location;
   var ratingIdx = contextValues.sheetIndex.Rating;
   contextValues.lastRow = contextValues.sheetData.length;
@@ -340,6 +350,7 @@ function processPreviousListings() {
         date: dateValue,
         category: categoryValue,
         location: locValue,
+        locationRating: currItem[locationRatingIdx],
         rating: currItem[ratingIdx],
       };
       previousListingObject[titleIdx] = titleValue;
@@ -375,6 +386,11 @@ function processOldRatings(ratingData, idx) {
 
   contextValues.ratings[ratingData[contextValues.ratingIndex.URL]] = idx;
   contextValues.ratings[cleanupTitle(ratingData[contextValues.ratingIndex.Title])] = ratingData;
+}
+
+function processOldLocationRatings(ratingData, idx) {
+  var cleanedLocation = cleanupLocation(ratingData[contextValues.locationRatingIndex.SortedName]);
+  contextValues.locationRatings[cleanedLocation] = ratingData;
 }
 
 function processRatingItem(item) {
@@ -560,6 +576,7 @@ function addOrUpdateAc(item) {
     listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl + '")';
     listingInfo[contextValues.sheetIndex.Title] = title;
     listingInfo[contextValues.sheetIndex.Rating] = rating;
+    listingInfo[contextValues.sheetIndex.LocationRating] = getLocationRating(venue);
     listingInfo[contextValues.sheetIndex.AdminFee] = contextValues.freeAC[url] ? 'FREE' : '~£3.60';
     listingInfo[contextValues.sheetIndex.Date] = date;
     listingInfo[contextValues.sheetIndex.Category] = description;
@@ -641,6 +658,8 @@ function getLocationTimePicture(rowEl, rowString, elData) {
   elData[contextValues.sheetIndex.Image] = '=Image("' + getFullPbpUrl(ImageUrl) + '")';
   elData[contextValues.sheetIndex.Date] = date;
   elData[contextValues.sheetIndex.Location] = location;
+  elData[contextValues.sheetIndex.LocationRating] = getLocationRating(location);
+
 }
 
 function getPbpId(rowString) {
@@ -691,6 +710,7 @@ function addOrUpdateSf(item) {
     listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ((ImageUrl && ImageUrl[1]) || '') + '")';
     listingInfo[contextValues.sheetIndex.Title] = title;
     listingInfo[contextValues.sheetIndex.Rating] = getRating(title);
+    listingInfo[contextValues.sheetIndex.LocationRating] = getRating(location);
     listingInfo[contextValues.sheetIndex.AdminFee] = price;
     listingInfo[contextValues.sheetIndex.Date] = date[0].getText().trim() + time;
     listingInfo[contextValues.sheetIndex.Category] = trimHtml(description[0].toXmlString());
@@ -778,13 +798,15 @@ function addNewListingCT(item, htmlText, url) {
     return;
   }
 
+  var location = getColonSeparatedTextCT(htmlText, 'Location');
   listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl + '")';
   listingInfo[contextValues.sheetIndex.Title] = title;
   listingInfo[contextValues.sheetIndex.Rating] = getRating(title);
+  listingInfo[contextValues.sheetIndex.LocationRating] = getRating(location);
   listingInfo[contextValues.sheetIndex.AdminFee] = getFeeCT(htmlText);
   listingInfo[contextValues.sheetIndex.Date] = getDateCT(htmlText);
   listingInfo[contextValues.sheetIndex.Category] = getColonSeparatedTextCT(htmlText, 'Category');
-  listingInfo[contextValues.sheetIndex.Location] = getColonSeparatedTextCT(htmlText, 'Location');
+  listingInfo[contextValues.sheetIndex.Location] = location;
   listingInfo[contextValues.sheetIndex.Url] = url;
   listingInfo[contextValues.sheetIndex.EventManager] = getColonSeparatedTextCT(htmlText, 'Event Manager');
   listingInfo[contextValues.sheetIndex.UploadDate] = new Date();
@@ -889,8 +911,10 @@ function archiveExpiredItems() {
       lastArchiveRow++;
       currentItem = contextValues.previousListings[expiredItem];
       row = currentItem.row + 1;
-      cutRange = contextValues.sheet.getRange('A' + row + ':J' + row);
-      newRange = archive.getRange('A' + lastArchiveRow + ':K' + lastArchiveRow)
+
+      // UPDATE IF ADD NEW ROWS
+      cutRange = contextValues.sheet.getRange('A' + row + ':K' + row);
+      newRange = archive.getRange('A' + lastArchiveRow + ':L' + lastArchiveRow)
       oldValues = cutRange.getValues();
       oldValues[0][imageIdx] = getImageUrl(contextValues.sheetData[currentItem.row][imageIdx]);
       oldValues[0].push(currentTime);
@@ -937,6 +961,8 @@ function emailRatingIfRatingChanged(newRating, oldRating, emailInfo) {
 
 function checkRatingAndDeletePreviousListing(itemInfo, url, currentItem, title) {
   var rating = getRating(title);
+  var location = itemInfo.location;
+  var locationRating = getLocationRating(location);
 
   if (title !== itemInfo.title &&
       title !== "'" + itemInfo.title &&
@@ -952,6 +978,10 @@ function checkRatingAndDeletePreviousListing(itemInfo, url, currentItem, title) 
   if (rating !== itemInfo.rating) {
     markCellForUpdate(itemInfo.row, 'Rating', rating);
     emailRatingIfRatingChanged(rating, itemInfo.rating, currentItem);
+  }
+
+  if (locationRating !== itemInfo.locationRating) {
+    markCellForUpdate(itemInfo.row, 'LocationRating', locationRating);
   }
 
   if (currentItem.length) {
@@ -973,6 +1003,7 @@ function checkRatingAndDeletePreviousListing(itemInfo, url, currentItem, title) 
 
 
     currentItem[contextValues.sheetIndex.Location] = itemInfo.location;
+    currentItem[contextValues.sheetIndex.LocationRating] = locationRating;
     currentItem[contextValues.sheetIndex.Url] = url;
     updatedItems.push(currentItem);
   }
@@ -1097,6 +1128,7 @@ function getElementSection(listingInfo) {
   var imageIdx = contextValues.sheetIndex.Image;
   var titleIdx = contextValues.sheetIndex.Title;
   var ratingIdx = contextValues.sheetIndex.Rating;
+  var locationRatingIdx = contextValues.sheetIndex.LocationRating;
   var locationIdx = contextValues.sheetIndex.Location;
   var dateIdx = contextValues.sheetIndex.Date;
   var categoryIdx = contextValues.sheetIndex.Category;
@@ -1107,7 +1139,8 @@ function getElementSection(listingInfo) {
                  '';
   var rating = listingInfo[ratingIdx] ? ' <small>' + listingInfo[ratingIdx] + '</small>' : '';
   var feeDiv = listingInfo[feeIdx] ? (listingInfo[feeIdx] + '<br>') : '';
-  var locationDiv = listingInfo[locationIdx] ? (listingInfo[locationIdx] + '<br>') : '';
+  var locationRatingDiv = listingInfo[locationRatingIdx] ? ' (<small>' + (listingInfo[locationRatingIdx] + '</small>)') : '';
+  var locationDiv = listingInfo[locationIdx] ? (listingInfo[locationIdx] + locationRatingDiv + '<br>') : '';
   var dateDiv = listingInfo[dateIdx] ? (listingInfo[dateIdx] + '<br>') : '';
   var categoryDiv = listingInfo[categoryIdx] ? (listingInfo[categoryIdx] + '<br>') : '';
   return '<h3>' + listingInfo[titleIdx] + rating + '</h3><br>' +
@@ -1147,6 +1180,35 @@ function cleanupTitle(title) {
     return title.replace(/\s*\(.*\)\s*$/i, '').replace(/\s\s*/, ' ').toLowerCase();
   } else {
     return title;
+  }
+}
+
+function getLocationRating(location) {
+  location = cleanupLocation(location, 'thoroughReplace');
+  var currLocation = contextValues.locationRatings[location];
+  var ratingIdx = contextValues.locationRatingIndex.SortedRating;
+  var countIdx = contextValues.locationRatingIndex.SortedCount;
+  var reviewIdx = contextValues.locationRatingIndex.SortedReviews;
+  var currRating = currLocation ? currLocation[ratingIdx] : '';
+  return (currRating !== '' && !isNaN(currRating)) ?
+    Math.round(currRating * 100) / 100 +
+            ' (' + currLocation[countIdx] +
+            '-' + currLocation[reviewIdx] + ')' :
+         '';
+}
+
+function cleanupLocation(location, thoroughReplace) {
+  if (location.replace) {
+    location = location.trim().replace(/\([\s\S]*|,[\s\S]*|\s-\s[\s\S]*|;[\s\S]*/i, '');
+
+    if (thoroughReplace) {
+      location = location.trim().replace(/\s\s[\s\S]*/, '');
+    }
+
+    return location.trim()
+                   .toLowerCase();
+  } else {
+    return location;
   }
 }
 
