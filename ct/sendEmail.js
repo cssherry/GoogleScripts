@@ -412,37 +412,7 @@ function addOrUpdatePbPItem(pbpItem) {
       currentItem[contextValues.sheetIndex.Date] = date + '<br><em>(Previously ' + itemInfo.date + ')</em>';
     }
 
-    if (title !== itemInfo.title &&
-        title !== "'" + itemInfo.title &&
-        title !== "'" + itemInfo.title + "'" &&
-        title !== itemInfo.title + "'" &&
-        title !== '"' + itemInfo.title &&
-        title !== '"' + itemInfo.title + '"' &&
-        title !== itemInfo.title + '"') {
-      markCellForUpdate(itemInfo.row, 'Title', title);
-      currentItem[contextValues.sheetIndex.Title] = title + '<br><em>(Previously ' + itemInfo.title + ')</em>';
-    }
-
-    if (currentItem.length) {
-      if (!currentItem[contextValues.sheetIndex.Title]) {
-        currentItem[contextValues.sheetIndex.Title] = title;
-      }
-
-      if (!currentItem[contextValues.sheetIndex.Date]) {
-        currentItem[contextValues.sheetIndex.Date] = date;
-      }
-
-      if (!currentItem[contextValues.sheetIndex.Rating]) {
-        currentItem[contextValues.sheetIndex.Rating] = rating;
-      }
-
-      currentItem[contextValues.sheetIndex.Location] = itemInfo.location;
-      currentItem[contextValues.sheetIndex.Url] = url;
-      updatedItems.push(currentItem);
-    }
-
-    delete contextValues.previousListings[url];
-    contextValues.alreadyDeleted[url] = true;
+    checkRatingAndDeletePreviousListing(itemInfo, url, currentItem, title);
   } else if (!contextValues.alreadyDeleted[url]) {
     pbpItem[contextValues.sheetIndex.AdminFee] = '~£2';
     pbpItem[contextValues.sheetIndex.Category] = '';
@@ -487,17 +457,16 @@ function addOrUpdateFm(item) {
 
   var links = getElementsByTagName(item, 'a')
   var aElement = links[0];
+  var title = aElement.getText().trim();
+  if (!title) {
+    return;
+  }
+
   var url = aElement.getAttribute('href').getValue().replace('.', urls.fmDomain).trim();
   var itemInfo = contextValues.previousListings[url];
   if (itemInfo) {
-    delete contextValues.previousListings[url];
-    contextValues.alreadyDeleted[url] = true;
+    checkRatingAndDeletePreviousListing(itemInfo, url, [], title);
   } else if (!contextValues.alreadyDeleted[url]) {
-    var title = aElement.getText().trim();
-    if (!title) {
-      return;
-    }
-
     var listingInfo = [];
     listingInfo[contextValues.sheetIndex.Image] = '=Image("' + urls.fmImage + '")';
     listingInfo[contextValues.sheetIndex.Title] = title;
@@ -516,20 +485,20 @@ function addOrUpdateFm(item) {
 
 // Figure out of the page which listings are new
 function addOrUpdateSf(item) {
+  var title = getElementsByTagName(item, 'h2');
+  title = title[0].getText().trim();
+  if (!title) {
+    return;
+  }
+
   var aElement = getElementsByTagName(item, 'a')[0];
   var url = aElement.getAttribute('href').getValue().trim();
   var itemInfo = contextValues.previousListings[url];
   if (itemInfo) {
-    delete contextValues.previousListings[url];
-    contextValues.alreadyDeleted[url] = true;
+    checkRatingAndDeletePreviousListing(itemInfo, url, [], title);
   } else if (!contextValues.alreadyDeleted[url]) {
     var itemHtml = item.toXmlString();
     var ImageUrl = itemHtml.match(/background-image:url\(.*?(http:\/\/.*?\.jpg)/i);
-    var title = getElementsByTagName(item, 'h2');
-    title = title[0].getText().trim();
-    if (!title) {
-      return;
-    }
 
     var date = getElementByClassName(item, 'date-event');
     var description = getElementByClassName(item, 'internal_content');
@@ -691,6 +660,59 @@ function getRating(title) {
          '';
 }
 
+function emailRatingIfRatingChanged(newRating, oldRating, emailInfo) {
+  const replaceRegex = /\(.*reviews\)/;
+  if (newRating.replace(replaceRegex, '') !== oldRating.replace(replaceRegex, '')) {
+    emailInfo[contextValues.sheetIndex.Rating] = newRating + '<em>(Previously ' + oldRating + ')</em>';
+  }
+}
+
+function checkRatingAndDeletePreviousListing(itemInfo, url, currentItem, title) {
+  var rating = getRating(title);
+
+  if (title !== itemInfo.title &&
+      title !== "'" + itemInfo.title &&
+      title !== "'" + itemInfo.title + "'" &&
+      title !== itemInfo.title + "'" &&
+      title !== '"' + itemInfo.title &&
+      title !== '"' + itemInfo.title + '"' &&
+      title !== itemInfo.title + '"') {
+    markCellForUpdate(itemInfo.row, 'Title', title);
+    currentItem[contextValues.sheetIndex.Title] = title + '<br><em>(Previously ' + itemInfo.title + ')</em>';
+  }
+
+  if (rating !== itemInfo.rating) {
+    markCellForUpdate(itemInfo.row, 'Rating', rating);
+    emailRatingIfRatingChanged(rating, itemInfo.rating, currentItem);
+  }
+
+  if (currentItem.length) {
+    if (!currentItem[contextValues.sheetIndex.Title]) {
+      currentItem[contextValues.sheetIndex.Title] = title;
+    }
+
+    if (!currentItem[contextValues.sheetIndex.Date]) {
+      currentItem[contextValues.sheetIndex.Date] = itemInfo.date;
+    }
+
+    if (!currentItem[contextValues.sheetIndex.Rating]) {
+      currentItem[contextValues.sheetIndex.Rating] = rating;
+    }
+
+    if (!currentItem[contextValues.sheetIndex.Category]) {
+      currentItem[contextValues.sheetIndex.Category] = itemInfo.category;
+    }
+
+
+    currentItem[contextValues.sheetIndex.Location] = itemInfo.location;
+    currentItem[contextValues.sheetIndex.Url] = url;
+    updatedItems.push(currentItem);
+  }
+
+  delete contextValues.previousListings[url];
+  contextValues.alreadyDeleted[url] = true;
+}
+
 // Figure out of the page which listings are new
 function addOrUpdateAc(item) {
   var header = getElementByClassName(item, 'showtitle')
@@ -743,7 +765,7 @@ function addOrUpdateAc(item) {
 
     if (rating !== itemInfo.rating) {
       markCellForUpdate(itemInfo.row, 'Rating', rating);
-      currentItem[contextValues.sheetIndex.Rating] = rating + '<em>(Previously ' + itemInfo.rating + ')</em>';
+      emailRatingIfRatingChanged(rating, itemInfo.rating, currentItem);
     }
 
     if (description !== itemInfo.category &&
@@ -791,7 +813,7 @@ function addOrUpdateAc(item) {
     var listingInfo = [];
     listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl + '")';
     listingInfo[contextValues.sheetIndex.Title] = title;
-    listingInfo[contextValues.sheetIndex.Rating] = getRating(title);
+    listingInfo[contextValues.sheetIndex.Rating] = rating;
     listingInfo[contextValues.sheetIndex.AdminFee] = contextValues.freeAC[url] ? 'FREE' : '~£3.60';
     listingInfo[contextValues.sheetIndex.Date] = date;
     listingInfo[contextValues.sheetIndex.Category] = description;
@@ -826,43 +848,7 @@ function addOrUpdate(item) {
       currentItem[contextValues.sheetIndex.Date] = date + '<br><em>(Previously ' + itemInfo.date + ')</em>';
     }
 
-    if (rating !== itemInfo.rating) {
-      markCellForUpdate(itemInfo.row, 'Rating', rating);
-      currentItem[contextValues.sheetIndex.Rating] = rating + '<em>(Previously ' + itemInfo.rating + ')</em>';
-    }
-
-    if (title !== itemInfo.title &&
-        title !== "'" + itemInfo.title &&
-        title !== "'" + itemInfo.title + "'" &&
-        title !== itemInfo.title + "'" &&
-        title !== '"' + itemInfo.title &&
-        title !== '"' + itemInfo.title + '"' &&
-        title !== itemInfo.title + '"') {
-      markCellForUpdate(itemInfo.row, 'Title', title);
-      currentItem[contextValues.sheetIndex.Title] = title + '<br><em>(Previously ' + itemInfo.title + ')</em>';
-    }
-
-    if (currentItem.length) {
-      if (!currentItem[contextValues.sheetIndex.Title]) {
-        currentItem[contextValues.sheetIndex.Title] = title;
-      }
-
-      if (!currentItem[contextValues.sheetIndex.Date]) {
-        currentItem[contextValues.sheetIndex.Date] = date;
-      }
-
-      if (!currentItem[contextValues.sheetIndex.Rating]) {
-        currentItem[contextValues.sheetIndex.Rating] = rating;
-      }
-
-      currentItem[contextValues.sheetIndex.Category] = itemInfo.category;
-      currentItem[contextValues.sheetIndex.Location] = itemInfo.location;
-      currentItem[contextValues.sheetIndex.Url] = url;
-      updatedItems.push(currentItem);
-    }
-
-    delete contextValues.previousListings[url];
-    contextValues.alreadyDeleted[url] = true;
+    checkRatingAndDeletePreviousListing(itemInfo, url, currentItem, title);
   } else if (!contextValues.alreadyDeleted[url]) {
     addNewListing(item, htmlText, url);
   }
