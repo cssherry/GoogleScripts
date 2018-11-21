@@ -162,6 +162,7 @@ function updateSheet() {
         subject: '[CT] New Ratings (' + contextValues.newRatings.length +
                  ') | Updated Ratings (' + contextValues.updatedRatings.length + ')',
         htmlBody: ratingMessage
+                    + 'Link: ' + spreadsheetURL,
       });
       return;
     }
@@ -815,6 +816,7 @@ function sendEmail() {
   if (!updatedItems.length && !newItemsForUpdate.length) return;
 
   var footer = '<hr>' +
+               'Sheet: ' + spreadsheetURL;
   var newItemsText = newItemsForUpdate.length ? '<hr><h2>New:</h2><br>' + newItemsForUpdate.map(getElementSection).join('') : '';
   var updatedItemsText = updatedItems.length ? '<hr><h2>Updated:</h2><br>' + updatedItems.map(getElementSection).join('') : '';
   var archivedItemsText = '';
@@ -992,6 +994,7 @@ function removeAndEmail(domain, specificErrorMessage) {
       to: myEmail,
       subject: '[CT] ' + updateMessage,
       htmlBody: updateMessage
+                 + ': ' + spreadsheetURL,
     });
 
     contextValues.lastErrorRow++;
