@@ -913,7 +913,7 @@ function archiveExpiredItems() {
 
 function getRating(title) {
   title = cleanupTitle(title);
-  const currItem = contextValues.ratings[title];
+  var currItem = contextValues.ratings[title];
   return currItem ?
          currItem[contextValues.ratingIndex.Rating] + '/5 (' +
             currItem[contextValues.ratingIndex.NumberReviews] + ' reviews - ' +
@@ -922,7 +922,7 @@ function getRating(title) {
 }
 
 function emailRatingIfRatingChanged(newRating, oldRating, emailInfo) {
-  const replaceRegex = /\(.*reviews\)/;
+  var replaceRegex = /\(.*reviews\)/;
   if (newRating.replace(replaceRegex, '') !== oldRating.replace(replaceRegex, '')) {
     emailInfo[contextValues.sheetIndex.Rating] = boldWord(newRating) + '<em>(Previously ' + boldWord(oldRating) + ')</em>';
   }
