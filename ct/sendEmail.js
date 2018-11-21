@@ -293,7 +293,7 @@ function updateSheet() {
   var secondLastIdx = contextValues.sheetData[0].length - 2;
   var timeEmail = contextValues.sheetData[0][secondLastIdx];
   if (timeEmail) {
-    sendEmail();
+    sendEmail(timeEmail);
   }
 
   updateAllCells();
@@ -824,9 +824,13 @@ function addNewCellItemsRow() {
 
 // --------------------------------------------
 // Send email with new listing information
-function sendEmail() {
+function sendEmail(numberItemsToSend) {
   // Only send if there's new items
-  if (!updatedItems.length && !newItemsForUpdate.length) return;
+  var noUpdatedItem = !updatedItems.length && numberItemsToSend === 2;
+  if (!newItemsForUpdate.length &&
+      (noUpdatedItem || numberItemsToSend === 1)) {
+    return
+  }
 
   var footer = '<hr>' +
                'Sheet: ' + spreadsheetURL;
