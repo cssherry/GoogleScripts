@@ -901,7 +901,8 @@ function getRating(title) {
   const currItem = contextValues.ratings[title];
   return currItem ?
          currItem[contextValues.ratingIndex.Rating] + '/5 (' +
-            currItem[contextValues.ratingIndex.NumberReviews] + ' reviews)' :
+            currItem[contextValues.ratingIndex.NumberReviews] + ' reviews - ' +
+            currItem[contextValues.ratingIndex.URL] + ')' :
          '';
 }
 
