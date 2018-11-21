@@ -456,7 +456,10 @@ function getLocationTimePicture(rowEl, rowString, elData) {
   var columns = getElementsByTagName(rowEl, 'td', 'onlyFirstLevel');
   var ImageUrl = getElementsByTagName(columns[0], 'img')[0].getAttribute('src').getValue();
   var location = trimHtml(columns[0].toXmlString()).trim();
-  var date = trimHtml(columns[1].toXmlString().replace('</td>', '\n')).trim();
+  var date = trimHtml(columns[1].toXmlString())
+              .replace(/\bpm/ig, 'PM;\n')
+              .replace(/\bam/ig, 'AM;\n')
+              .trim();
   elData[contextValues.sheetIndex.Image] = '=Image("' + getFullPbpUrl(ImageUrl) + '")';
   elData[contextValues.sheetIndex.Date] = date;
   elData[contextValues.sheetIndex.Location] = location;
