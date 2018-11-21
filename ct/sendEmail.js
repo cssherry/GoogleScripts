@@ -385,6 +385,7 @@ function processRatingItem(item) {
   var numberReviewsIdx = contextValues.ratingIndex.NumberReviews;
   var urlIdx = contextValues.ratingIndex.URL;
   var addedIdx = contextValues.ratingIndex.AddedDate;
+  var countColIdx = contextValues.ratingIndex.CountCol;
 
   var data = [];
   var noteArray;
@@ -439,6 +440,7 @@ function processRatingItem(item) {
       data[numberReviewsIdx] = numberReviews;
       data[urlIdx] = url;
       data[addedIdx] = new Date();
+      data[countColIdx] = 1;
       noteArray = [];
       for (var i = 0; i < data.length;) noteArray[i++] = '';
 
