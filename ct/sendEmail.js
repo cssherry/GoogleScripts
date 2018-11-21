@@ -629,7 +629,7 @@ function processRatingItem(item) {
       var updated = [];
 
       if (rating !== data[ratingIdx]) {
-        updated.push('Rating: ' + rating + '/5<em>(Previously ' + data[ratingIdx] + '/5)</em>');
+        updated.push('Rating: ' + rating + '<em>(Previously ' + data[ratingIdx] + ')</em>');
         noteArray[ratingIdx] = new Date().toISOString() + ' overwrote: ' + data[ratingIdx] + '\n' + noteArray[ratingIdx];
         data[ratingIdx] = rating;
       }
@@ -642,7 +642,7 @@ function processRatingItem(item) {
 
       if (updated.length) {
         updated.push('url: ' + url);
-        contextValues.updatedRatings.push('<h4>' + fullTitle + '  <small>' + rating + '/5</small></h4>' + updated.join('<br>'));
+        contextValues.updatedRatings.push('<h4>' + fullTitle + '  <small>' + rating + '</small></h4>' + updated.join('<br>'));
         contextValues.ratingMin = Math.min(rowIdx + 1, contextValues.ratingMin);
       }
     } else {
@@ -669,7 +669,7 @@ function processRatingItem(item) {
 
       newItems.push('NumberReviews: ' + numberReviews)
       newItems.push('url: ' + url)
-      contextValues.newRatings.push('<h4>' + fullTitle + '  <small>' + rating + '/5</small></h4>' + newItems.join('<br>'));
+      contextValues.newRatings.push('<h4>' + fullTitle + '  <small>' + rating + '</small></h4>' + newItems.join('<br>'));
     }
   }
 }
@@ -684,8 +684,10 @@ function cleanupTitle(title) {
 
 function getRating(title) {
   title = cleanupTitle(title);
-  return contextValues.ratings[title] ?
-         contextValues.ratings[title][contextValues.ratingIndex.Rating] :
+  const currItem = contextValues.ratings[title];
+  return currItem ?
+         currItem[contextValues.ratingIndex.Rating] + '/5 (' +
+            currItem[contextValues.ratingIndex.NumberReviews] + ' reviews)' :
          '';
 }
 
@@ -1013,7 +1015,7 @@ function getElementSection(listingInfo) {
   var imageUrl = listingInfo[imageIdx] ? getImageUrl(listingInfo[imageIdx])  : '';
   var imageDiv = imageUrl ? '<img src="' + imageUrl + '" alt="' + listingInfo[titleIdx] + '" width="128">' :
                  '';
-  var rating = listingInfo[ratingIdx] ? ' <small>' + listingInfo[ratingIdx] + '/5</small>' : '';
+  var rating = listingInfo[ratingIdx] ? ' <small>' + listingInfo[ratingIdx] + '</small>' : '';
   var feeDiv = listingInfo[feeIdx] ? (listingInfo[feeIdx] + '<br>') : '';
   var locationDiv = listingInfo[locationIdx] ? (listingInfo[locationIdx] + '<br>') : '';
   var dateDiv = listingInfo[dateIdx] ? (listingInfo[dateIdx] + '<br>') : '';
