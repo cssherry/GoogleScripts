@@ -127,7 +127,8 @@ function updateSheet() {
     // Only get ratings once a day or whenever we're not getting new events
     var isFirstRun = currentHour <= startHour;
     var lastIdx = contextValues.sheetData[0].length - 1;
-    if (isFirstRun || currentHour % contextValues.sheetData[0][lastIdx] !== 0) {
+    var customTimeToRun = currentHour % contextValues.sheetData[0][lastIdx] === 0;
+    if (isFirstRun || customTimeToRun) {
       contextValues.ratingMin = contextValues.ratingData.length + 1;
       var acReviewString = UrlFetchApp.fetch(urls.acReviews,
                                       {
@@ -287,7 +288,14 @@ function updateSheet() {
   items.forEach(addOrUpdateCT);
 
   addNewCellItemsRow();
-  sendEmail();
+
+  // Only email if user wants email. This handles vacations
+  var secondLastIdx = contextValues.sheetData[0].length - 2;
+  var timeEmail = contextValues.sheetData[0][secondLastIdx];
+  if (timeEmail) {
+    sendEmail();
+  }
+
   updateAllCells();
   archiveExpiredItems();
 }
