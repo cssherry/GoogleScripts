@@ -153,11 +153,14 @@ function updateSheet() {
       var arrayIdx = firstRow - 1;
       var rowLength = contextValues.ratingData.length - arrayIdx;
       var columnLength = contextValues.ratingData[0].length;
-      var updateRange = contextValues.ratingSheet.getRange(firstRow, 1, rowLength, columnLength);
-      updateRange.setValues(contextValues.ratingData.slice(arrayIdx));
-      updateRange.setNotes(contextValues.ratingNotes.slice(arrayIdx));
-      // It's nice to have email of updates
 
+      if (rowLength > 0) {
+        var updateRange = contextValues.ratingSheet.getRange(firstRow, 1, rowLength, columnLength);
+        updateRange.setValues(contextValues.ratingData.slice(arrayIdx));
+        updateRange.setNotes(contextValues.ratingNotes.slice(arrayIdx));
+      }
+
+      // It's nice to have email of updates
       var ratingMessage = '';
       if (contextValues.newRatings.length) {
         ratingMessage = '<h2>New Ratings</h2>' +
