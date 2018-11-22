@@ -1204,7 +1204,7 @@ function getLocationRating(location) {
   return (currRating !== '' && !isNaN(currRating)) ?
     Math.round(currRating * 100) / 100 +
             ' (' + currLocation[countIdx] +
-            '-' + currLocation[reviewIdx] + ')' :
+            ' shows - ' + currLocation[reviewIdx] + ' reviews - ' + location + ')' :
          '';
 }
 
