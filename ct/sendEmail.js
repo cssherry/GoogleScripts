@@ -24,6 +24,16 @@ function updateSheet() {
     return;
   }
 
+  // Get ratings for location
+  contextValues.locationRatings = {};
+  contextValues.locationRatingData = SpreadsheetApp.getActiveSpreadsheet()
+                                                   .getSheetByName('ratingAnalysis')
+                                                   .getDataRange()
+                                                   .getValues();
+  contextValues.locationRatingIndex = indexSheet(contextValues.locationRatingData);
+  contextValues.locationRatingData.forEach(processOldLocationRatings);
+
+  // Process previous values
   contextValues.sheet = SpreadsheetApp.getActiveSpreadsheet()
                                       .getSheetByName('Current');
   contextValues.sheetRange = contextValues.sheet.getDataRange();
@@ -42,15 +52,6 @@ function updateSheet() {
   contextValues.ratingData.forEach(processOldRatings);
   // // Remove duplicates
   // contextValues.ratingRange.setValues(contextValues.ratingData);
-
-  // Get ratings for location
-  contextValues.locationRatings = {};
-  contextValues.locationRatingData = SpreadsheetApp.getActiveSpreadsheet()
-                                                   .getSheetByName('ratingAnalysis')
-                                                   .getDataRange()
-                                                   .getValues();
-  contextValues.locationRatingIndex = indexSheet(contextValues.locationRatingData);
-  contextValues.locationRatingData.forEach(processOldLocationRatings);
 
 /** NOT WORKING
   // Process FM Listings
@@ -335,7 +336,7 @@ function processPreviousListings() {
   // Get range by row, column, row length, column length
   var imageFormulas = contextValues.sheetRange.getFormulas();
   var previousListingObject = {};
-  var urlValue, titleValue, feeValue, dateValue, categoryValue, locValue, currItem;
+  var urlValue, titleValue, feeValue, dateValue, categoryValue, locValue, locRatingValue, currItem;
   for (var i = 1; i < contextValues.lastRow; i++) {
     currItem = contextValues.sheetData[i];
     urlValue = currItem[idIdx].trim();
@@ -345,6 +346,13 @@ function processPreviousListings() {
       dateValue = currItem[dateIdx];
       categoryValue = currItem[categoryIdx];
       locValue = currItem[locIdx];
+      locRatingValue = currItem[locationRatingIdx];
+
+      // if (!locRatingValue) {
+      //   locRatingValue = getLocationRating(locValue);
+      //   currItem[locationRatingIdx] = locRatingValue;
+      // }
+
       currItem[imageIdx] = imageFormulas[i][0];
       previousListingObject = {
         row: i,
@@ -353,7 +361,7 @@ function processPreviousListings() {
         date: dateValue,
         category: categoryValue,
         location: locValue,
-        locationRating: currItem[locationRatingIdx],
+        locationRating: locRatingValue,
         rating: currItem[ratingIdx],
       };
       previousListingObject[titleIdx] = titleValue;
