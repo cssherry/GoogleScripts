@@ -525,22 +525,6 @@ function addOrUpdateAc(item) {
       currentItem[contextValues.sheetIndex.Date] = boldWord(date) + '<br><em>(Previously ' + boldWord(itemInfo.date) + ')</em>';
     }
 
-    if (title !== itemInfo.title &&
-        title !== "'" + itemInfo.title &&
-        title !== "'" + itemInfo.title + "'" &&
-        title !== itemInfo.title + "'" &&
-        title !== '"' + itemInfo.title &&
-        title !== '"' + itemInfo.title + '"' &&
-        title !== itemInfo.title + '"') {
-      markCellForUpdate(itemInfo.row, 'Title', title);
-      currentItem[contextValues.sheetIndex.Title] = boldWord(title) + '<br><em>(Previously ' + boldWord(itemInfo.title) + ')</em>';
-    }
-
-    if (rating !== itemInfo.rating) {
-      markCellForUpdate(itemInfo.row, 'Rating', rating);
-      emailRatingIfRatingChanged(rating, itemInfo.rating, currentItem);
-    }
-
     if (description !== itemInfo.category &&
         description !== "'" + itemInfo.category &&
         description !== "'" + itemInfo.category + "'" &&
@@ -552,30 +536,7 @@ function addOrUpdateAc(item) {
       currentItem[contextValues.sheetIndex.Category] = boldWord(description) + '<br><em>(Previously ' + boldWord(itemInfo.category) + ')</em>';
     }
 
-    if (currentItem.length) {
-      if (!currentItem[contextValues.sheetIndex.Title]) {
-        currentItem[contextValues.sheetIndex.Title] = title;
-      }
-
-      if (!currentItem[contextValues.sheetIndex.Date]) {
-        currentItem[contextValues.sheetIndex.Date] = date;
-      }
-
-      if (!currentItem[contextValues.sheetIndex.Category]) {
-        currentItem[contextValues.sheetIndex.Category] = description;
-      }
-
-      if (!currentItem[contextValues.sheetIndex.Rating]) {
-        currentItem[contextValues.sheetIndex.Rating] = rating;
-      }
-
-      currentItem[contextValues.sheetIndex.Location] = itemInfo.location;
-      currentItem[contextValues.sheetIndex.Url] = url;
-      updatedItems.push(currentItem);
-    }
-
-    delete contextValues.previousListings[url];
-    contextValues.alreadyDeleted[url] = true;
+    checkRatingAndDeletePreviousListing(itemInfo, url, currentItem, title);
   } else if (!contextValues.alreadyDeleted[url]) {
     var ImageElements = getElementByClassName(item, 'pic');
     var ImageUrl = ImageElements[1] ? urls.acDomain + ImageElements[1].getAttribute('src').getValue() : '';
