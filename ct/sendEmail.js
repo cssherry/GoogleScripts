@@ -682,7 +682,7 @@ function addOrUpdateSf(item) {
     listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ((ImageUrl && ImageUrl[1]) || '') + '")';
     listingInfo[contextValues.sheetIndex.Title] = title;
     listingInfo[contextValues.sheetIndex.Rating] = getRating(title);
-    listingInfo[contextValues.sheetIndex.LocationRating] = getRating(location);
+    listingInfo[contextValues.sheetIndex.LocationRating] = getLocationRating(location);
     listingInfo[contextValues.sheetIndex.AdminFee] = price;
     listingInfo[contextValues.sheetIndex.Date] = date[0].getText().trim() + time;
     listingInfo[contextValues.sheetIndex.Category] = trimHtml(description[0].toXmlString());
