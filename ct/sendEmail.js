@@ -774,7 +774,7 @@ function addNewListingCT(item, htmlText, url) {
   listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl + '")';
   listingInfo[contextValues.sheetIndex.Title] = title;
   listingInfo[contextValues.sheetIndex.Rating] = getRating(title);
-  listingInfo[contextValues.sheetIndex.LocationRating] = getRating(location);
+  listingInfo[contextValues.sheetIndex.LocationRating] = getLocationRating(location);
   listingInfo[contextValues.sheetIndex.AdminFee] = getFeeCT(htmlText);
   listingInfo[contextValues.sheetIndex.Date] = getDateCT(htmlText);
   listingInfo[contextValues.sheetIndex.Category] = getColonSeparatedTextCT(htmlText, 'Category');
