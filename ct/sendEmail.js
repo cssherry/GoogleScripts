@@ -1202,7 +1202,7 @@ function getLocationRating(location) {
 
 function cleanupLocation(location, thoroughReplace) {
   if (location.replace) {
-    location = location.trim().replace(/\([\s\S]*|,[\s\S]*|\s-\s[\s\S]*|;[\s\S]*/i, '');
+    location = location.trim().replace(/\([\s\S]*|,[\s\S]*|\s-\s[\s\S]*|;[\s\S]*|^the\s*/ig, '');
 
     if (thoroughReplace) {
       location = location.trim().replace(/\s\s[\s\S]*/, '');
