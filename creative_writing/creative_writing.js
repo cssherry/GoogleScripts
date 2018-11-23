@@ -39,7 +39,7 @@ function checkDaysProgress() {
                 ' (' + currEventTitle + ') originally on ' +
                 searchDate.toLocaleString() +
                 ', moved to ' + startTime.toLocaleString() +
-                '\n\n---------' +
+                '\n\n---------\n' +
                 'Link: ' + writingSpreadsheetUrl,
         });
       }
@@ -57,7 +57,7 @@ function checkDaysProgress() {
         to: allParts.join(',') + ',' + scriptInfo.data[scriptInfo.index.AdditionalEmails],
         subject: '[CreativeWriting] ' + currEventTitle,
         body: currEvent.getDescription() +
-              '\n\n---------' +
+              '\n\n---------\n' +
               'Link: ' + writingSpreadsheetUrl,
       });
     }
@@ -313,7 +313,7 @@ function runOnChange() {
                   eventDescription +
                   '\n\nNew Count: ' + wordsWrote +
                   '\n\nTotal Count: ' + currRow[wordsIdx] +
-                  '\n\n---------' +
+                  '\n\n---------\n' +
                   'Link: ' + writingSpreadsheetUrl,
           });
         }
