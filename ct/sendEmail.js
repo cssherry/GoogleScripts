@@ -746,7 +746,7 @@ function addOrUpdateCT(item) {
         currentItem = [];
     if (fee !== itemInfo.fee) {
       markCellForUpdate(itemInfo.row, 'AdminFee', fee);
-      currentItem[contextValues.sheetIndex.AdminFee] = boldWord(fee) + '<br><em>(Previously ' + iboldWord(temInfo.fee) + ')</em>';
+      currentItem[contextValues.sheetIndex.AdminFee] = boldWord(fee) + '<br><em>(Previously ' + boldWord(itemInfo.fee) + ')</em>';
     }
 
     if (date !== itemInfo.date) {
