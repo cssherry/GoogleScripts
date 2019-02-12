@@ -140,7 +140,8 @@ function runOnChange() {
     var title, text;
     var currRoundIdx = scriptInfo.index.currentRounds;
     var currentRound = scriptInfo.data[scriptLength][currRoundIdx];
-    if (newNumber > numberParticipants * currentRound) {
+    var offset = 1; // So that the same person isn't always the one starting prompts
+    if (newNumber > (numberParticipants * currentRound + 1)) {
       // Set new currenRound and promptId
       var promptInfo = getSheetInformation('Prompts');
       var numberPrompts = promptInfo.data.length - 1;
