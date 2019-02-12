@@ -109,7 +109,7 @@ function checkDaysProgress() {
                 ' (' + currEventTitle + ') originally on ' +
                 searchDate.toLocaleString() +
                 ', moved to ' + startTime.toLocaleString() +
-                '\n\n---------\n' +
+                '\n' + noteDivider +
                 'Link: ' + writingSpreadsheetUrl,
         });
       }
@@ -259,7 +259,7 @@ function runOnChange() {
       var newPrefix = getTitlePrefix(promptId, newNumber);
       scriptInfo.data[scriptLength][currNumberIdx] = newNumber;
       title = lastEvent.getTitle().replace(RegExp('^' + latestEventPrefix), newPrefix);
-      text = lastEvent.getDescription() + '\n------------------------\n\n';
+      text = lastEvent.getDescription() + noteDivider + '\n';
     }
 
     createEventAndNewRow(title, text, nextStartTime, guest);
@@ -359,7 +359,7 @@ function runOnChange() {
       submissionInfoNeedsUpdating = true;
 
       // Update text
-      submissionInfo.note[currIdx][textIdx] += ('\n===================\n' + new Date().toLocaleString() + ' overwrote:\n' + currRow[textIdx] + '\n');
+      submissionInfo.note[currIdx][textIdx] += (noteDivider + new Date().toLocaleString() + ' overwrote:\n' + currRow[textIdx] + '\n');
       currRow[textIdx] = eventDescription;
 
       // Update word count
@@ -392,11 +392,11 @@ function runOnChange() {
           MailApp.sendEmail({
             to: currRow[emailIdx],
             subject: '[CreativeWriting] Thanks for writing ' + wordsWrote + ' words today! (' + currRow[editedDateIdx].toDateString() + ')',
-            body: 'Prompt:\n\n' + lastEvent.getTitle() + '\n==================\n' +
+            body: 'Prompt:\n\n' + lastEvent.getTitle() + noteDivider +
                   eventDescription +
                   '\n\nNew Count: ' + wordsWrote +
                   '\n\nTotal Count: ' + currRow[wordsIdx] +
-                  '\n\n---------\n' +
+                  '\n' + noteDivider +
                   'Link: ' + writingSpreadsheetUrl,
           });
         }
@@ -430,7 +430,7 @@ function runOnChange() {
       event = writingCalendar.createAllDayEvent(title, startDate, eventOptions);
     } else {
       var endDate = new Date(startDate);
-      endDate.setHours(endDate.getHours() + 3);
+      endDate.setHours(endDate.getHours() + lengthEvent);
       event = writingCalendar.createEvent(title, startDate, endDate, eventOptions);
     }
 
