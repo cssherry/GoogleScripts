@@ -1,33 +1,103 @@
 var writingCalendar;
 
+var warningDay = 5;
+var moveDay = 7;
+
+var lengthEvent = 3; // Hours writing event should last
+
+var noteDivider = '\n===================\n';
+
 // ==========================================
 // Runs at 8 AM UK Time
 // 1. If there isn't an all day event for correct prompt today, move today's event to next day
+// 2. If it has been "moveDay" number days since prompt was updated, switch to different person
+// 2.1. Send email to previous person
+// 2.2. Remove previous person from event, add new person to event
+// 3. If it has been "warningDay" number days since prompt was updated, send warning
 // ==========================================
 function checkDaysProgress() {
   var searchDate = new Date();
   changeDate(searchDate, -1);
   var scriptInfo = getSheetInformation('ScriptInfo');
+  var scriptLength = scriptInfo.data.length - 1;
+  var currParticipantIdx = scriptInfo.index.CurrentParticipantEmail;
+  var currEmail = scriptInfo.data[scriptLength][currParticipantIdx];
 
   if (!writingCalendar) {
     writingCalendar =  CalendarApp.getCalendarById(calendarId);
   }
 
   var events = writingCalendar.getEventsForDay(searchDate);
-  var promptId = scriptInfo.data[scriptInfo.data.length - 1][scriptInfo.index.PromptID]
-  var currentNumber = scriptInfo.data[scriptInfo.data.length - 1][scriptInfo.index.CurrentNumber]
+  var promptId = scriptInfo.data[scriptLength][scriptInfo.index.PromptID]
+  var lastDateIdx = scriptInfo.index.LastDate;
+  var lastDate = scriptInfo.data[scriptLength][lastDateIdx]
+  var currentNumber = scriptInfo.data[scriptLength][scriptInfo.index.CurrentNumber]
   var promptPrefix = getTitlePrefix(promptId, currentNumber);
   var promptEvent, currEvent, currEventTitle;
+  var participantInfo, partEmailIdx, submissionInfo;
 
   for (var i = 0; i < events.length; i++) {
     currEvent = events[i];
     currEventTitle = currEvent.getTitle();
     if (currEventTitle.indexOf(promptPrefix) === 0) {
       // Move out yesterday's event if it's not all-day
+      // If 8 - 9 days late, send out email that it will be switched to next person
+      // If 10 days late, switch to next person
       promptEvent = currEvent;
+      var startTime = promptEvent.getStartTime();
+      var endTime = promptEvent.getEndTime();
+
       if (!promptEvent.isAllDayEvent()) {
-        var startTime = promptEvent.getStartTime();
-        var endTime = promptEvent.getEndTime();
+        var daysSince = getDayDifference(lastDate, new Date());
+        if (daysSince >= moveDay) {
+          if (!participantInfo) {
+            participantInfo = getSheetInformation('Participants');
+            partEmailIdx = participantInfo.index.Email;
+            submissionInfo = getSheetInformation('Submission');
+          }
+
+          var partEmailIdx = participantInfo.index.Email;
+          var currNumberTotalIdx = scriptInfo.index.CurrentNumberTotal;
+          var currentNumberTotal = scriptInfo.data[scriptLength][currNumberTotalIdx] + 1;
+          var nextParticipantRow = calculateNextParticipant(participantInfo, currentNumberTotal, startTime);
+          endTime.setHours(startTime.getHours() + lengthEvent);
+          var nextGuest = nextParticipantRow[partEmailIdx];
+          promptEvent.removeGuest(currEmail);
+          promptEvent.addGuest(nextGuest);
+
+          // Update ScriptInfo sheet
+          scriptInfo.data[scriptLength][lastDateIdx] = new Date();
+          scriptInfo.data[scriptLength][currNumberTotalIdx] = currentNumberTotal;
+          scriptInfo.data[scriptLength][currParticipantIdx] = nextGuest;
+          scriptInfo.range.setValues(scriptInfo.data);
+
+          // Now update the last ParticipantEmail on Submission page
+          var lastSubmissionIdx = submissionInfo.data.length;
+          var participantEmailIdx = submissionInfo.index.ParticipantEmail + 1;
+          var newParticipantRange = submissionInfo.sheet
+                                                  .getRange(lastSubmissionIdx, participantEmailIdx, 1, 1);
+
+          var newNote = newParticipantRange.getNotes();
+          newNote[0][0] += (noteDivider + new Date().toLocaleString() + ' overwrote:\n' + currEmail + '\n');
+          newParticipantRange.setNotes(newNote);
+          newParticipantRange.setValues([[nextGuest]]);
+        } else if (daysSince >= warningDay) {
+          var sendEmail = myEmail;
+          if (currEmail !== sendEmail) {
+            sendEmail += (',' + currEmail)
+          }
+
+          MailApp.sendEmail({
+            to: sendEmail,
+            subject: '[CreativeWriting] ' + currEmail.split('@')[0] + ' Update event!',
+            body: 'It has been ' + daysSince + ' days. Update within the next ' +
+                  (moveDay - lastDate) + ' day(s) or #' + promptPrefix +
+                  ' (' + currEventTitle + ') will be reassigned.' +
+                  '\n' + noteDivider +
+                  'Link: ' + writingSpreadsheetUrl,
+          });
+        }
+
         changeDate(startTime, 1);
         changeDate(endTime, 1);
         promptEvent.setTime(startTime, endTime);
@@ -45,20 +115,34 @@ function checkDaysProgress() {
       }
     } else if (currEventTitle.indexOf('Final:') === 0) {
       // If it's the finale -- give it 1 day to be updated, then send it out to everyone!
-      var participantInfo = getSheetInformation('Participants');
-      var partEmailIdx = participantInfo.index.Email;
-      var allParts = [];
+      var textIdx, promptIdIdx;
+      if (!participantInfo) {
+        participantInfo = getSheetInformation('Participants');
+        partEmailIdx = participantInfo.index.Email;
+        submissionInfo = getSheetInformation('Submission');
+        textIdx = submissionInfo.index.Text;
+        promptIdIdx = submissionInfo.index.PromptID;
+      }
 
+      var allParts = [];
       for (var i = 1; i < participantInfo.data.length; i++) {
-        allParts.push([participantInfo.data[i][partEmailIdx]]);
+        allParts.push(participantInfo.data[i][partEmailIdx]);
+      }
+
+      var allStory = [];
+      for (var j = 1; j < submissionInfo.data.length; j++) {
+        if (participantInfo.data[j][promptIdIdx] === promptId) {
+          allStory.push(participantInfo.data[j][textIdx]);
+        }
       }
 
       MailApp.sendEmail({
         to: allParts.join(',') + ',' + scriptInfo.data[scriptInfo.index.AdditionalEmails],
         subject: '[CreativeWriting] ' + currEventTitle,
-        body: currEvent.getDescription() +
-              '\n\n---------\n' +
-              'Link: ' + writingSpreadsheetUrl,
+        body: allStory.join('\n\n') +
+              noteDivider +
+              'Google Doc Link: ' + totalDoc +
+              'Spreadsheet Link: ' + writingSpreadsheetUrl,
       });
     }
   }
@@ -80,6 +164,8 @@ function runOnChange() {
   var scriptInfo = getSheetInformation('ScriptInfo');
   var promptIdIdx = scriptInfo.index.PromptID;
   var currNumberIdx = scriptInfo.index.CurrentNumber;
+  var defaultRoundIdx = scriptInfo.index.defaultRounds;
+  var currParticipantIdx = scriptInfo.index.CurrentParticipantEmail;
   var scriptLength = scriptInfo.data.length - 1;
   var promptId = scriptInfo.data[scriptLength][promptIdIdx]
   var currentNumber = scriptInfo.data[scriptLength][currNumberIdx]
@@ -112,6 +198,7 @@ function runOnChange() {
     var currNumberTotalIdx = scriptInfo.index.CurrentNumberTotal;
     var newCurrNumberTotal = scriptInfo.data[scriptLength][currNumberTotalIdx] + 1;
     scriptInfo.data[scriptLength][currNumberTotalIdx] = newCurrNumberTotal;
+    scriptInfo.data[scriptLength][scriptInfo.index.LastDate] = new Date();
 
     // get next day
     var nextStartTime = new Date();
@@ -128,14 +215,8 @@ function runOnChange() {
     var participantInfo = getSheetInformation('Participants');
     var partEmailIdx = participantInfo.index.Email;
     var numberParticipants = participantInfo.data.length - 1;
-    var nextParticipantIdx = newCurrNumberTotal % numberParticipants || numberParticipants;
-    var nextParticipantRow = participantInfo.data[nextParticipantIdx];
+    var nextParticipantRow = calculateNextParticipant(participantInfo, newCurrNumberTotal, nextStartTime);
     var guest = nextParticipantRow[partEmailIdx];
-
-    // Set correct time for nextStartTime
-    nextStartTime.setHours(nextParticipantRow[participantInfo.index.BestTimeUK]);
-    nextStartTime.setMinutes(0);
-    nextStartTime.setMilliseconds(0);
 
     var title, text;
     var currRoundIdx = scriptInfo.index.currentRounds;
@@ -160,7 +241,8 @@ function runOnChange() {
       promptId = newPrompt[promptInfo.index.Prompt];
       scriptInfo.data[scriptLength][currNumberIdx] = 1;
       scriptInfo.data[scriptLength][promptIdIdx] = promptId;
-      scriptInfo.data[scriptLength][currRoundIdx] = scriptInfo.data[scriptLength][scriptInfo.index.defaultRounds];
+      scriptInfo.data[scriptLength][currParticipantIdx] = guest;
+      scriptInfo.data[scriptLength][currRoundIdx] = scriptInfo.data[scriptLength][defaultRoundIdx];
       title = newPrompt[promptInfo.index.Prompt];
       text = newPrompt[promptInfo.index.Category] + ': ' + newPrompt[promptInfo.index.Source] + '\n\n';
 
@@ -441,4 +523,24 @@ function getRelativeDate(daysOffset, hour) {
   date.setSeconds(0);
   date.setMilliseconds(0);
   return date;
+}
+
+function getDayDifference(day1, day2) {
+  var millisecondsPerDay = 24 * 60 * 60 * 1000;
+  return Math.abs((day2 - day1) / millisecondsPerDay);
+}
+
+// Calculate next participant and update dateObj to that person's ideal time
+function calculateNextParticipant(participantInfo, currNumberTotal, dateObj) {
+  var partEmailIdx = participantInfo.index.Email;
+  var numberParticipants = participantInfo.data.length - 1;
+  var nextParticipantIdx = currNumberTotal % numberParticipants || numberParticipants;
+  var nextParticipantRow = participantInfo.data[nextParticipantIdx];
+
+  // Set correct time for nextStartTime
+  dateObj.setHours(nextParticipantRow[participantInfo.index.BestTimeUK]);
+  dateObj.setMinutes(0);
+  dateObj.setMilliseconds(0);
+
+  return nextParticipantRow;
 }
