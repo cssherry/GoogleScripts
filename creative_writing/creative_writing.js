@@ -156,7 +156,7 @@ function runOnChange() {
       promptInfo.sheet.getRange(promptToUse, dateIdx, 1, 2).setValues([[new Date(), newCurrNumberTotal]]);
 
       // Define the title/text
-      var promptId = newPrompt[promptInfo.index.Prompt];
+      promptId = newPrompt[promptInfo.index.Prompt];
       scriptInfo.data[scriptLength][currNumberIdx] = 1;
       scriptInfo.data[scriptLength][promptIdIdx] = promptId;
       scriptInfo.data[scriptLength][currRoundIdx] = scriptInfo.data[scriptLength][scriptInfo.index.defaultRounds];
