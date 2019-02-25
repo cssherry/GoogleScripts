@@ -1,7 +1,7 @@
 var writingCalendar;
 
 var warningDay = 5;
-var moveDay = 7;
+var moveDay = 8;
 
 var lengthEvent = 3; // Hours writing event should last
 
