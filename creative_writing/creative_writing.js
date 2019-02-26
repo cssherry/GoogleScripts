@@ -194,7 +194,7 @@ function runOnChange() {
     submissionInfo.range.setNotes(submissionInfo.note);
   }
 
-  // Handle cases when use has written new section
+  // Handle cases when new section has been added
   if (lastEvent) {
     var currNumberTotalIdx = scriptInfo.index.CurrentNumberTotal;
     var newCurrNumberTotal = scriptInfo.data[scriptLength][currNumberTotalIdx] + 1;
