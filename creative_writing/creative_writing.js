@@ -1,11 +1,16 @@
 var writingCalendar;
 
+// https://support.google.com/calendar/forum/AAAAd3GaXpEoHbbc3DuDt0/?hl=en
+var charLimit = 8148;
+var graceLimit = 500; // we allow for average length + gracelimit before dropping 1 day's writing
+
 var warningDay = 5;
 var moveDay = 8;
 
 var lengthEvent = 3; // Hours writing event should last
 
 var noteDivider = '\n===================\n';
+var summaryHeader = 'Final: '
 
 // ==========================================
 // Runs at 8 AM UK Time
@@ -34,7 +39,7 @@ function checkDaysProgress() {
   var currentNumber = scriptInfo.data[scriptLength][scriptInfo.index.CurrentNumber]
   var promptPrefix = getTitlePrefix(promptId, currentNumber);
   var promptEvent, currEvent, currEventTitle;
-  var participantInfo, partEmailIdx, submissionInfo;
+  var participantInfo, partEmailIdx, submissionInfo, finaleSent;
 
   for (var i = 0; i < events.length; i++) {
     currEvent = events[i];
@@ -113,7 +118,7 @@ function checkDaysProgress() {
                 'Link: ' + writingSpreadsheetUrl,
         });
       }
-    } else if (currEventTitle.indexOf('Final:') === 0) {
+    } else if (!finaleSent && currEventTitle.indexOf(summaryHeader) === 0) {
       // If it's the finale -- give it 1 day to be updated, then send it out to everyone!
       var textIdx, promptIdIdx;
       if (!participantInfo) {
@@ -144,14 +149,19 @@ function checkDaysProgress() {
               'Google Doc Link: ' + totalDoc +
               'Spreadsheet Link: ' + writingSpreadsheetUrl,
       });
+
+      finaleSent = true;
     }
   }
 }
 
 // ==========================================
 // Run on change --
-// 1. Check text -- if changed, update text in spreadsheet (as identified by date) on Submission tab and write "EditedDate"
-// 2. update nextSyncToken, increment currentNumber
+// 1. Check text -- update "Submission" tab
+//      Figure out which parts are changed and update text in spreadsheet (as identified by CalendarEventId) on Submission tab
+//      Update "EditedDate"
+// 2.1. update nextSyncToken
+// 2.2. If is last event: increment currentNumber/CurrentNumberTotal
 // 3.1. If currentNumber is 2x rounds -- reset currentNumber and randomly identify new PromptID, create new all-day calendar event, invite both participants, create new row for information
 // 3.2. Identify new participant, create new calendar event with updated text in note, create new row with "---------" between each day's note
 // ==========================================
@@ -248,15 +258,47 @@ function runOnChange() {
       title = getTitlePrefix(promptId, 1) + ' ' + newPrompt[promptInfo.index.Prompt];
       text = '';
 
-      // Create an overview event for the last writing prompt
-      var overviewTitle = lastEvent.getTitle().replace(RegExp('^' + latestEventPrefix), 'Final: ');
-      var allParts = [];
+      // Create overview events for the last writing prompt, keeping within calendar description limit
+      var currIndex = 1;
+      var totalCharCount = 0;
+      var originalTitle = lastEvent.getTitle();
 
-      for (var i = 1; i < participantInfo.data.length; i++) {
-        allParts.push([participantInfo.data[i][partEmailIdx]]);
+      function getNewTitle() {
+        return originalTitle.replace(RegExp('^' + latestEventPrefix), summaryHeader + currIndex + ': ');
       }
 
-      createEventAndNewRow(overviewTitle, lastEvent.getDescription(), nextStartTime, allParts.join(','), true);
+      var overviewTitle = getNewTitle();
+      var allParts = [];
+      var currText;
+      for (var i = 1; i < participantInfo.data.length; i++) {
+        currText = participantInfo.data[i][partEmailIdx];
+        totalCharCount += currText.length;
+        if (totalCharCount > charLimit) {
+          createEventAndNewRow({
+            title: overviewTitle,
+            text: lastEvent.getDescription(),
+            startDate: nextStartTime,
+            guests: allParts.join(','),
+            isAllDay: true,
+          });
+          allParts = [];
+          currIndex += 1;
+          totalCharCount = currText.length;
+          overviewTitle = getNewTitle();
+        }
+
+        allParts.push(currText);
+      }
+
+      if (allParts.length) {
+        createEventAndNewRow({
+          title: overviewTitle,
+          text: lastEvent.getDescription(),
+          startDate: nextStartTime,
+          guests: allParts.join(','),
+          isAllDay: true,
+        });
+      }
     } else {
       var newPrefix = getTitlePrefix(promptId, newNumber);
       scriptInfo.data[scriptLength][currNumberIdx] = newNumber;
@@ -264,8 +306,30 @@ function runOnChange() {
       text = lastEvent.getDescription() + noteDivider + '\n';
     }
 
-    createEventAndNewRow(title, text, nextStartTime, guest);
-  }
+    // If text is longer than (charLimit - average length - graceLimit), then remove one section
+    // Only need to calculate for events that have text (ie: not new prompts)
+    var inNumbers = '';
+    if (text.length) {
+      var avgCharIdx = scriptInfo.index.AverageCharacters;
+      var avgChars = scriptInfo.data[scriptLength][avgCharIdx];
+      var firstSectionRegexp = new Regexp('^[\\s\\S]*?' + noteDivider + '\\s*')
+      inNumbers = submissionInfo.titlePrefixToRow[latestEventPrefix][submissionInfo.index.InNumbers] +
+                  latestEventPrefix + ', ';
+      if (text.length >= (charLimit - avgChars - graceLimit)) {
+        text = text.replace(firstSectionRegexp, '');
+        inNumbers = inNumbers.replace(/[0-9\.]+,\s*/, '');
+      }
+    }
+
+    createEventAndNewRow({
+      title: title,
+      text: text,
+      startDate: nextStartTime,
+      guests: guest,
+      inNumbers: inNumbers,
+      addNewRow: true,
+    });
+  } // end of "if (lastEvent) {"
 
   if (lastEvent || newToken) {
     // Update scriptInfo
@@ -290,7 +354,8 @@ function runOnChange() {
   }
 
   /**
-   * Incrementally gets only updated tasts
+   * Incrementally gets only updated events
+   * Skips events that have summaryHeader in the title
    */
   function getEvents(changedCalId, fullSync) {
     var options = {
@@ -330,7 +395,7 @@ function runOnChange() {
           var event = events.items[i];
           if (event.status === 'cancelled') {
             console.log('Event id %s was cancelled.', event.id);
-          } else {
+          } else if (event.summary.indexOf(summaryHeader) !== 0) {
             // All-day event if event.start.date
             // Events that don't last all day; they have defined start times.
             updateEventIfChanged(event.id, event.summary, event.description)
@@ -420,7 +485,15 @@ function runOnChange() {
   /**
    * Creates new writing event
    */
-  function createEventAndNewRow(title, text, startDate, guests, isAllDay) {
+  function createEventAndNewRow(config) {
+    var title = config.title; // calendar title
+    var text = config.text; // calendar description
+    var startDate = config.startDate; // calendar start date
+    var guests = config.guests; // calendar attendees
+    var isAllDay = config.isAllDay; // will not create new row
+    var inNumbers = config.inNumbers; // not needed if isAllDay
+    var addNewRow = config.addNewRow; // not needed if isAllDay
+
     var event;
     var eventOptions = {
       description: text,
@@ -438,22 +511,25 @@ function runOnChange() {
 
     event.setGuestsCanModify(true);
 
-    // Now add this new row to "Submission" spreadsheet
-    // Get range by row, column, row length, column length
-    var newRow = [];
-    for (var i = 0; i < submissionInfo.data[0].length;) newRow[i++] = '';
+    if (addNewRow) {
+      // Now add this new row to "Submission" spreadsheet
+      // Get range by row, column, row length, column length
+      var newRow = [];
+      for (var i = 0; i < submissionInfo.data[0].length;) newRow[i++] = '';
 
-    newRow[submissionInfo.index.ParticipantEmail] = guests;
-    newRow[subPromptId] = scriptInfo.data[scriptLength][promptIdIdx];
-    newRow[subCurrNumIdx] = scriptInfo.data[scriptLength][currNumberIdx];
-    newRow[eventIdIdx] = title;
-    newRow[calendarEventIdx] = event.getId();
-    newRow[submissionInfo.index.CreatedDate] = new Date();
-    newRow[textIdx] = text;
-    newRow[wordsIdx] = getWordCount(text);
-    lastSubmissionIdx++;
-    var cells = submissionInfo.sheet.getRange(lastSubmissionIdx, 1, 1, newRow.length);
-    cells.setValues([newRow])
+      newRow[submissionInfo.index.ParticipantEmail] = guests;
+      newRow[subPromptId] = scriptInfo.data[scriptLength][promptIdIdx];
+      newRow[subCurrNumIdx] = scriptInfo.data[scriptLength][currNumberIdx];
+      newRow[eventIdIdx] = title;
+      newRow[calendarEventIdx] = event.getId();
+      newRow[submissionInfo.index.InNumbers] = inNumbers || '';
+      newRow[submissionInfo.index.CreatedDate] = new Date();
+      newRow[textIdx] = text;
+      newRow[wordsIdx] = getWordCount(text);
+      lastSubmissionIdx++;
+      var cells = submissionInfo.sheet.getRange(lastSubmissionIdx, 1, 1, newRow.length);
+      cells.setValues([newRow])
+    }
 
     return event;
   }
