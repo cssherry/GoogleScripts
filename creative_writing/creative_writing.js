@@ -194,6 +194,7 @@ function runOnChange() {
     submissionInfo.range.setNotes(submissionInfo.note);
   }
 
+  // Handle cases when use has written new section
   if (lastEvent) {
     var currNumberTotalIdx = scriptInfo.index.CurrentNumberTotal;
     var newCurrNumberTotal = scriptInfo.data[scriptLength][currNumberTotalIdx] + 1;
@@ -237,7 +238,7 @@ function runOnChange() {
       // Update the Date and Order of the prompt row
       promptInfo.sheet.getRange(promptToUse, dateIdx, 1, 2).setValues([[new Date(), newCurrNumberTotal]]);
 
-      // Define the title/text
+      // Define the title/text for new prompt
       promptId = newPrompt[promptInfo.index.Prompt];
       scriptInfo.data[scriptLength][currNumberIdx] = 1;
       scriptInfo.data[scriptLength][promptIdIdx] = promptId;
