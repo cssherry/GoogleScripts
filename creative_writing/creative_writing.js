@@ -236,7 +236,8 @@ function runOnChange() {
       }
 
       // Update the Date and Order of the prompt row
-      promptInfo.sheet.getRange(promptToUse, dateIdx, 1, 2).setValues([[new Date(), newCurrNumberTotal]]);
+      promptInfo.sheet.getRange(promptToUse, dateIdx, 1, 2)
+                      .setValues([[new Date(), newCurrNumberTotal]]);
 
       // Define the title/text for new prompt
       promptId = newPrompt[promptInfo.index.Prompt];
