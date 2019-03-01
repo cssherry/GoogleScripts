@@ -96,7 +96,7 @@ function checkDaysProgress() {
             to: sendEmail,
             subject: '[CreativeWriting] ' + currEmail.split('@')[0] + ' Update event!',
             body: 'It has been ' + daysSince + ' days. Update within the next ' +
-                  (moveDay - lastDate) + ' day(s) or #' + promptPrefix +
+                  (moveDay - daysSince) + ' day(s) or #' + promptPrefix +
                   ' (' + currEventTitle + ') will be reassigned.' +
                   '\n' + noteDivider +
                   'Link: ' + writingSpreadsheetUrl,
