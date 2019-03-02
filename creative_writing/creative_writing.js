@@ -513,11 +513,11 @@ function runOnChange() {
       newRow[subPromptId] = scriptInfo.data[scriptLength][promptIdIdx];
       newRow[subCurrNumIdx] = scriptInfo.data[scriptLength][currNumberIdx];
       newRow[eventIdIdx] = title;
-      newRow[calendarEventIdx] = event.getId();
+      newRow[calendarEventIdx] = event.getId().replace('@google.com', '');
       newRow[submissionInfo.index.InNumbers] = inNumbers || '';
       newRow[submissionInfo.index.CreatedDate] = new Date();
-      newRow[textIdx] = text;
-      newRow[wordsIdx] = getWordCount(text);
+      newRow[textIdx] = '';
+      newRow[wordsIdx] = 0;
       lastSubmissionIdx++;
       var cells = submissionInfo.sheet.getRange(lastSubmissionIdx, 1, 1, newRow.length);
       cells.setValues([newRow])
