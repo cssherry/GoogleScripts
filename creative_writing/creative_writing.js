@@ -39,7 +39,7 @@ function checkDaysProgress() {
   var currentNumber = scriptInfo.data[scriptLength][scriptInfo.index.CurrentNumber]
   var promptPrefix = getTitlePrefix(promptId, currentNumber);
   var promptEvent, currEvent, currEventTitle;
-  var participantInfo, partEmailIdx, submissionInfo, finaleSent;
+  var participantInfo, partEmailIdx, submissionInfo, finaleSections = [];
 
   for (var i = 0; i < events.length; i++) {
     currEvent = events[i];
@@ -118,40 +118,32 @@ function checkDaysProgress() {
                 'Link: ' + writingSpreadsheetUrl,
         });
       }
-    } else if (!finaleSent && currEventTitle.indexOf(summaryHeader) === 0) {
-      // If it's the finale -- give it 1 day to be updated, then send it out to everyone!
-      var textIdx, promptIdIdx;
-      if (!participantInfo) {
-        participantInfo = getSheetInformation('Participants');
-        partEmailIdx = participantInfo.index.Email;
-        submissionInfo = getSheetInformation('Submission');
-        textIdx = submissionInfo.index.Text;
-        promptIdIdx = submissionInfo.index.PromptID;
-      }
-
-      var allParts = [];
-      for (var i = 1; i < participantInfo.data.length; i++) {
-        allParts.push(participantInfo.data[i][partEmailIdx]);
-      }
-
-      var allStory = [];
-      for (var j = 1; j < submissionInfo.data.length; j++) {
-        if (participantInfo.data[j][promptIdIdx] === promptId) {
-          allStory.push(participantInfo.data[j][textIdx]);
-        }
-      }
-
-      MailApp.sendEmail({
-        to: allParts.join(',') + ',' + scriptInfo.data[scriptInfo.index.AdditionalEmails],
-        subject: '[CreativeWriting] ' + currEventTitle,
-        body: allStory.join('\n\n') +
-              noteDivider +
-              'Google Doc Link: ' + totalDoc +
-              'Spreadsheet Link: ' + writingSpreadsheetUrl,
-      });
-
-      finaleSent = true;
+    } else if (currEventTitle.indexOf(summaryHeader) === 0) {
+      finaleSections.push(currEvent.getDescription());
     }
+  }
+
+  // Send finale email if needed
+  if (finaleSections.length) {
+    // If it's the finale -- give it 1 day to be updated, then send it out to everyone!
+    if (!participantInfo) {
+      participantInfo = getSheetInformation('Participants');
+      partEmailIdx = participantInfo.index.Email;
+    }
+
+    var allParts = [];
+    for (var i = 1; i < participantInfo.data.length; i++) {
+      allParts.push(participantInfo.data[i][partEmailIdx]);
+    }
+
+    MailApp.sendEmail({
+      to: allParts.join(',') + ',' + scriptInfo.data[scriptInfo.index.AdditionalEmails],
+      subject: '[CreativeWriting] ' + currEventTitle,
+      body: finaleSections.join('\n\n') +
+            noteDivider +
+            'Google Doc Link: ' + totalDoc +
+            'Spreadsheet Link: ' + writingSpreadsheetUrl,
+    });
   }
 }
 
