@@ -223,6 +223,8 @@ function runOnChange() {
     var nextParticipantRow = calculateNextParticipant(participantInfo, newCurrNumberTotal, nextStartTime);
     var guest = nextParticipantRow[partEmailIdx];
 
+    scriptInfo.data[scriptLength][currParticipantIdx] = guest;
+
     var title, text;
     var currRoundIdx = scriptInfo.index.currentRounds;
     var currentRound = scriptInfo.data[scriptLength][currRoundIdx];
