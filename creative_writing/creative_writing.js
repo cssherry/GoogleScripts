@@ -192,12 +192,14 @@ function runOnChange() {
   getEvents(calendarId);
 
   if (submissionInfoNeedsUpdating) {
+    console.log('Submission Updating');
     submissionInfo.range.setValues(submissionInfo.data);
     submissionInfo.range.setNotes(submissionInfo.note);
   }
 
   // Handle cases when new section has been added
   if (lastEvent) {
+    console.log('Last Event Updating');
     var currNumberTotalIdx = scriptInfo.index.CurrentNumberTotal;
     var newCurrNumberTotal = scriptInfo.data[scriptLength][currNumberTotalIdx] + 1;
     scriptInfo.data[scriptLength][currNumberTotalIdx] = newCurrNumberTotal;
@@ -249,6 +251,7 @@ function runOnChange() {
       scriptInfo.data[scriptLength][currRoundIdx] = scriptInfo.data[scriptLength][defaultRoundIdx];
       title = getTitlePrefix(promptId, 1) + ' ' + newPrompt[promptInfo.index.Prompt];
       text = '';
+      console.log('New Prompt %s: %s', promptId, title);
 
       // Create overview events for the last writing prompt, keeping within calendar description limit
       var currIndex = 1;
@@ -283,6 +286,7 @@ function runOnChange() {
       }
 
       if (allParts.length) {
+        console.log('Adding Overview Final: %s (%s)', overviewTitle, currIndex);
         createEventAndNewRow({
           title: overviewTitle,
           text: lastEvent.getDescription(),
@@ -296,6 +300,7 @@ function runOnChange() {
       scriptInfo.data[scriptLength][currNumberIdx] = newNumber;
       title = lastEvent.getTitle().replace(RegExp('^' + latestEventPrefix), newPrefix);
       text = lastEvent.getDescription() + noteDivider + '\n';
+      console.log('New Section: %s', title);
     }
 
     // If text is longer than (charLimit - average length - graceLimit), then remove one section
@@ -310,7 +315,11 @@ function runOnChange() {
       if (text.length >= (charLimit - avgChars - graceLimit)) {
         text = text.replace(firstSectionRegexp, '');
         inNumbers = inNumbers.replace(/[0-9\.]+,\s*/, '');
+        console.log('Trim Description: %s', text);
+        console.log('Trim InNumbers: %s', inNumbers);
       }
+
+      console.log('InNumbers: %s', inNumbers);
     }
 
     createEventAndNewRow({
@@ -325,6 +334,7 @@ function runOnChange() {
 
   if (lastEvent || newToken) {
     // Update scriptInfo
+    console.log('Update ScriptInfo');
     scriptInfo.range.setValues(scriptInfo.data);
   }
 
@@ -372,6 +382,7 @@ function runOnChange() {
       } catch (e) {
         // Check to see if the sync token was invalidated by the server;
         // if so, perform a full sync instead.
+        console.log(e.message);
         if (e.message === 'Sync token is no longer valid, a full sync is required.') {
           scriptInfo.data[scriptLength][syncIdx] = '';
           scriptInfo.range.setValues(scriptInfo.data);
@@ -391,6 +402,8 @@ function runOnChange() {
             // All-day event if event.start.date
             // Events that don't last all day; they have defined start times.
             updateEventIfChanged(event.id, event.summary, event.description)
+          } else {
+            console.log('Event id %s is summary.', event.id);
           }
         }
       }
