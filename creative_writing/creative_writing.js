@@ -249,7 +249,6 @@ function runOnChange() {
       promptId = newPrompt[promptInfo.index.Prompt];
       scriptInfo.data[scriptLength][currNumberIdx] = 1;
       scriptInfo.data[scriptLength][promptIdIdx] = promptId;
-      scriptInfo.data[scriptLength][currParticipantIdx] = guest;
       scriptInfo.data[scriptLength][currRoundIdx] = scriptInfo.data[scriptLength][defaultRoundIdx];
       title = getTitlePrefix(promptId, 1) + ' ' + newPrompt[promptInfo.index.Prompt];
       text = '';
