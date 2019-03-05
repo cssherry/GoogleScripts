@@ -326,8 +326,8 @@ function runOnChange() {
     } else {
       var newPrefix = getTitlePrefix(promptId, newNumber);
       scriptInfo.data[scriptLength][currNumberIdx] = newNumber;
-      title = lastEvent.getTitle().replace(RegExp('^' + latestEventPrefix), newPrefix);
-      text = lastEvent.getDescription() + noteDivider + '\n';
+      title = lastEvent.getTitle().replace(new RegExp('^' + latestEventPrefix), newPrefix);
+      text = lastEvent.getDescription() + noteDivider + '\n\n';
       console.log('New Section: %s', title);
     }
 
@@ -337,9 +337,9 @@ function runOnChange() {
     if (text.length) {
       var avgCharIdx = scriptInfo.index.AverageCharacters;
       var avgChars = scriptInfo.data[scriptLength][avgCharIdx];
-      var firstSectionRegexp = new Regexp('^[\\s\\S]*?' + noteDivider + '\\s*')
-      inNumbers = submissionInfo.titlePrefixToRow[latestEventPrefix][submissionInfo.index.InNumbers] +
-                  latestEventPrefix + ', ';
+      var firstSectionRegexp = new RegExp('^[\\s\\S]*?' + divider + '+?\\s*')
+      inNumbers = submissionInfo.titlePrefixToRow[latestEventPrefix][inNumberIdx] +
+                  latestEventPrefix.replace(':', '') + ', ';
       if (text.length >= (charLimit - avgChars - graceLimit)) {
         text = text.replace(firstSectionRegexp, '');
         inNumbers = inNumbers.replace(/[0-9\.]+,\s*/, '');
