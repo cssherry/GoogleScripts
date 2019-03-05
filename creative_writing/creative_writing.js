@@ -9,8 +9,10 @@ var moveDay = 8;
 
 var lengthEvent = 3; // Hours writing event should last
 
-var noteDivider = '\n===================\n';
-var summaryHeader = 'Final: '
+var divider = '===================';
+var noteDivider = '\n' + divider + '\n';
+var summaryHeader = 'Final: ';
+var summaryPartRegex = new RegExp('^' + summaryHeader + '\\d+(\\.(\\d+)):');
 
 // ==========================================
 // Runs at 8 AM UK Time
@@ -39,7 +41,7 @@ function checkDaysProgress() {
   var currentNumber = scriptInfo.data[scriptLength][scriptInfo.index.CurrentNumber]
   var promptPrefix = getTitlePrefix(promptId, currentNumber);
   var promptEvent, currEvent, currEventTitle;
-  var participantInfo, partEmailIdx, submissionInfo, finaleSections = [];
+  var participantInfo, partEmailIdx, submissionInfo, finaleSections = [], summaryTitle;
 
   for (var i = 0; i < events.length; i++) {
     currEvent = events[i];
@@ -119,7 +121,13 @@ function checkDaysProgress() {
         });
       }
     } else if (currEventTitle.indexOf(summaryHeader) === 0) {
-      finaleSections.push(currEvent.getDescription());
+      var matches = currEventTitle.match(summaryPartRegex);
+      if (matches) {
+        summaryTitle = summaryTitle || currEventTitle.replace(matches[1], '');
+        finaleSections[parseInt(matches[2], 10)] = currEvent.getDescription();
+      } else {
+        console.log('No matches for summary: %s', currEventTitle);
+      }
     }
   }
 
@@ -137,8 +145,8 @@ function checkDaysProgress() {
     }
 
     MailApp.sendEmail({
-      to: allParts.join(',') + ',' + scriptInfo.data[scriptInfo.index.AdditionalEmails],
-      subject: '[CreativeWriting] ' + currEventTitle,
+      to: allParts.join(',') + ',' + scriptInfo.data[scriptLength][scriptInfo.index.AdditionalEmails],
+      subject: '[CreativeWriting] ' + summaryTitle,
       body: finaleSections.join('\n\n') +
             noteDivider +
             'Google Doc Link: ' + totalDoc +
