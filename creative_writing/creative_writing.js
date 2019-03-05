@@ -239,6 +239,7 @@ function runOnChange() {
     var offset = 1; // So that the same person isn't always the one starting prompts
     if (newNumber > (numberParticipants * currentRound + 1)) {
       // Set new currenRound and promptId
+      var oldPromptId = scriptInfo.data[scriptLength][promptIdIdx];
       var promptInfo = getSheetInformation('Prompts');
       var numberPrompts = promptInfo.data.length - 1;
       var dateIdx = promptInfo.index.Date;
@@ -268,21 +269,39 @@ function runOnChange() {
       var originalTitle = lastEvent.getTitle();
 
       function getNewTitle() {
-        return originalTitle.replace(RegExp('^' + latestEventPrefix), summaryHeader + currIndex + ': ');
+        return originalTitle.replace(new RegExp('^' + latestEventPrefix), summaryHeader + promptId + '.' + currIndex + ': ');
       }
 
+      // Get all participants
+      // If it's the finale -- give it 1 day to be updated, then send it out to everyone!
+      if (!participantInfo) {
+        participantInfo = getSheetInformation('Participants');
+        partEmailIdx = participantInfo.index.Email;
+      }
+
+      var allParticipants = [];
+      for (var i = 1; i < participantInfo.data.length; i++) {
+        allParticipants.push(participantInfo.data[i][partEmailIdx]);
+      }
+
+      // Get all parts
       var overviewTitle = getNewTitle();
       var allParts = [];
       var currText;
-      for (var i = 1; i < participantInfo.data.length; i++) {
-        currText = participantInfo.data[i][partEmailIdx];
+      for (var j = 1; j < submissionInfo.data.length; j++) {
+        if (oldPromptId !== submissionInfo.data[j][subPromptId]) {
+          continue;
+        }
+
+        currText = submissionInfo.data[j][textIdx];
         totalCharCount += currText.length;
         if (totalCharCount > charLimit) {
+          console.log('Adding Overview Part: %s (%s)', overviewTitle, currIndex);
           createEventAndNewRow({
             title: overviewTitle,
-            text: lastEvent.getDescription(),
+            text: allParts.join(noteDivider),
             startDate: nextStartTime,
-            guests: allParts.join(','),
+            guests: allParticipants.join(','),
             isAllDay: true,
           });
           allParts = [];
@@ -298,9 +317,9 @@ function runOnChange() {
         console.log('Adding Overview Final: %s (%s)', overviewTitle, currIndex);
         createEventAndNewRow({
           title: overviewTitle,
-          text: lastEvent.getDescription(),
+          text: allParts.join(noteDivider),
           startDate: nextStartTime,
-          guests: allParts.join(','),
+          guests: allParticipants.join(','),
           isAllDay: true,
         });
       }
