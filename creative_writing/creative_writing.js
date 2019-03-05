@@ -190,14 +190,27 @@ function runOnChange() {
   var subCurrNumIdx = submissionInfo.index.CurrentNumber;
   var eventIdIdx = submissionInfo.index.EventName;
   var calendarEventIdx = submissionInfo.index.CalendarEventId;
+  var inNumberIdx = submissionInfo.index.InNumbers;
   var textIdx = submissionInfo.index.Text;
   var wordsIdx = submissionInfo.index.Words;
   var editedDateIdx = submissionInfo.index.EditedDate;
   var submissionInfoNeedsUpdating = false;
   var lastSubmissionIdx = submissionInfo.data.length;
+
+  var eventToFullTextArray = {}; // links ID with array of text
   processSubmissions();
 
+  var updatedEventIdToTextArray = {}; // links ID with array of text, but only for updated ones
   getEvents(calendarId);
+
+  var currArray;
+  for (var calId in updatedEventIdToTextArray) {
+    if (updatedEventIdToTextArray.hasOwnProperty(calId)) {
+      currArray = updatedEventIdToTextArray[calId];
+      writingCalendar.getEventById(calId)
+                     .setDescription(currArray.join(noteDivider));
+    }
+  }
 
   if (submissionInfoNeedsUpdating) {
     console.log('Submission Updating');
@@ -368,18 +381,48 @@ function runOnChange() {
 
   // Helper functions
   /**
-   * Incrementally gets only updated tasts
+   * Process previous submissions
    */
   function processSubmissions() {
     submissionInfo.eventNameToRow = {};
     submissionInfo.titlePrefixToRow = {};
+    var calendarId, currSub, inNumbers, iterPrefix, iterDescription, iterCalId, iterRow;
     for (var i = 1; i < submissionInfo.data.length; i++) {
-      submissionInfo.eventNameToRow[submissionInfo.data[i][eventIdIdx]] = i;
+      currSub = submissionInfo.data[i];
 
-      var titlePrefix = getTitlePrefix(submissionInfo.data[i][subPromptId],
-                                       submissionInfo.data[i][subCurrNumIdx]);
+      submissionInfo.eventNameToRow[currSub[eventIdIdx]] = i;
 
-      submissionInfo.titlePrefixToRow[titlePrefix] = submissionInfo.data[i];
+      var titlePrefix = getTitlePrefix(currSub[subPromptId], currSub[subCurrNumIdx]);
+      submissionInfo.titlePrefixToRow[titlePrefix] = currSub;
+
+      // Now compile all sections that are part of this row's calendar event
+      calendarId = currSub[calendarEventIdx];
+      inNumbers = currSub[inNumberIdx].split(/,\s*/g);
+      if (!eventToFullTextArray[calendarId]) {
+        eventToFullTextArray[calendarId] = {
+          descArray: [],
+          usedInTitlePrefix: [],
+          eventNameArray: [],
+        };
+      }
+
+      for (var j = 0; j < inNumbers.length; j++) {
+        iterPrefix = inNumbers[j];
+        if (iterPrefix) {
+          // Add all event's text to event
+          iterRow = submissionInfo.data[i - inNumbers.length + j + 1];
+          iterDescription = iterRow[textIdx].trim();
+          eventToFullTextArray[calendarId].descArray.push(iterDescription);
+          eventToFullTextArray[calendarId].eventNameArray.push(iterRow[eventIdIdx]);
+
+          // Add this iterprefix to calendar event's usedInTitlePrefix
+          iterCalId = submissionInfo.titlePrefixToRow[iterPrefix + ':'][calendarEventIdx];
+          eventToFullTextArray[iterCalId].usedInTitlePrefix.push(titlePrefix);
+        }
+      }
+
+      eventToFullTextArray[calendarId].descArray.push(currSub[textIdx] || '');
+      eventToFullTextArray[calendarId].eventNameArray.push(currSub[eventIdIdx]);
     }
   }
 
@@ -455,63 +498,98 @@ function runOnChange() {
     var currIdx = submissionInfo.eventNameToRow[eventTitle];
     var currRow = submissionInfo.data[currIdx];
     var currText = currRow[textIdx];
-    if (eventDescription !== currText) {
-      submissionInfoNeedsUpdating = true;
+    var dividerRegex = new RegExp('\\s*' + divider + '+?\\s*');
 
-      // Update text
-      submissionInfo.note[currIdx][textIdx] += (noteDivider + new Date().toLocaleString() + ' overwrote:\n' + currRow[textIdx] + '\n');
-      currRow[textIdx] = eventDescription;
+    // Check every section of current eventTitle,
+    // update submissionInfo and related calendar events as necessary
+    // If last event, set it as lastEvent and send email
+    var isChanged = false;
+    var calendarSectionsNew = eventDescription.split(dividerRegex);
+    var calendarSectionsOld = eventToFullTextArray[eventId];
+    var currSectionNew, currSectionOld, currSectionIdx, currSectionRow;
 
-      // Update word count
-      submissionInfo.note[currIdx][wordsIdx] += (new Date().toLocaleString() + ' overwrote:\n' + currRow[wordsIdx] + '\n');
-      currRow[wordsIdx] = getWordCount(eventDescription);
+    // Recursively update description for all affected calendar events
+    function updateAllCalendarForRow(inNumbers, idxFromEnd) {
+      console.log('updateAllCalendarForRow for %s, %s', inNumbers.toString(), idxFromEnd);
+      var calID = currSectionRow[calendarEventIdx];
 
-      if (currRow[editedDateIdx]) {
-        submissionInfo.note[currIdx][editedDateIdx] += (new Date().toLocaleString() + ' overwrote:\n' + currRow[editedDateIdx] + '\n');
-      }
-
-      currRow[editedDateIdx] = new Date();
-
-      if (eventTitle.indexOf(latestEventPrefix) === 0) {
-        lastEvent = writingCalendar.getEventById(eventId);
-
-        if (lastEvent.getDescription() !== eventDescription) {
-          // Don't process last event if it's just cascading update
-          lastEvent.setDescription(eventDescription);
-          lastEvent = undefined;
-        } else {
-          // Send email to user letting them now their current contribution and how many words they wrote
-          lastEvent.setAllDayDate(lastEvent.getStartTime());
-          var splitByDays = eventDescription.split('------');
-          var wordsWrote, currIdx = splitByDays.length - 1;
-          while (!wordsWrote && currIdx >= 0) {
-            wordsWrote = getWordCount(splitByDays[currIdx]);
-            currIdx--;
-          }
-
-          MailApp.sendEmail({
-            to: currRow[emailIdx],
-            subject: '[CreativeWriting] Thanks for writing ' + wordsWrote + ' words today! (' + currRow[editedDateIdx].toDateString() + ')',
-            body: 'Prompt:\n\n' + lastEvent.getTitle() + noteDivider +
-                  eventDescription +
-                  '\n\nNew Count: ' + wordsWrote +
-                  '\n\nTotal Count: ' + currRow[wordsIdx] +
-                  '\n' + noteDivider +
-                  'Link: ' + writingSpreadsheetUrl,
-          });
-        }
+      if (idxFromEnd && idxFromEnd > inNumbers.length) {
+        console.log('updateAllCalendarForRow Done');
+        return;
+      } else if (idxFromEnd) {
+        var inNumberRow = submissionInfo.titlePrefixToRow[inNumbers[idxFromEnd - 1]];
+        calID = inNumberRow[calendarEventIdx];
       } else {
-        // If older event was edited, cascade changes
-        var currPromptId = currRow[subPromptId];
-        var nextNumber = currRow[subCurrNumIdx] + 1;
-        var nextRow = submissionInfo.titlePrefixToRow[getTitlePrefix(currPromptId, nextNumber)];
-        var text = nextRow && nextRow[textIdx];
-        var changedText = nextRow && text.replace(currText, eventDescription);
-
-        if (text !== changedText) {
-          updateEventIfChanged(nextRow[calendarEventIdx], nextRow[eventIdIdx], changedText);
-        }
+        idxFromEnd = 0;
       }
+
+      if (!updatedEventIdToTextArray[calID]) {
+        updatedEventIdToTextArray[calID] = eventToFullTextArray[calID].descArray;
+      }
+
+      var updatedDescArray = updatedEventIdToTextArray[calID];
+      var idxToUpdate = updatedDescArray.length - idxFromEnd - 1;
+      updatedDescArray[idxToUpdate] = currSectionNew;
+
+      console.log('idxToUpdate: %s', idxToUpdate);
+
+      updateAllCalendarForRow(inNumbers, ++idxFromEnd);
+    }
+
+    for (var i = 0; i < calendarSectionsNew.length; i++) {
+      console.log('calendarSectionsNew i: %s', i);
+      currSectionNew = calendarSectionsNew[i];
+      currSectionOld = calendarSectionsOld.descArray[i];
+
+      if (currSectionNew !== currSectionOld) {
+        isChanged = true;
+        submissionInfoNeedsUpdating = true;
+        currSectionIdx = submissionInfo.eventNameToRow[calendarSectionsOld.eventNameArray[i]];
+        currSectionRow = submissionInfo.data[currSectionIdx];
+        console.log('currSectionIdx: %s', currSectionIdx);
+        console.log('currSectionRow: %s', currSectionRow.toString());
+
+        // Update text
+        submissionInfo.note[currSectionIdx][textIdx] += (noteDivider + new Date().toLocaleString() + ' overwrote:\n' + currSectionRow[textIdx] + '\n');
+        currSectionRow[textIdx] = currSectionNew;
+
+        // Update word count
+        submissionInfo.note[currSectionIdx][wordsIdx] += (new Date().toLocaleString() + ' overwrote:\n' + currSectionRow[wordsIdx] + '\n');
+        currSectionRow[wordsIdx] = getWordCount(currSectionNew);
+
+        if (currSectionRow[editedDateIdx]) {
+          submissionInfo.note[currSectionIdx][editedDateIdx] += (new Date().toLocaleString() + ' overwrote:\n' + currSectionRow[editedDateIdx] + '\n');
+        }
+
+        currSectionRow[editedDateIdx] = new Date();
+
+        updateAllCalendarForRow(eventToFullTextArray[currSectionRow[calendarEventIdx]].usedInTitlePrefix);
+      }
+    }
+
+    if (isChanged && eventTitle.indexOf(latestEventPrefix) === 0) {
+      lastEvent = writingCalendar.getEventById(eventId);
+
+      var wordsWrote = getWordCount(calendarSectionsNew[calendarSectionsNew.length - 1]);
+      if (!wordsWrote) {
+        console.log('Nothing added to section');
+        lastEvent = undefined;
+        return;
+      }
+
+      // Send email to user letting them now their current contribution and how many words they wrote
+      lastEvent.setAllDayDate(lastEvent.getStartTime());
+      console.log('Last event changed, sending email');
+      MailApp.sendEmail({
+        to: currRow[emailIdx],
+        subject: '[CreativeWriting] Thanks for writing ' + wordsWrote + ' words today! (' + currRow[editedDateIdx].toDateString() + ')',
+        body: 'Prompt:\n\n' + lastEvent.getTitle() + noteDivider +
+              eventDescription +
+              '\n\nNew Count: ' + wordsWrote +
+              '\n\nTotal Count: ' + currRow[wordsIdx] +
+              '\n' + noteDivider +
+              'Link: ' + writingSpreadsheetUrl,
+      });
     }
   }
 
