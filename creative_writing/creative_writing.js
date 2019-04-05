@@ -500,6 +500,10 @@ function runOnChange() {
     var currText = currRow[textIdx];
     var dividerRegex = new RegExp('\\s*' + divider + '+?\\s*');
 
+    if (!eventDescription) {
+      return;
+    }
+
     // Check every section of current eventTitle,
     // update submissionInfo and related calendar events as necessary
     // If last event, set it as lastEvent and send email
