@@ -47,14 +47,14 @@ function syncPRs() {
       }
     }
 
-    // https://arcadiadata.atlassian.net/issues/?jql=id%20in%20(ARC-9577%2C%20ARC-10817%2C%20ARC-5863)
+    // ' + bitLink + '/issues/?jql=id%20in%20(ARC-9577%2C%20ARC-10817%2C%20ARC-5863)
 
     var jiras = title.match(/(?:ARC|arc|Arc)-\d+/gm);
     if (jiras) {
       if (jiras.length === 1) {
-        d.jiras = '=HYPERLINK("https://arcadiadata.atlassian.net/browse/' + jiras[0] + '", "' + jiras[0] +'")';
+        d.jiras = '=HYPERLINK("' + bitLink + '/browse/' + jiras[0] + '", "' + jiras[0] +'")';
       } else {
-        d.jiras = '=HYPERLINK("https://arcadiadata.atlassian.net/issues/?jql=id%20in%20(' + jiras.join("%2C%20") + ')", "' + jiras.join(", ") +'")';
+        d.jiras = '=HYPERLINK("' + bitLink + '/issues/?jql=id%20in%20(' + jiras.join("%2C%20") + ')", "' + jiras.join(", ") +'")';
         //d.jiras = jiras.join(", ");
       }
     } else {
