@@ -282,7 +282,7 @@ function runOnChange() {
       var originalTitle = lastEvent.getTitle();
 
       function getNewTitle() {
-        return originalTitle.replace(new RegExp('^' + latestEventPrefix), summaryHeader + promptId + '.' + currIndex + ': ');
+        return originalTitle.replace(new RegExp('^' + latestEventPrefix), summaryHeader + oldPromptId + '.' + currIndex + ': ');
       }
 
       // Get all participants
