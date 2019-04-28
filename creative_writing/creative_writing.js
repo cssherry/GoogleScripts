@@ -144,9 +144,12 @@ function checkDaysProgress() {
       allParts.push(participantInfo.data[i][partEmailIdx]);
     }
 
+    var shortenedString = summaryTitle.substring(0, 200);
+    var lastIndex = summaryTitle.lastIndexOf(' ');
+    shortenedString = shortenedString.substring(0, lastIndex - 2);
     MailApp.sendEmail({
       to: allParts.join(',') + ',' + scriptInfo.data[scriptLength][scriptInfo.index.AdditionalEmails],
-      subject: '[CreativeWriting] ' + summaryTitle,
+      subject: '[CreativeWriting] ' + shortenedString,
       body: finaleSections.join('\n\n') +
             noteDivider +
             'Google Doc Link: ' + totalDoc +
