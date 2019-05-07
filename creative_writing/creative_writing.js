@@ -315,7 +315,7 @@ function runOnChange() {
           console.log('Adding Overview Part: %s (%s)', overviewTitle, currIndex);
           createEventAndNewRow({
             title: overviewTitle,
-            text: allParts.join('\n\n'),
+            text: allParts.join(noteDivider),
             startDate: nextStartTime,
             guests: allParticipants.join(','),
             isAllDay: true,
