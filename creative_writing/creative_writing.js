@@ -601,7 +601,7 @@ function runOnChange() {
         body: 'Prompt:\n\n' + lastEvent.getTitle() + noteDivider +
               eventDescription +
               '\n\nNew Count: ' + wordsWrote +
-              '\n\nTotal Count: ' + currRow[wordsIdx] +
+              '\n\nTotal Count: ' + getWordCount(eventDescription) +
               '\n' + noteDivider +
               'Link: ' + writingSpreadsheetUrl,
       });
