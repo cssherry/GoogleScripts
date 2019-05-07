@@ -196,6 +196,7 @@ function runOnChange() {
   var inNumberIdx = submissionInfo.index.InNumbers;
   var textIdx = submissionInfo.index.Text;
   var wordsIdx = submissionInfo.index.Words;
+  var charIdx = submissionInfo.index.Characters;
   var editedDateIdx = submissionInfo.index.EditedDate;
   var submissionInfoNeedsUpdating = false;
   var lastSubmissionIdx = submissionInfo.data.length;
@@ -565,9 +566,11 @@ function runOnChange() {
         submissionInfo.note[currSectionIdx][textIdx] += (noteDivider + new Date().toLocaleString() + ' overwrote:\n' + currSectionRow[textIdx] + '\n');
         currSectionRow[textIdx] = currSectionNew;
 
-        // Update word count
+        // Update word and character count
         submissionInfo.note[currSectionIdx][wordsIdx] += (new Date().toLocaleString() + ' overwrote:\n' + currSectionRow[wordsIdx] + '\n');
         currSectionRow[wordsIdx] = getWordCount(currSectionNew);
+        submissionInfo.note[currSectionIdx][charIdx] += (new Date().toLocaleString() + ' overwrote:\n' + currSectionRow[charIdx] + '\n');
+        currSectionRow[charIdx] = currSectionNew.length;
 
         if (currSectionRow[editedDateIdx]) {
           submissionInfo.note[currSectionIdx][editedDateIdx] += (new Date().toLocaleString() + ' overwrote:\n' + currSectionRow[editedDateIdx] + '\n');
@@ -649,6 +652,7 @@ function runOnChange() {
       newRow[submissionInfo.index.CreatedDate] = new Date();
       newRow[textIdx] = '';
       newRow[wordsIdx] = 0;
+      newRow[charIdx] = 0;
       lastSubmissionIdx++;
       var cells = submissionInfo.sheet.getRange(lastSubmissionIdx, 1, 1, newRow.length);
       cells.setValues([newRow])
