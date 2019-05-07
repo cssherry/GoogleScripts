@@ -347,20 +347,25 @@ function runOnChange() {
       console.log('New Section: %s', title);
     }
 
-    // If text is longer than (charLimit - average length - graceLimit), then remove one section
+    // If text is longer than (charLimit - 2 * average length - graceLimit), then remove one section
     // Only need to calculate for events that have text (ie: not new prompts)
     var inNumbers = '';
-    if (text.length) {
-      var avgCharIdx = scriptInfo.index.AverageCharacters;
-      var avgChars = scriptInfo.data[scriptLength][avgCharIdx];
-      var firstSectionRegexp = new RegExp('^[\\s\\S]*?' + divider + '+?\\s*')
-      inNumbers = submissionInfo.titlePrefixToRow[latestEventPrefix][inNumberIdx] +
-                  latestEventPrefix.replace(':', '') + ', ';
-      if (text.length >= (charLimit - avgChars - graceLimit)) {
+    var textLength = text.length;
+    if (textLength) {
+      var charLimit = charLimit - (2 * avgChars) - graceLimit;
+      console.log('Current text length: %s', textLength);
+      while (textLength >= charLimit) {
+        var avgCharIdx = scriptInfo.index.AverageCharacters;
+        var avgChars = scriptInfo.data[scriptLength][avgCharIdx];
+        var firstSectionRegexp = new RegExp('^[\\s\\S]*?' + divider + '+?\\s*')
+        inNumbers = submissionInfo.titlePrefixToRow[latestEventPrefix][inNumberIdx] +
+                    latestEventPrefix.replace(':', '') + ', ';
         text = text.replace(firstSectionRegexp, '');
         inNumbers = inNumbers.replace(/[0-9\.]+,\s*/, '');
+        textLength = text.length;
         console.log('Trim Description: %s', text);
         console.log('Trim InNumbers: %s', inNumbers);
+        console.log('New text length: %s', textLength);
       }
 
       console.log('InNumbers: %s', inNumbers);
