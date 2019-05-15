@@ -824,7 +824,7 @@ function addNewCellItemsRow() {
 // returns back regexp string and weight for that string
 function getRegexpAndWeight(weightRegexpNote) {
   var weightAndRegex = weightRegexpNote.match(/(\d+):(.*)/);
-  var weight = int(weightAndRegex[1]);
+  var weight = parseInt(weightAndRegex[1]);
   var regexp = weightAndRegex[2].replace(/\s+/g, '\\s+');
 
   return {
