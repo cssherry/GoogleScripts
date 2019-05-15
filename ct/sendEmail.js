@@ -622,7 +622,8 @@ function addOrUpdatePbPItem(pbpItem) {
 function getLocationTimePicture(rowEl, rowString, elData) {
   var columns = getElementsByTagName(rowEl, 'td', 'onlyFirstLevel');
   var ImageUrl = getElementsByTagName(columns[0], 'img')[0].getAttribute('src').getValue();
-  var location = trimHtml(columns[0].toXmlString().replace(/<br>/g, '; ')).trim();
+  var locationHTML = columns[0].toXmlString();
+  var location = trimHtml(locationHTML.replace(/<br>/g, '; ')).trim();
   var date = trimHtml(columns[1].toXmlString())
               .replace(/\bpm/ig, 'PM;\n')
               .replace(/\bam/ig, 'AM;\n')
