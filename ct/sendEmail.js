@@ -912,7 +912,6 @@ function sendEmail(numberItemsToSend) {
   var subject = '[CT] *' + sortNewItems.numberFound + '/' + newItemsForUpdate.length + '* New || *' +
                 sortUpdatedItems.numberFound + '/' + updatedItems.length + '* Updated ' + new Date().toLocaleString();
 
-  // Get information from TotalSavings tab
   var email = MailApp.sendEmail({
     to: myEmail,
     subject: subject,
