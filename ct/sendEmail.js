@@ -820,6 +820,64 @@ function addNewCellItemsRow() {
 }
 
 // --------------------------------------------
+// returns back regexp string and weight for that string
+function getRegexpAndWeight(weightRegexpNote) {
+  var weightAndRegex = weightRegexpNote.match(/(\d+):(.*)/);
+  var weight = int(weightAndRegex[1]);
+  var regexp = weightAndRegex[2].replace(/\s+/g, '\\s+');
+
+  return {
+    regexpStr: regexp,
+    weight: weight,
+  }
+}
+
+// --------------------------------------------
+// Weight sort function
+function sortByWeight(a, b) {
+  return b.weight - a.weight;
+}
+
+// --------------------------------------------
+// Sorts items in array based on location or number of matching category keywords
+function sortEmailItems(items) {
+  var locationIdx = contextValues.sheetIndex.Location;
+  var categoryIdx = contextValues.sheetIndex.Category;
+  var locationSearch = getRegexpAndWeight(contextValues.sheetNotes[locationIdx]);
+  var locationWords = locationSearch.regexpStr.split('|');
+  var locationRegexp = new RegExp('\\b' + locationWords.join('\\b|\\b') + '\\b', 'i');
+  var categorySearch = getRegexpAndWeight(contextValues.sheetNotes[categoryIdx]);
+  var categoryRegexp = new RegExp(locationSearch.regexpStr, 'gi');
+  var pattern = '<em style="color: darkred;">$&</em>';
+  var numberFound = 0;
+
+  var currloc, currcat, locationFound, catFound, weight;
+  items.map(function addRating(itm) {
+    currloc = itm[locationIdx];
+    currcat = itm[categoryIdx];
+    locationFound = currloc.match(locationRegexp) ? locationSearch.weight : 0;
+    catFound = currcat.match(categoryRegexp).length;
+    weight = locationFound + catFound * categorySearch.weight;
+
+    // Update email values
+    itm[locationIdx] = currloc.replace(locationRegexp, pattern);
+    itm[categoryIdx] = currcat.replace(categorySearch, pattern);
+
+    // add weight
+    itm.weight = weight;
+
+    if (weight) {
+      numberFound += 1;
+    }
+  });
+
+  return {
+    sortedItems: items.sort(sortByWeight),
+    numberFound: numberFound,
+  };
+}
+
+// --------------------------------------------
 // Send email with new listing information
 function sendEmail(numberItemsToSend) {
   // Only send if there's new items
@@ -831,8 +889,12 @@ function sendEmail(numberItemsToSend) {
 
   var footer = '<hr>' +
                'Sheet: ' + spreadsheetURL;
-  var newItemsText = newItemsForUpdate.length ? '<hr><h2>New:</h2><br>' + newItemsForUpdate.map(getElementSection).join('') : '';
-  var updatedItemsText = updatedItems.length ? '<hr><h2>Updated:</h2><br>' + updatedItems.map(getElementSection).join('') : '';
+  var sortNewItems = sortEmailItems(newItemsForUpdate);
+  var sortUpdatedItems = sortEmailItems(updatedItems);
+  var newItemsText = newItemsForUpdate.length ? '<hr><h2>New:</h2><br>' +
+                     sortNewItems.sortedItems.map(getElementSection).join('') : '';
+  var updatedItemsText = updatedItems.length ? '<hr><h2>Updated:</h2><br>' +
+                         sortUpdatedItems.sortedItems.map(getElementSection).join('') : '';
   var archivedItemsText = '';
   if (Object.keys(contextValues.previousListings).length) {
     archivedItemsText = '<hr><h2>Archived:</h2><br>';
@@ -847,8 +909,8 @@ function sendEmail(numberItemsToSend) {
                       updatedItemsText +
                       archivedItemsText +
                       footer;
-  var subject = '[CT] *' + newItemsForUpdate.length + '* New || *' + updatedItems.length + '* Updated ' + new Date().toLocaleString();
-
+  var subject = '[CT] *' + sortNewItems.numberFound + '/' + newItemsForUpdate.length + '* New || *' +
+                sortUpdatedItems.numberFound + '/' + updatedItems.length + '* Updated ' + new Date().toLocaleString();
 
   // Get information from TotalSavings tab
   var email = MailApp.sendEmail({
