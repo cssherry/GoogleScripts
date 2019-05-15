@@ -301,6 +301,7 @@ function updateSheet() {
   items.forEach(addOrUpdateCT);
 
   addNewCellItemsRow();
+  updateAllCells();
 
   // Only email if user wants email. This handles vacations
   var secondLastIdx = contextValues.sheetData[0].length - 2;
@@ -309,7 +310,6 @@ function updateSheet() {
     sendEmail(timeEmail);
   }
 
-  updateAllCells();
   archiveExpiredItems();
 }
 
