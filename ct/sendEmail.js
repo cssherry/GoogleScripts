@@ -763,7 +763,8 @@ function addOrUpdateCT(item) {
 
 // Process CT
 function addNewListingCT(item, htmlText, url) {
-  var ImageUrl = getElementsByTagName(item, 'img')[0].getAttribute('src').getValue();
+  var imageElement = getElementsByTagName(item, 'img')[0];
+  var ImageUrl = imageElement ? imageElement.getAttribute('src').getValue() : '';
   var listingInfo = [];
   var title = getTitleCT(item);
 
