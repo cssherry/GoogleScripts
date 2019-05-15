@@ -830,7 +830,7 @@ function getRegexpAndWeight(weightRegexpNote) {
   return {
     regexpStr: regexp,
     weight: weight,
-  }
+  };
 }
 
 // --------------------------------------------
@@ -885,7 +885,7 @@ function sendEmail(numberItemsToSend) {
   var noUpdatedItem = !updatedItems.length && numberItemsToSend === 2;
   if (!newItemsForUpdate.length &&
       (noUpdatedItem || numberItemsToSend === 1)) {
-    return
+    return;
   }
 
   var footer = '<hr>' +
