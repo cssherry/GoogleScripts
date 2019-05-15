@@ -1006,8 +1006,10 @@ function removeAndEmail(domain, specificErrorMessage) {
   }
 
   // If it hasn't been emailed today
-  var lastEmailedDate = contextValues.errorData[contextValues.lastErrorRow - 1][contextValues.errorDateIdx];
-  if (specificErrorMessage || !lastEmailedDate.toDateString || lastEmailedDate.toDateString() !== new Date().toDateString()) {
+  var lastRow = contextValues.errorData[contextValues.lastErrorRow - 1];
+  var lastEmailedDate = lastRow[contextValues.errorDateIdx];
+  var sameErrorMessage = lastRow[contextValues.errorSitesIdx] === domain && lastRow[contextValues.errorIndex.errorMessage] === specificErrorMessage;
+  if ((specificErrorMessage && !sameErrorMessage) || !lastEmailedDate.toDateString || lastEmailedDate.toDateString() !== new Date().toDateString()) {
     var updateMessage = 'Update ' + domain + ' Token';
 
     if (specificErrorMessage) {
