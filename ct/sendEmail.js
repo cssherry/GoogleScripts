@@ -844,10 +844,10 @@ function sortByWeight(a, b) {
 function sortEmailItems(items) {
   var locationIdx = contextValues.sheetIndex.Location;
   var categoryIdx = contextValues.sheetIndex.Category;
-  var locationSearch = getRegexpAndWeight(contextValues.sheetNotes[locationIdx]);
+  var locationSearch = getRegexpAndWeight(contextValues.sheetNotes[0][locationIdx]);
   var locationWords = locationSearch.regexpStr.split('|');
   var locationRegexp = new RegExp('\\b' + locationWords.join('\\b|\\b') + '\\b', 'i');
-  var categorySearch = getRegexpAndWeight(contextValues.sheetNotes[categoryIdx]);
+  var categorySearch = getRegexpAndWeight(contextValues.sheetNotes[0][categoryIdx]);
   var categoryRegexp = new RegExp(locationSearch.regexpStr, 'gi');
   var pattern = '<em style="color: darkred;">$&</em>';
   var numberFound = 0;
