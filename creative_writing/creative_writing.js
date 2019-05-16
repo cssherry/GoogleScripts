@@ -312,7 +312,7 @@ function runOnChange() {
 
         currText = submissionInfo.data[j][textIdx];
         totalCharCount += currText.length;
-        if (totalCharCount > charLimit) {
+        if (totalCharCount > (charLimit - graceLimit)) {
           console.log('Adding Overview Part: %s (%s)', overviewTitle, currIndex);
           createEventAndNewRow({
             title: overviewTitle,
@@ -353,9 +353,9 @@ function runOnChange() {
     var inNumbers = '';
     var textLength = text.length;
     if (textLength) {
-      var charLimit = charLimit - (2 * avgChars) - graceLimit;
+      var charLimitWithGrace = charLimit - (2 * avgChars) - graceLimit;
       console.log('Current text length: %s', textLength);
-      while (textLength >= charLimit) {
+      while (textLength >= charLimitWithGrace) {
         var avgCharIdx = scriptInfo.index.AverageCharacters;
         var avgChars = scriptInfo.data[scriptLength][avgCharIdx];
         var firstSectionRegexp = new RegExp('^[\\s\\S]*?' + divider + '+?\\s*')
