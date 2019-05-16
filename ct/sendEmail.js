@@ -679,8 +679,8 @@ function addOrUpdateSf(item) {
     if (detailPage.indexOf(detailError) === -1) {
       price = detailPage.match(/price_info_box.*?>([\s\S]*?)<\/span>/);
       location = detailPage.match(/location_td.*?>([\s\S]*?)<\/td>/);
-      price = price ? trimHtml(price[1]) : '';
-      location = location ? trimHtml(location[1]) : '';
+      price = price ? trimHtml(price[1]).trim() : '';
+      location = location ? trimHtml(location[1]).trim() : '';
       time = ' @ ' + detailPage.match(/<td>(.*?:.*?)<\/td>/)[1];
     }
 
@@ -691,7 +691,7 @@ function addOrUpdateSf(item) {
     listingInfo[contextValues.sheetIndex.LocationRating] = getLocationRating(location);
     listingInfo[contextValues.sheetIndex.AdminFee] = price;
     listingInfo[contextValues.sheetIndex.Date] = date[0].getText().trim() + time;
-    listingInfo[contextValues.sheetIndex.Category] = trimHtml(description[0].toXmlString());
+    listingInfo[contextValues.sheetIndex.Category] = trimHtml(description[0].toXmlString()).trim();
     listingInfo[contextValues.sheetIndex.Location] = location;
     listingInfo[contextValues.sheetIndex.Url] = url;
     listingInfo[contextValues.sheetIndex.EventManager] = '';
