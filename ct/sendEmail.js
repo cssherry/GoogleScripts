@@ -295,10 +295,15 @@ function updateSheet() {
   // --------------------------------------------
   // CT LISTINGS
   var mainPage = cleanupHTML(getMainPageCT());
-  var doc = Xml.parse(mainPage, true).getElement();
-  var mainList = getElementsByTagName(doc, 'ul');
-  var items = getElementsByTagName(mainList[3], 'li');
-  items.forEach(addOrUpdateCT);
+  var ctError = 'Member Login';
+  if (mainPage.indexOf(ctError) === -1) {
+    var doc = Xml.parse(mainPage, true).getElement();
+    var mainList = getElementsByTagName(doc, 'ul');
+    var items = getElementsByTagName(mainList[3], 'li');
+    items.forEach(addOrUpdateCT);
+  } else {
+    removeAndEmail(urls.ctDomain);
+  }
 
   addNewCellItemsRow();
   updateAllCells();
@@ -697,35 +702,12 @@ function addOrUpdateSf(item) {
 
 // --------------------------------------------
 // CT Helpers
-// Get CT login cookie
-function loginCT() {
-  var postOptions = {
-    method: 'post',
-    payload: {
-      email: fetchPayload.email,
-      password: sjcl.decrypt(fetchPayload.salt, fetchPayload.password),
-    },
-    followRedirects: false,
-  };
-  var loginPage = UrlFetchApp.fetch(urls.login, postOptions);
-  var loginCode = loginPage.getResponseCode();
-  if (loginCode === 200) { //could not log in.
-    return "Couldn't login. Please make sure your username/password is correct.";
-  } else if (loginCode === 303 || loginCode === 302) {
-    return loginPage.getAllHeaders()['Set-Cookie'];
-  }
-}
-
 // Get the main CT page
 function getMainPageCT() {
-  if (!fetchPayload.cookie) {
-    fetchPayload.cookie = loginCT();
-  }
-
   var mainPage = UrlFetchApp.fetch(urls.main,
                                   {
                                     headers: {
-                                      Cookie: fetchPayload.cookie,
+                                      Cookie: fetchPayload.ctPassword,
                                     },
                                   });
   return mainPage.getContentText();
