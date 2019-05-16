@@ -838,7 +838,8 @@ function sortEmailItems(items) {
     currloc = itm[locationIdx];
     currcat = itm[categoryIdx];
     locationFound = currloc.match(locationRegexp) ? locationSearch.weight : 0;
-    catFound = currcat.match(categoryRegexp).length;
+    catFound = currcat.match(categoryRegexp)
+    catFound = catFound ? catFound.length : 0;
     weight = locationFound + catFound * categorySearch.weight;
 
     // Update email values
