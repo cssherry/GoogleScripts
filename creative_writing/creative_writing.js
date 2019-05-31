@@ -31,7 +31,7 @@ function checkDaysProgress() {
   var currEmail = scriptInfo.data[scriptLength][currParticipantIdx];
 
   if (!writingCalendar) {
-    writingCalendar =  CalendarApp.getCalendarById(calendarId);
+    writingCalendar = CalendarApp.getCalendarById(calendarId);
   }
 
   var events = writingCalendar.getEventsForDay(searchDate);
@@ -170,7 +170,7 @@ function checkDaysProgress() {
 // ==========================================
 function runOnChange() {
   if (!writingCalendar) {
-    writingCalendar =  CalendarApp.getCalendarById(calendarId);
+    writingCalendar = CalendarApp.getCalendarById(calendarId);
   }
 
   // Calculate latest event
