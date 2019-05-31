@@ -892,8 +892,10 @@ function sendEmail(numberItemsToSend) {
                       updatedItemsText +
                       archivedItemsText +
                       footer;
-  var subject = '[CT] *' + sortNewItems.numberFound + '/' + newItemsForUpdate.length + '* New || *' +
-                sortUpdatedItems.numberFound + '/' + updatedItems.length + '* Updated ' + new Date().toLocaleString();
+  var newFound = sortNewItems.numberFound ? sortNewItems.numberFound + '/' : '';
+  var updatedFound = sortUpdatedItems.numberFound ? sortUpdatedItems.numberFound + '/' : '';
+  var subject = '[CT] *' + newFound + newItemsForUpdate.length + '* New || *' +
+                updatedFound + updatedItems.length + '* Updated ' + new Date().toLocaleString();
 
   var email = MailApp.sendEmail({
     to: myEmail,
