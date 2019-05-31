@@ -355,12 +355,13 @@ function runOnChange() {
     if (textLength) {
       var charLimitWithGrace = charLimit - (2 * avgChars) - graceLimit;
       console.log('Current text length: %s', textLength);
-      while (textLength >= charLimitWithGrace) {
         var avgCharIdx = scriptInfo.index.AverageCharacters;
         var avgChars = scriptInfo.data[scriptLength][avgCharIdx];
         var firstSectionRegexp = new RegExp('^[\\s\\S]*?' + divider + '+?\\s*')
         inNumbers = submissionInfo.titlePrefixToRow[latestEventPrefix][inNumberIdx] +
                     latestEventPrefix.replace(':', '') + ', ';
+
+      while (textLength >= charLimitWithGrace) {
         text = text.replace(firstSectionRegexp, '');
         inNumbers = inNumbers.replace(/[0-9\.]+,\s*/, '');
         textLength = text.length;
