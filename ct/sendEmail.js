@@ -829,7 +829,7 @@ function sortEmailItems(items) {
   var locationWords = locationSearch.regexpStr.split('|');
   var locationRegexp = new RegExp('\\b' + locationWords.join('\\b|\\b') + '\\b', 'i');
   var categorySearch = getRegexpAndWeight(contextValues.sheetNotes[0][categoryIdx]);
-  var categoryRegexp = new RegExp(locationSearch.regexpStr, 'gi');
+  var categoryRegexp = new RegExp(categorySearch.regexpStr, 'gi');
   var pattern = '<em style="color: darkred;">$&</em>';
   var numberFound = 0;
 
@@ -844,7 +844,7 @@ function sortEmailItems(items) {
 
     // Update email values
     itm[locationIdx] = currloc.replace(locationRegexp, pattern);
-    itm[categoryIdx] = currcat.replace(categorySearch, pattern);
+    itm[categoryIdx] = currcat.replace(categoryRegexp, pattern);
 
     // add weight
     itm.weight = weight;
