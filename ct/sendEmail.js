@@ -1155,7 +1155,7 @@ function getElementSection(listingInfo) {
   var categoryIdx = contextValues.sheetIndex.Category;
   var urlIdx = contextValues.sheetIndex.Url;
   var feeIdx = contextValues.sheetIndex.AdminFee;
-  var imageUrl = listingInfo[imageIdx] ? getImageUrl(listingInfo[imageIdx])  : '';
+  var imageUrl = listingInfo[imageIdx] ? getImageUrl(listingInfo[imageIdx]) : '';
   var imageDiv = imageUrl ? '<img src="' + imageUrl + '" alt="' + listingInfo[titleIdx] + '" width="128">' :
                  '';
   var rating = listingInfo[ratingIdx] ? ' <small>' + listingInfo[ratingIdx] + '</small>' : '';
