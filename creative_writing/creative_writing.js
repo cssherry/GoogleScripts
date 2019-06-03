@@ -4,8 +4,8 @@ var writingCalendar;
 var charLimit = 8148;
 var graceLimit = 500; // we allow for average length + gracelimit before dropping 1 day's writing
 
-var warningDay = 5;
-var moveDay = 8;
+var warningDay = 3;
+var moveDay = 6;
 
 var lengthEvent = 3; // Hours writing event should last
 
