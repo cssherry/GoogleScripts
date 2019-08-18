@@ -147,14 +147,15 @@ function checkDaysProgress() {
     var shortenedString = summaryTitle.substring(0, 200);
     var lastIndex = summaryTitle.lastIndexOf(' ');
     shortenedString = shortenedString.substring(0, lastIndex - 2);
-    var allSections = finaleSections.join('\n\n')
+    var allSections = finaleSections.join(noteDivider);
     MailApp.sendEmail({
       to: allParts.join(',') + ',' + scriptInfo.data[scriptLength][scriptInfo.index.AdditionalEmails],
       subject: '[CreativeWriting] ' + shortenedString,
-      body: allSections +
-            noteDivider +
-            'Google Doc Link: ' + totalDoc +
-            'Spreadsheet Link: ' + writingSpreadsheetUrl,
+      body: 'Prompt:\n\n' + summaryTitle + noteDivider + '\n' +
+        allSections +
+        noteDivider +
+        'Google Doc Link: ' + totalDoc +
+        '\nSpreadsheet Link: ' + writingSpreadsheetUrl,
     });
 
     // Now add it to google docs
@@ -163,7 +164,7 @@ function checkDaysProgress() {
     var header = body.appendParagraph(summaryTitle);
     header.setHeading(DocumentApp.ParagraphHeading.HEADING1);
     body.appendParagraph(new Date());
-    body.appendParagraph('\n\n' + allSections);
+    body.appendParagraph('\n' + allSections);
   }
 }
 
@@ -325,7 +326,7 @@ function runOnChange() {
           console.log('Adding Overview Part: %s (%s)', overviewTitle, currIndex);
           createEventAndNewRow({
             title: overviewTitle,
-            text: allParts.join('\n\n'),
+            text: allParts.join(noteDivider),
             startDate: nextStartTime,
             guests: allParticipants.join(','),
             isAllDay: true,
