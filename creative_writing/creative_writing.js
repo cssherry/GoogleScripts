@@ -82,7 +82,7 @@ function checkDaysProgress() {
           var lastSubmissionIdx = submissionInfo.data.length;
           var participantEmailIdx = submissionInfo.index.ParticipantEmail + 1;
           var newParticipantRange = submissionInfo.sheet
-                                                  .getRange(lastSubmissionIdx, participantEmailIdx, 1, 1);
+            .getRange(lastSubmissionIdx, participantEmailIdx, 1, 1);
 
           var newNote = newParticipantRange.getNotes();
           newNote[0][0] += (noteDivider + new Date().toLocaleString() + ' overwrote:\n' + currEmail + '\n');
@@ -98,10 +98,10 @@ function checkDaysProgress() {
             to: sendEmail,
             subject: '[CreativeWriting] ' + currEmail.split('@')[0] + ' Update event!',
             body: 'It has been ' + daysSince + ' days. Update within the next ' +
-                  (moveDay - daysSince) + ' day(s) or #' + promptPrefix +
-                  ' (' + currEventTitle + ') will be reassigned.' +
-                  '\n' + noteDivider +
-                  'Link: ' + writingSpreadsheetUrl,
+              (moveDay - daysSince) + ' day(s) or #' + promptPrefix +
+              ' (' + currEventTitle + ') will be reassigned.' +
+              '\n' + noteDivider +
+              'Link: ' + writingSpreadsheetUrl,
           });
         }
 
@@ -113,11 +113,11 @@ function checkDaysProgress() {
           to: myEmail,
           subject: '[CreativeWriting] Event moved to next day',
           body: 'Event moved to next day for #' + promptPrefix +
-                ' (' + currEventTitle + ') originally on ' +
-                searchDate.toLocaleString() +
-                ', moved to ' + startTime.toLocaleString() +
-                '\n' + noteDivider +
-                'Link: ' + writingSpreadsheetUrl,
+            ' (' + currEventTitle + ') originally on ' +
+            searchDate.toLocaleString() +
+            ', moved to ' + startTime.toLocaleString() +
+            '\n' + noteDivider +
+            'Link: ' + writingSpreadsheetUrl,
         });
       }
     } else if (currEventTitle.indexOf(summaryHeader) === 0) {
@@ -221,7 +221,7 @@ function runOnChange() {
     if (updatedEventIdToTextArray.hasOwnProperty(calId)) {
       currArray = updatedEventIdToTextArray[calId];
       writingCalendar.getEventById(calId)
-                     .setDescription(currArray.join(noteDivider));
+        .setDescription(currArray.join(noteDivider));
     }
   }
 
@@ -278,7 +278,7 @@ function runOnChange() {
 
       // Update the Date and Order of the prompt row
       promptInfo.sheet.getRange(promptToUse + 1, dateIdx + 1, 1, 2)
-                      .setValues([[new Date(), newCurrNumberTotal]]);
+        .setValues([[new Date(), newCurrNumberTotal]]);
 
       // Define the title/text for new prompt
       promptId = newPrompt[promptInfo.index.PromptID];
@@ -609,11 +609,11 @@ function runOnChange() {
         to: currRow[emailIdx],
         subject: '[CreativeWriting] Thanks for writing ' + wordsWrote + ' words today! (' + currRow[editedDateIdx].toDateString() + ')',
         body: 'Prompt:\n\n' + lastEvent.getTitle() + noteDivider +
-              eventDescription +
-              '\n\nNew Count: ' + wordsWrote +
-              '\n\nTotal Count: ' + getWordCount(eventDescription) +
-              '\n' + noteDivider +
-              'Link: ' + writingSpreadsheetUrl,
+          eventDescription +
+          '\n\nNew Count: ' + wordsWrote +
+          '\n\nTotal Count: ' + getWordCount(eventDescription) +
+          '\n' + noteDivider +
+          'Link: ' + writingSpreadsheetUrl,
       });
     }
   }
@@ -701,7 +701,7 @@ function getSheetInformation(sheetName, includeNote) {
 // For greater flexibility (columns can be moved around)
 function indexSheet(sheetData) {
   var result = {},
-      length = sheetData[0].length;
+    length = sheetData[0].length;
 
   for (var i = 0; i < length; i++) {
     result[sheetData[0][i]] = i;
