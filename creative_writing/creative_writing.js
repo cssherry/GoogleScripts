@@ -358,18 +358,18 @@ function runOnChange() {
       console.log('New Section: %s', title);
     }
 
-    // If text is longer than (charLimit - 2 * average length - graceLimit), then remove one section
+    // If text is longer than (charLimit - maximum length - graceLimit), then remove one section
     // Only need to calculate for events that have text (ie: not new prompts)
     var inNumbers = '';
     var textLength = text.length;
     if (textLength) {
-      var charLimitWithGrace = charLimit - (2 * avgChars) - graceLimit;
+      var avgCharIdx = scriptInfo.index.AverageCharacters;
+      var avgChars = scriptInfo.data[scriptLength][avgCharIdx];
+      var charLimitWithGrace = charLimit - avgChars - graceLimit;
       console.log('Current text length: %s', textLength);
-        var avgCharIdx = scriptInfo.index.AverageCharacters;
-        var avgChars = scriptInfo.data[scriptLength][avgCharIdx];
-        var firstSectionRegexp = new RegExp('^[\\s\\S]*?' + divider + '+?\\s*')
-        inNumbers = submissionInfo.titlePrefixToRow[latestEventPrefix][inNumberIdx] +
-                    latestEventPrefix.replace(':', '') + ', ';
+      var firstSectionRegexp = new RegExp('^[\\s\\S]*?' + divider + '+?\\s*')
+      inNumbers = submissionInfo.titlePrefixToRow[latestEventPrefix][inNumberIdx] +
+        latestEventPrefix.replace(':', '') + ', ';
 
       while (textLength >= charLimitWithGrace) {
         text = text.replace(firstSectionRegexp, '');
