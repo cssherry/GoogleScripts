@@ -608,7 +608,7 @@ function runOnChange() {
       console.log('Last event changed, sending email');
       MailApp.sendEmail({
         to: currRow[emailIdx],
-        subject: '[CreativeWriting] Thanks for writing ' + wordsWrote + ' words today! (' + currRow[editedDateIdx].toDateString() + ')',
+        subject: '[CreativeWriting] Thanks for writing ' + wordsWrote + ' words today! (' + new Date().toDateString() + ')',
         body: 'Prompt:\n\n' + lastEvent.getTitle() + noteDivider +
           eventDescription +
           '\n\nNew Count: ' + wordsWrote +
