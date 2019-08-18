@@ -67,7 +67,7 @@ function checkDaysProgress() {
           var currNumberTotalIdx = scriptInfo.index.CurrentNumberTotal;
           var currentNumberTotal = scriptInfo.data[scriptLength][currNumberTotalIdx] + 1;
           var nextParticipantRow = calculateNextParticipant(participantInfo, currentNumberTotal, startTime);
-          endTime.setHours(startTime.getHours() + lengthEvent);
+          endTime = getEndTime(startTime);
           var nextGuest = nextParticipantRow[partEmailIdx];
           promptEvent.removeGuest(currEmail);
           promptEvent.addGuest(nextGuest);
@@ -640,8 +640,7 @@ function runOnChange() {
     if (isAllDay) {
       event = writingCalendar.createAllDayEvent(title, startDate, eventOptions);
     } else {
-      var endDate = new Date(startDate);
-      endDate.setHours(endDate.getHours() + lengthEvent);
+      var endDate = getEndTime(startDate);
       event = writingCalendar.createEvent(title, startDate, endDate, eventOptions);
     }
 
@@ -738,6 +737,12 @@ function getRelativeDate(daysOffset, hour) {
   date.setSeconds(0);
   date.setMilliseconds(0);
   return date;
+}
+
+function getEndTime(startTime) {
+  var newDate = new Date(startTime);
+  newDate.setHours(startTime.getHours() + lengthEvent);
+  return newDate;
 }
 
 function getDayDifference(day1, day2) {
