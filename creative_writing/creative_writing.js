@@ -560,10 +560,12 @@ function runOnChange() {
       updateAllCalendarForRow(inNumbers, ++idxFromEnd);
     }
 
+    var totalWordsWrote = 0;
     for (var i = 0; i < calendarSectionsNew.length; i++) {
       console.log('calendarSectionsNew i: %s', i);
       currSectionNew = calendarSectionsNew[i];
       currSectionOld = calendarSectionsOld.descArray[i];
+      totalWordsWrote += (Math.max(0, getWordCount(currSectionNew) - getWordCount(currSectionOld)));
 
       if (currSectionNew !== currSectionOld) {
         isChanged = true;
@@ -596,8 +598,8 @@ function runOnChange() {
     if (isChanged && eventTitle.indexOf(latestEventPrefix) === 0) {
       lastEvent = writingCalendar.getEventById(eventId);
 
-      var wordsWrote = getWordCount(calendarSectionsNew[calendarSectionsNew.length - 1]);
-      if (!wordsWrote) {
+      var currWordsWrote = getWordCount(calendarSectionsNew[calendarSectionsNew.length - 1]);
+      if (!currWordsWrote) {
         console.log('Nothing added to section');
         lastEvent = undefined;
         return;
@@ -608,10 +610,10 @@ function runOnChange() {
       console.log('Last event changed, sending email');
       MailApp.sendEmail({
         to: currRow[emailIdx],
-        subject: '[CreativeWriting] Thanks for writing ' + wordsWrote + ' words today! (' + new Date().toDateString() + ')',
+        subject: '[CreativeWriting] Thanks for writing ' + currWordsWrote + ' words today! (' + new Date().toDateString() + ')',
         body: 'Prompt:\n\n' + lastEvent.getTitle() + noteDivider +
           eventDescription +
-          '\n\nNew Count: ' + wordsWrote +
+          '\n\nNew Count: ' + currWordsWrote + '/' + (currWordsWrote + totalWordsWrote) +
           '\n\nTotal Count: ' + getWordCount(eventDescription) +
           '\n' + noteDivider +
           'Link: ' + writingSpreadsheetUrl,
