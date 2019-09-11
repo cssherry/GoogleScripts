@@ -234,20 +234,9 @@ function updateSheet() {
     var pbpPage = cleanupHTML(pbpHTML.getContentText());
 
     var pbpError = 'images/EnquiryBlue.jpg';
-    if (pbpPage.indexOf(pbpError) === -1) {
+    if (pbpPage.indexOf('Click Here for Membership Enquiry') === -1) {
       var pbpDoc = Xml.parse(pbpPage, true).getElement();
-      var pbpTable = getElementsByTagName(pbpDoc, 'table');
-      for (var i = 0; i < pbpTable.length; i++) {
-        if (pbpTable[i].getAttribute('width').getValue() === '80%') {
-          pbpTable = pbpTable[i];
-        }
-      }
-
-      if (pbpTable.length) {
-        removeAndEmail(urls.pbpDomain, 'noTableExists');
-      }
-
-      var pbpItems = getElementsByTagName(pbpTable, 'tr', 'onlyFirstLevel');
+      var pbpItems = getElementByClassName(pbpDoc, 'showlist');
       contextValues.pbpByUrl = {};
       pbpItems.forEach(processPBP);
 
@@ -260,6 +249,7 @@ function updateSheet() {
       removeAndEmail(urls.pbpDomain);
     }
   } catch (e) {
+    printError(e)
     removeAndEmail(urls.pbpDomain, 'errorLoadingPage');
   }
 
@@ -595,8 +585,8 @@ function processPBP(rowEl) {
   } else {
     var title = trimHtml(rowString).trim();
     contextValues.pbpByUrl[url] = [];
+    getLocationTimePicture(rowEl, rowString, contextValues.pbpByUrl[url]);
     contextValues.pbpByUrl[url][contextValues.sheetIndex.Url] = url;
-    contextValues.pbpByUrl[url][contextValues.sheetIndex.Title] = title;
     contextValues.pbpByUrl[url][contextValues.sheetIndex.Rating] = getRating(title);
   }
 }
@@ -625,23 +615,25 @@ function addOrUpdatePbPItem(pbpItem) {
 }
 
 function getLocationTimePicture(rowEl, rowString, elData) {
-  var columns = getElementsByTagName(rowEl, 'td', 'onlyFirstLevel');
-  var ImageUrl = getElementsByTagName(columns[0], 'img')[0].getAttribute('src').getValue();
-  var locationHTML = columns[0].toXmlString();
-  var location = trimHtml(locationHTML.replace(/<br>/g, '; ')).trim();
-  var date = trimHtml(columns[1].toXmlString())
-              .replace(/\bpm/ig, 'PM;\n')
-              .replace(/\bam/ig, 'AM;\n')
-              .trim();
-  elData[contextValues.sheetIndex.Image] = '=Image("' + getFullPbpUrl(ImageUrl) + '")';
-  elData[contextValues.sheetIndex.Date] = date;
+  var image = getElementsByTagName(rowEl, 'img')[0];
+  var imageUrl = image.getAttribute('src').getValue();
+  var title = image.getAttribute('alt').getValue();
+  var locationHTML = getElementByClassName(rowEl, 'col-md-3')[0];
+  var locationString = locationHTML.toXmlString();
+  var location = trimHtml(locationString.replace(/<br.*?>|<\/h4>/g, '; ')).trim();
+  var dateAll = getElementByClassName(rowEl, 'col-md-7')[0];
+  var dateArray = getElementByClassName(dateAll, 'row').map(function(row) {
+    return trimHtml(row.toXmlString());
+  });
+  elData[contextValues.sheetIndex.Image] = '=Image("' + getFullPbpUrl(imageUrl) + '")';
+  elData[contextValues.sheetIndex.Date] = dateArray.join('; ');
+  elData[contextValues.sheetIndex.Title] = title;
   elData[contextValues.sheetIndex.Location] = location;
   elData[contextValues.sheetIndex.LocationRating] = getLocationRating(location);
-
 }
 
 function getPbpId(rowString) {
-  var idMatch = rowString.match(/<a .*?href="(show.php\?cn=\d*?)".*?>/);
+  var idMatch = rowString.match(/<a .*?href="(\/show\/\?id=.*?)".*?>/);
   if (idMatch) {
     return idMatch[1];
   }
@@ -1235,4 +1227,10 @@ function cleanupLocation(location, thoroughReplace) {
 
 function boldWord(word) {
   return '<b>' + word + '</b>';
+}
+
+function printError(error) {
+  console.log("Error", error.stack);
+  console.log("Error", error.name);
+  console.log("Error", error.message);
 }
