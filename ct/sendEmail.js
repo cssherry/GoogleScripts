@@ -195,7 +195,7 @@ function updateSheet() {
                                         Cookie: fetchPayload.acCookie,
                                       },
                                     });
-    var acFreePage = cleanupHTML(acFreeHTML.getContentText());
+    var acFreePage = cleanupHTMLElement(acFreeHTML);
     contextValues.freeAC = {};
 
     var acFreeDoc = Xml.parse(acFreePage, true).getElement();
@@ -211,7 +211,7 @@ function updateSheet() {
                                         Cookie: fetchPayload.acCookie,
                                       },
                                     });
-    var acPage = cleanupHTML(acHTML.getContentText());
+    var acPage = cleanupHTMLElement(acHTML);
 
     var acDoc = Xml.parse(acPage, true).getElement();
     var acTable = getElementByClassName(acDoc, 'page_content')[0];
@@ -231,7 +231,7 @@ function updateSheet() {
                                         Cookie: fetchPayload.pbpCookie,
                                       },
                                     });
-    var pbpPage = cleanupHTML(pbpHTML.getContentText());
+    var pbpPage = cleanupHTMLElement(pbpHTML);
 
     var pbpError = 'images/EnquiryBlue.jpg';
     if (pbpPage.indexOf('Click Here for Membership Enquiry') === -1) {
@@ -277,7 +277,7 @@ function updateSheet() {
                                         Cookie: fetchPayload.sfCookie,
                                       },
                                     });
-    var sfPage = cleanupHTML(sfHTML.getContentText());
+    var sfPage = cleanupHTMLElement(sfHTML);
     var sfDoc = Xml.parse(sfPage, true).getElement();
     getElementByClassName(sfDoc, 'showcasebox').forEach(addOrUpdateSf);
   }
@@ -665,7 +665,7 @@ function addOrUpdateSf(item) {
     var date = getElementByClassName(item, 'date-event');
     var description = getElementByClassName(item, 'internal_content');
 
-    var detailPage = cleanupHTML(UrlFetchApp.fetch(url).getContentText());
+    var detailPage = cleanupHTMLElement(UrlFetchApp.fetch(url));
     var detailError = 'Sorry, this offer has now ended';
     var price = '', location = '', time = '';
     if (detailPage.indexOf(detailError) === -1) {
@@ -1168,9 +1168,19 @@ function getElementSection(listingInfo) {
          '<hr>';
 }
 
+function cleanupHTMLElement(html) {
+  return cleanupHTML(html.getContentText());
+}
+
 function cleanupHTML(htmlText) {
   return htmlText.match(/<body[\s\S]*?<\/body>/)[0]
-                 .replace(/<(no)?script[\s\S]*?<\/(no)?script>/g, '')
+                 .replace(/<(no)?script[\s\S]*?<\/(no)?script>|<link[\s\S]*?<\/link>|<footer[\s\S]*?<\/footer>|<button[\s\S]*?<\/button>|&copy;/g, '')
+                 .replace(/&nbsp;|<\/?span[\s\S]*?>|<table[\s\S]*?width=(?!")[\s\S]*?<\/table>/g, ' ') // ugh sf
+                 .replace(/<img([\s\S]*?)(?!\/)>/g, '<img$1 />') // ugh sf
+                 .replace(/ & /g, ' and ') // ugh sf
+                 .replace(/�/g, "'") // ugh sf
+                 .replace(/<br>/g, "<br/>") // ugh sf
+                 .replace(/<!--\s*?(?!<)[\s\S]*?-->/g, '')
                  .replace(/<!--|-->/g, '');
 }
 
