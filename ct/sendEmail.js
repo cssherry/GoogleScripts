@@ -289,7 +289,7 @@ function updateSheet() {
   if (mainPage.indexOf(ctError) === -1) {
     var doc = Xml.parse(mainPage, true).getElement();
     var mainList = getElementsByTagName(doc, 'ul');
-    var items = getElementsByTagName(mainList[3], 'li');
+    var items = getElementsByTagName(mainList[0], 'li');
     items.forEach(addOrUpdateCT);
   } else {
     removeAndEmail(urls.ctDomain);
