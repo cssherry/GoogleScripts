@@ -129,3 +129,79 @@ function parseDate(date) {
 function padNumber(num) {
     return num < 10 ? `0${num}` : num.toString();
 }
+
+// SHEET CUSTOM FUNCTION
+// Based on https://stackoverflow.com/a/16086964
+// https://github.com/darkskyapp/tz-lookup-oss/ -> https://github.com/darkskyapp/tz-lookup-oss/blob/master/tz.js
+function getTimezoneTime(sheetDate, lat, long) {
+    if (sheetDate instanceof Array) {
+      const result = [];
+      for (let rowIdx in sheetDate) {
+        const currDate = sheetDate[rowIdx][0];
+        const currLat = lat[rowIdx][0];
+        const currLong = long[rowIdx][0];
+        result[rowIdx] = convertFromPacific(currDate, currLat, currLong);
+      }
+
+      return result;
+    }
+
+    return convertFromPacific(sheetDate, lat, long);
+}
+
+// Array filter
+
+// Array filter
+
+// Array filter
+function customArrayFilterJoin(joinText, range, ...restArguments) {
+    const result = []
+    let arrayLength = 1;
+    restArguments.forEach((arg, idx) => {
+        if (idx % 2 == 0 & arg instanceof Array) {
+            arrayLength = arg.length;
+        }
+    });
+
+    for (let arrayIdx = 0; arrayIdx < arrayLength; arrayIdx++) {
+        result.push(
+            range.filter((_, idx) => {
+                for (let argPairIndex = 0; argPairIndex < restArguments.length / 2; argPairIndex++) {
+                    const argIndex = argPairIndex * 2;
+                    const compareItem = restArguments[argIndex][idx];
+                    let staticItem = restArguments[argIndex + 1];
+                    staticItem = staticItem instanceof Array ? staticItem[arrayIdx][0] : staticItem;
+                    if (compareItem.toString() !== staticItem.toString()) return false;
+                }
+
+                return true;
+            }).join(joinText)
+        )
+    }
+
+    return result;
+}
+
+// CUSTOM FUNCTION HELPERS
+
+// Faster isNan
+function myIsNaN(val) {
+	return !(val <= 0) && !(val > 0);
+}
+
+function convertFromPacific(date, latitude, longitude) {
+    return changeTimezone(date, 'America/Los_Angeles', tzlookup(latitude, longitude));
+}
+
+// converting from time zone:https://stackoverflow.com/a/53652131
+function changeTimezone(date, oldTimezone, newTimezone) {
+    const oldDate = new Date(date.toLocaleString('en-US', {
+        timeZone: oldTimezone,
+    }));
+    const newDate = new Date(date.toLocaleString('en-US', {
+        timeZone: newTimezone,
+    }));
+
+    const diff = newDate.getTime() - oldDate.getTime();
+    return new Date(date.getTime() + diff);
+}
