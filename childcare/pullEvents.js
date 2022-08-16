@@ -47,7 +47,13 @@ function pullAndUpdateEvents() {
     MailApp.sendEmail({
         to: GLOBALS_VARIABLES.myEmails.join(','),
         subject: '[Famly] New Events Logged',
-        body: GLOBALS_VARIABLES.newData.map((row) => row.filter(item => !!item).join('\n')).join('\n\n\n'),
+        body: GLOBALS_VARIABLES.newData.map((row) => row.filter(item => !!item).map(item => {
+          if (item.startsWith('{') & item.endsWith('}')) {
+            return JSON.stringify(JSON.parse(item), null, '    ');
+          }
+
+          return item;
+        }).join('\n')).join('\n\n-----------------------\n\n'),
       });
 }
 
@@ -77,7 +83,7 @@ function processEvent(event) {
     newDataRow[dateIdx] = new Date(event.from);
     newDataRow[actionIdx] = event.originator.type;
     newDataRow[noteIdx] = event.title;
-    newDataRow[infoIdx] = JSON.stringify(event, null, '  ');
+    newDataRow[infoIdx] = JSON.stringify(event);
 
     if (event.to) {
         newDataRow[totalTime] = (new Date(event.to) - new Date(event.from)) /60/1000;
