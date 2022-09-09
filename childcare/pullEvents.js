@@ -45,7 +45,7 @@ function pullAndUpdateEvents() {
     newDate.setValues([[currDate]]);
 
     const lineSeparators = '\n\n-----------------------\n\n';
-    const summaryData = '';
+    let summaryData = '';
     const data = GLOBALS_VARIABLES.newData.map((row) => {
       summaryData += `${row[GLOBALS_VARIABLES.index.Note]}${lineSeparators}`;
       return row.filter(item => !!item)
