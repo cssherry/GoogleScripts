@@ -44,16 +44,23 @@ function pullAndUpdateEvents() {
     const newDate = sheet.getRange(1, dateIdx + 1, 1, 1);
     newDate.setValues([[currDate]]);
 
+    const lineSeparators = '\n\n-----------------------\n\n';
+    const summaryData = '';
+    const data = GLOBALS_VARIABLES.newData.map((row) => {
+      summaryData += `${row[GLOBALS_VARIABLES.index.Note]}${lineSeparators}`;
+      return row.filter(item => !!item)
+                .map(item => {
+                  if (item.toString().startsWith('{') & item.toString().endsWith('}')) {
+                    return JSON.stringify(JSON.parse(item), null, '    ');
+                  }
+
+                  return item;
+                }).join('\n');
+      }).join(lineSeparators);
     MailApp.sendEmail({
         to: GLOBALS_VARIABLES.myEmails.join(','),
-        subject: '[Famly] New Events Logged',
-        body: GLOBALS_VARIABLES.newData.map((row) => row.filter(item => !!item).map(item => {
-          if (item.toString().startsWith('{') & item.toString().endsWith('}')) {
-            return JSON.stringify(JSON.parse(item), null, '    ');
-          }
-
-          return item;
-        }).join('\n')).join('\n\n-----------------------\n\n'),
+        subject: `[Famly] New Events Logged ${GLOBALS_VARIABLES.endDate}`,
+        body: summaryData + data,
       });
 }
 
