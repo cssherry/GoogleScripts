@@ -48,7 +48,7 @@ function pullAndUpdateEvents() {
         to: GLOBALS_VARIABLES.myEmails.join(','),
         subject: '[Famly] New Events Logged',
         body: GLOBALS_VARIABLES.newData.map((row) => row.filter(item => !!item).map(item => {
-          if (item.startsWith('{') & item.endsWith('}')) {
+          if (item.toString().startsWith('{') & item.toString().endsWith('}')) {
             return JSON.stringify(JSON.parse(item), null, '    ');
           }
 
@@ -105,8 +105,9 @@ function processEvent(event) {
 // HELPER FUNCTIONS
 function getIdentifier(row) {
     const fromIdx = GLOBALS_VARIABLES.index.Date;
-    const actionIdx = GLOBALS_VARIABLES.index.Action
-    return `${row[fromIdx]}-${row[actionIdx]}`;
+    const actionIdx = GLOBALS_VARIABLES.index.Action;
+    const noteIdx = GLOBALS_VARIABLES.index.Note;
+    return `${row[fromIdx]}-${row[actionIdx]}-${row[noteIdx]}`;
 }
 
 function getStartDate() {
@@ -121,7 +122,7 @@ function getFullUrl(url) {
 
 function parseDate(date) {
     const year = date.getFullYear();
-    const month = padNumber(date.getMonth());
+    const month = padNumber(date.getMonth() + 1);
     const day = padNumber(date.getDate());
     return `${year}-${month}-${day}`;
 }
@@ -132,7 +133,7 @@ function padNumber(num) {
 
 // SHEET CUSTOM FUNCTION
 // Based on https://stackoverflow.com/a/16086964
-// https://github.com/darkskyapp/tz-lookup-oss/ -> https://github.com/darkskyapp/tz-lookup-oss/blob/master/tz.js
+// https://github.com/darkskyapp/tz-lookup-oss/ -> https://github.com/darkskyapp/tz-lookup-oss/blob/master/tz.js from 8f09dc19104a006fa386ad86a69d26781ce31637
 function getTimezoneTime(sheetDate, lat, long) {
     if (sheetDate instanceof Array) {
       const result = [];
