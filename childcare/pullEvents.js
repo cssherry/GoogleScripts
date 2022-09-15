@@ -1,3 +1,16 @@
+// Needs GLOBALS_VARIABLES and indexSheet function
+// GLOBALS_VARIABLES = {
+//   headers: {
+//     'x-famly-accesstoken': '',
+//   },
+//   urls: [''],
+
+//   myEmails: [
+//     ''
+//   ],
+// };
+
+const lineSeparators = '\n\n-----------------------\n\n';
 function pullAndUpdateEvents() {
     // Only run after 7 AM or before 7 PM on weekdays
     const currDate = new Date();
@@ -44,10 +57,9 @@ function pullAndUpdateEvents() {
     const newDate = sheet.getRange(1, dateIdx + 1, 1, 1);
     newDate.setValues([[currDate]]);
 
-    const lineSeparators = '\n\n-----------------------\n\n';
-    let summaryData = '';
+    let famlySummary = '';
     const data = GLOBALS_VARIABLES.newData.map((row) => {
-      summaryData += `${row[GLOBALS_VARIABLES.index.Note]}${lineSeparators}`;
+      famlySummary += `${row[GLOBALS_VARIABLES.index.Note]}${lineSeparators}`;
       return row.filter(item => !!item)
                 .map(item => {
                   if (item.toString().startsWith('{') & item.toString().endsWith('}')) {
@@ -60,7 +72,7 @@ function pullAndUpdateEvents() {
     MailApp.sendEmail({
         to: GLOBALS_VARIABLES.myEmails.join(','),
         subject: `[Famly] New Events Logged ${GLOBALS_VARIABLES.endDate}`,
-        body: summaryData + data,
+        body: famlySummary + data,
       });
 }
 
@@ -76,6 +88,14 @@ function getAndParseEvents(baseUrl) {
         const { events } = dayObj;
         events.forEach(processEvent);
     });
+}
+
+const amountToDescription = {
+   1: "Little",
+   2: "Half",
+   3: "Most",
+   4: "All",
+   5: "All+",
 }
 
 function processEvent(event) {
@@ -99,7 +119,7 @@ function processEvent(event) {
     }
 
     if (event.embed && event.embed.mealItems && event.embed.mealItems.length) {
-        newDataRow[noteIdx] += ` (${event.embed.mealItems.map(item => `${item.foodItem.title} - ${item.amount}`).join(', ')})`;
+        newDataRow[noteIdx] += ` (${event.embed.mealItems.map(item => `${item.foodItem.title} - ${amountToDescription[item.amount] || item.amount}`).join(', ')})`;
     }
 
     const eventIdentifier = getIdentifier(newDataRow);
