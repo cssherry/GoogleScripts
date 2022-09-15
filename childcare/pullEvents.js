@@ -182,7 +182,7 @@ function getTimezoneTime(sheetDate, lat, long) {
 // Array filter
 
 // Array filter
-function customArrayFilterJoin(joinText, range, ...restArguments) {
+function customArrayFilterJoin(joinText, prependText, range, ...restArguments) {
     const result = []
     let arrayLength = 1;
     restArguments.forEach((arg, idx) => {
@@ -192,19 +192,21 @@ function customArrayFilterJoin(joinText, range, ...restArguments) {
     });
 
     for (let arrayIdx = 0; arrayIdx < arrayLength; arrayIdx++) {
-        result.push(
-            range.filter((_, idx) => {
-                for (let argPairIndex = 0; argPairIndex < restArguments.length / 2; argPairIndex++) {
-                    const argIndex = argPairIndex * 2;
-                    const compareItem = restArguments[argIndex][idx];
-                    let staticItem = restArguments[argIndex + 1];
-                    staticItem = staticItem instanceof Array ? staticItem[arrayIdx][0] : staticItem;
-                    if (compareItem.toString() !== staticItem.toString()) return false;
-                }
+        const filteredItems = range.filter((_, idx) => {
+            for (let argPairIndex = 0; argPairIndex < restArguments.length / 2; argPairIndex++) {
+                const argIndex = argPairIndex * 2;
+                const compareItem = restArguments[argIndex][idx];
+                let staticItem = restArguments[argIndex + 1];
+                staticItem = staticItem instanceof Array ? staticItem[arrayIdx][0] : staticItem;
+                if (compareItem.toString() !== staticItem.toString()) return false;
+            }
 
-                return true;
-            }).join(joinText)
-        )
+            return true;
+        });
+        const filteredText = filteredItems.length
+            ? `${prependText}${filteredItems.join(joinText)}`
+            : '';
+        result.push(filteredText)
     }
 
     return result;
