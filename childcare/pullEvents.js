@@ -301,8 +301,21 @@ function downloadFiles(containerObj) {
 function uploadFile(fileUrl, fileName, additionalDescription) {
     const response = UrlFetchApp.fetch(fileUrl);
     if (!GLOBALS_VARIABLES.googleDrive) {
+        GLOBALS_VARIABLES.googleDriveExistingFiles = {};
         GLOBALS_VARIABLES.googleDrive = DriveApp.getFolderById(GLOBALS_VARIABLES.folderId);
+        const existingFiles = GLOBALS_VARIABLES.googleDrive.getFiles();
+        while (existingFiles.hasNext()) {
+            const file = existingFiles.next();
+            const fileName = file.getName();
+            const fileUrl = file.getUrl();
+            GLOBALS_VARIABLES.googleDriveExistingFiles[fileName] = fileUrl;
+        }
     }
+
+    if (GLOBALS_VARIABLES.googleDriveExistingFiles[fileName]) {
+        return GLOBALS_VARIABLES.googleDriveExistingFiles[fileName];
+    }
+
     const blob = response.getBlob();
     const file = GLOBALS_VARIABLES.googleDrive.createFile(blob);
     file.setName(fileName);
