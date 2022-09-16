@@ -248,14 +248,14 @@ function getAndParsePosts() {
             if (post.target.feedItemId) {
                 hasChanged.push(messageId);
             } else {
-                const newMessages = [];
-                newMessages[dateIdx] = new Date();
-                newMessages[chainIdx] = post.notificationId;
-                newMessages[selfId] = post.notificationId;
-                newMessages[lastUpdateIdx] = post.createdDate;
-                newMessages[typeIdx] = postType;
-                newMessages[infoIdx] = JSON.stringify(post);
-                newMessages[contentIdx] = post.body;
+                const newMessage = [];
+                newMessage[dateIdx] = new Date();
+                newMessage[chainIdx] = post.notificationId;
+                newMessage[selfId] = post.notificationId;
+                newMessage[lastUpdateIdx] = post.createdDate;
+                newMessage[typeIdx] = postType;
+                newMessage[infoIdx] = JSON.stringify(post);
+                newMessage[contentIdx] = post.body;
                 GLOBALS_VARIABLES.newFamilyData.push(newMessage);
             }
         }
