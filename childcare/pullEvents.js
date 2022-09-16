@@ -248,6 +248,7 @@ function getAndParsePosts() {
             if (post.target.feedItemId) {
                 hasChanged.push(messageId);
             } else {
+                const newMessages = [];
                 newMessages[dateIdx] = new Date();
                 newMessages[chainIdx] = post.notificationId;
                 newMessages[selfId] = post.notificationId;
