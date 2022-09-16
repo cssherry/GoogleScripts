@@ -233,13 +233,6 @@ function getAndParsePosts() {
         headers: GLOBALS_VARIABLES.headers,
     }).getContentText());
 
-    postList.forEach((post) => {
-        const messageId = post.target.feedItemId;
-        if (!isLogged(messageId, postType)) {
-            hasChanged.push(messageId);
-        }
-    });
-
     const dateIdx = GLOBALS_VARIABLES.familyIndex.Date;
     const chainIdx = GLOBALS_VARIABLES.familyIndex.ChainId;
     const selfId = GLOBALS_VARIABLES.familyIndex.SelfId;
@@ -248,6 +241,25 @@ function getAndParsePosts() {
     const contentIdx = GLOBALS_VARIABLES.familyIndex.Content;
     const attachmentIdx = GLOBALS_VARIABLES.familyIndex.Attachments;
     const infoIdx = GLOBALS_VARIABLES.familyIndex.FamilyInfo;
+
+    postList.forEach((post) => {
+        const messageId = post.target.feedItemId || post.notificationId;
+        if (!isLogged(messageId, postType)) {
+            if (post.target.feedItemId) {
+                hasChanged.push(messageId);
+            } else {
+                newMessages[dateIdx] = new Date();
+                newMessages[chainIdx] = post.notificationId;
+                newMessages[selfId] = post.notificationId;
+                newMessages[lastUpdateIdx] = post.createdDate;
+                newMessages[typeIdx] = postType;
+                newMessages[infoIdx] = JSON.stringify(post);
+                newMessages[contentIdx] = post.body;
+                GLOBALS_VARIABLES.newFamilyData.push(newMessage);
+            }
+        }
+    });
+
     hasChanged.forEach((newPostId) => {
         const postUrl = `${GLOBALS_VARIABLES.feedItemUrl}?feedItemId=${newPostId}`;
         const postData = JSON.parse(UrlFetchApp.fetch(postUrl, {
