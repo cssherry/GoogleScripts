@@ -305,13 +305,17 @@ function downloadFiles(containerObj) {
     }
 
     if (containerObj.videos && containerObj.videos.length) {
-        attachments.push(...containerObj.videos);
+        containerObj.videos.forEach((videoObj) => {
+            const videoName = `${parseDate(new Date(createDate))}_video_${videoObj.videoId}`;
+            const fileUrl = uploadFile(videoObj.videoUrl, videoName, description, true);
+            attachments.push(fileUrl);
+        });
     }
 
     return attachments;
 }
 
-function uploadFile(fileUrl, fileName, additionalDescription) {
+function uploadFile(fileUrl, fileName, additionalDescription, keepExtension = false) {
     const response = UrlFetchApp.fetch(fileUrl);
     if (!GLOBALS_VARIABLES.googleDrive) {
         GLOBALS_VARIABLES.googleDriveExistingFiles = {};
@@ -331,6 +335,14 @@ function uploadFile(fileUrl, fileName, additionalDescription) {
 
     const blob = response.getBlob();
     const file = GLOBALS_VARIABLES.googleDrive.createFile(blob);
+
+    if (keepExtension) {
+        const extension = file.getName().match(/\..*$/)[0];
+        if (extension) {
+            fileName += extension;
+        }
+    }
+
     file.setName(fileName);
     file.setDescription(`Download from ${fileUrl} on ${new Date()}\n\n${additionalDescription}`);
     return file.getUrl();
