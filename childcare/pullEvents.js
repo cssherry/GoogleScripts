@@ -86,6 +86,7 @@ function pullAndUpdateEvents() {
     getAndParseMessages();
 
     // Check for new posts
+    getAndParsePosts();
 
     // Save changes if there are any
     if (!GLOBALS_VARIABLES.newData.length && !GLOBALS_VARIABLES.newFamilyData.length) return;
@@ -221,6 +222,52 @@ function processMessage(messages) {
         newContent,
         attachmentUrls,
     }
+}
+
+function getAndParsePosts() {
+    const hasChanged = [];
+    const fullUrl = `${GLOBALS_VARIABLES.postUrl}?limit=${maxLimit}`;
+    const postList = JSON.parse(UrlFetchApp.fetch(fullUrl, {
+        method: 'get',
+        followRedirects: false,
+        headers: GLOBALS_VARIABLES.headers,
+    }).getContentText());
+
+    postList.forEach((post) => {
+        const messageId = post.target.feedItemId;
+        if (!isLogged(messageId, postType)) {
+            hasChanged.push(messageId);
+        }
+    });
+
+    const dateIdx = GLOBALS_VARIABLES.familyIndex.Date;
+    const chainIdx = GLOBALS_VARIABLES.familyIndex.ChainId;
+    const selfId = GLOBALS_VARIABLES.familyIndex.SelfId;
+    const lastUpdateIdx = GLOBALS_VARIABLES.familyIndex.LastDate;
+    const typeIdx = GLOBALS_VARIABLES.familyIndex.Type;
+    const contentIdx = GLOBALS_VARIABLES.familyIndex.Content;
+    const attachmentIdx = GLOBALS_VARIABLES.familyIndex.Attachments;
+    const infoIdx = GLOBALS_VARIABLES.familyIndex.FamilyInfo;
+    hasChanged.forEach((newPostId) => {
+        const postUrl = `${GLOBALS_VARIABLES.feedItemUrl}?feedItemId=${newPostId}`;
+        const postData = JSON.parse(UrlFetchApp.fetch(postUrl, {
+            method: 'get',
+            followRedirects: false,
+            headers: GLOBALS_VARIABLES.headers,
+        }).getContentText());
+        const newMessages = [];
+        newMessages[dateIdx] = new Date();
+        newMessages[chainIdx] = postData.feedItem.originatorId;
+        newMessages[selfId] = postData.feedItem.feedItemId;
+        newMessages[lastUpdateIdx] = postData.feedItem.createdDate;
+        newMessages[typeIdx] = postType;
+        newMessages[infoIdx] = JSON.stringify(postData);
+
+        newMessages[contentIdx] = postData.feedItem.body;
+        newMessages[attachmentIdx] = downloadFiles(postData.feedItem).join('\n');
+        GLOBALS_VARIABLES.newFamilyData.push(newMessages);
+    });
+
 }
 
 function downloadFiles(containerObj) {
