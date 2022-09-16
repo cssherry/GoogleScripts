@@ -4,13 +4,27 @@
 //     'x-famly-accesstoken': '',
 //   },
 //   urls: [''],
-
-//   myEmails: [
+//
+//   myEmails: [ // Daycare event emails
 //     ''
 //   ],
+//
+//   summaryEmails: [ // Daily summary emails
+//     ''
+//   ],
+//
+//   folderId: '',
+//
+//   messageUrl: '',
+//   postUrl: '',
+//   feedItemUrl: '',
 // };
 
 const lineSeparators = '\n\n-----------------------\n\n';
+const maxLimit = 100;
+const idDelimiter = ',';
+const messageType = 'Message';
+const postType = 'Post';
 function pullAndUpdateEvents() {
     // Only run after 7 AM or before 7 PM on weekdays
     const currDate = new Date();
@@ -44,21 +58,51 @@ function pullAndUpdateEvents() {
     // Go through each url set and parse dates
     GLOBALS_VARIABLES.urls.forEach(getAndParseEvents);
 
-    // Save changes if there are any
-    if (!GLOBALS_VARIABLES.newData.length) return;
+    // Now parse Family events
+    const familySheet = allSheet.getSheetByName('Famly');
+    const familyRange = familySheet.getDataRange();
+    GLOBALS_VARIABLES.familyData = familyRange.getValues();
+    GLOBALS_VARIABLES.newFamilyData = [];
+    GLOBALS_VARIABLES.familyIndex = indexSheet(GLOBALS_VARIABLES.familyData);
+    GLOBALS_VARIABLES.familyLoggedEvents = {};
+    GLOBALS_VARIABLES.familyLoggedEvents[messageType] = {};
+    GLOBALS_VARIABLES.familyLoggedEvents[postType] = {};
 
-    const startRow = sheet.getLastRow() + 1;
-    const startCol = 1;
-    const numRows = GLOBALS_VARIABLES.newData.length;
-    const numCols = GLOBALS_VARIABLES.newData[0].length;
-    const newRange = sheet.getRange(startRow, startCol, numRows, numCols);
-    newRange.setValues(GLOBALS_VARIABLES.newData);
+    // Process existing posts/messages
+    const typeIdx = GLOBALS_VARIABLES.familyIndex.Type;
+    const idIdx = GLOBALS_VARIABLES.familyIndex.SelfId;
+    GLOBALS_VARIABLES.familyData.forEach((row, idx) => {
+        if (idx === 0) return;
+        if (!row[0]) return;
+        const type = row[typeIdx];
+        const ids = row[idIdx].split(idDelimiter);
+        ids.forEach((id) => {
+            GLOBALS_VARIABLES.familyLoggedEvents[type][id] = idx;
+            GLOBALS_VARIABLES.familyLoggedEvents[type][id] = idx;
+        });
+    });
+
+    // Check for new messages
+    getAndParseMessages();
+
+    // Check for new posts
+
+    // Save changes if there are any
+    if (!GLOBALS_VARIABLES.newData.length && !GLOBALS_VARIABLES.newFamilyData.length) return;
+
+    if (GLOBALS_VARIABLES.newData.length) {
+      appendRows(sheet, GLOBALS_VARIABLES.newData);
+    }
+
+    if (GLOBALS_VARIABLES.newFamilyData.length) {
+      appendRows(familySheet, GLOBALS_VARIABLES.newFamilyData);
+    }
 
     const newDate = sheet.getRange(1, dateIdx + 1, 1, 1);
     newDate.setValues([[currDate]]);
 
     let famlySummary = '';
-    const data = GLOBALS_VARIABLES.newData.map((row) => {
+    const loggedData = GLOBALS_VARIABLES.newData.map((row) => {
       famlySummary += `${row[GLOBALS_VARIABLES.index.Note]}${lineSeparators}`;
       return row.filter(item => !!item)
                 .map(item => {
@@ -68,11 +112,26 @@ function pullAndUpdateEvents() {
 
                   return item;
                 }).join('\n');
-      }).join(lineSeparators);
+    }).join(lineSeparators);
+
+    // Generate text for new messages/posts
+    const separator = GLOBALS_VARIABLES.newFamilyData.length ? lineSeparators : '';
+    const daycareGeneral = GLOBALS_VARIABLES.newFamilyData.map((row) => {
+        const type = row[GLOBALS_VARIABLES.familyIndex.Type];
+        const content = row[GLOBALS_VARIABLES.familyIndex.Content];
+        const attachments = row[GLOBALS_VARIABLES.familyIndex.Attachments];
+        const jsonData = JSON.stringify(JSON.parse(row[GLOBALS_VARIABLES.familyIndex.FamilyInfo]), null, '    ');
+        const header = `${type}\n${content}`
+        famlySummary += header + lineSeparators;
+
+        return `${header}\n\n${attachments}\n\n${jsonData}`;
+    }).join(lineSeparators);
+
+    // SEND EMAIL
     MailApp.sendEmail({
         to: GLOBALS_VARIABLES.myEmails.join(','),
         subject: `[Famly] New Events Logged ${GLOBALS_VARIABLES.endDate}`,
-        body: famlySummary + data,
+        body: famlySummary + loggedData + separator + daycareGeneral,
       });
 }
 
@@ -90,12 +149,130 @@ function getAndParseEvents(baseUrl) {
     });
 }
 
+function getAndParseMessages() {
+    const hasChanged = [];
+    const fullUrl = `${GLOBALS_VARIABLES.messagesUrl}?limit=${maxLimit}`;
+    const conversationList = JSON.parse(UrlFetchApp.fetch(fullUrl, {
+        method: 'get',
+        followRedirects: false,
+        headers: GLOBALS_VARIABLES.headers,
+    }).getContentText());
+
+    conversationList.forEach((convo) => {
+        const messageId = convo.lastMessage.messageId;
+        if (!isLogged(messageId, messageType)) {
+            hasChanged.push(convo.conversationId);
+        }
+    });
+
+    const dateIdx = GLOBALS_VARIABLES.familyIndex.Date;
+    const chainIdx = GLOBALS_VARIABLES.familyIndex.ChainId;
+    const selfId = GLOBALS_VARIABLES.familyIndex.SelfId;
+    const lastUpdateIdx = GLOBALS_VARIABLES.familyIndex.LastDate;
+    const typeIdx = GLOBALS_VARIABLES.familyIndex.Type;
+    const contentIdx = GLOBALS_VARIABLES.familyIndex.Content;
+    const attachmentIdx = GLOBALS_VARIABLES.familyIndex.Attachments;
+    const infoIdx = GLOBALS_VARIABLES.familyIndex.FamilyInfo;
+    hasChanged.forEach((newConvoId) => {
+        const conversationUrl = `${GLOBALS_VARIABLES.messagesUrl}/${newConvoId}`;
+        const conversationData = JSON.parse(UrlFetchApp.fetch(conversationUrl, {
+            method: 'get',
+            followRedirects: false,
+            headers: GLOBALS_VARIABLES.headers,
+        }).getContentText());
+        const newMessages = [];
+        newMessages[dateIdx] = new Date();
+        newMessages[chainIdx] = conversationData.conversationId;
+        newMessages[lastUpdateIdx] = conversationData.lastActivityAt;
+        newMessages[typeIdx] = messageType;
+        newMessages[infoIdx] = JSON.stringify(conversationData);
+
+        const {
+            newMessageIds,
+            newContent,
+            attachmentUrls,
+        } = processMessage(conversationData.messages);
+
+        newMessages[selfId] = newMessageIds.join(idDelimiter);
+        newMessages[contentIdx] = newContent;
+        newMessages[attachmentIdx] = attachmentUrls.join('\n');
+        GLOBALS_VARIABLES.newFamilyData.push(newMessages);
+    });
+}
+
+function processMessage(messages) {
+    const newMessageIds = [];
+    let newContent = '';
+    const attachmentUrls = [];
+
+    messages.forEach((message) => {
+        if (!isLogged(message.messageId, messageType)) {
+            newMessageIds.push(message.messageId);
+            newContent += `- ${message.body}\n`
+            const newFiles = downloadFiles(message);
+            if (newFiles.length) {
+                attachmentUrls.push(...newFiles);
+            }
+        }
+    });
+
+    return {
+        newMessageIds,
+        newContent,
+        attachmentUrls,
+    }
+}
+
+function downloadFiles(containerObj) {
+    const attachments = [];
+    const createDate = containerObj.createdDate || containerObj.createdAt || 'Unknown Date';
+    const body = containerObj.body || '';
+    const description = `${body}\n\nShared on: ${createDate}`;
+    if (containerObj.files.length) {
+        containerObj.files.forEach((fileObj) => {
+            const fileUrl = uploadFile(fileObj.url, fileObj.filename, description);
+            attachments.push(fileUrl);
+        });
+    }
+
+    if (containerObj.images.length) {
+        containerObj.images.forEach((imgObj) => {
+            const url = `${imgObj.prefix}/${imgObj.width}x${imgObj.height}/${imgObj.key}`;
+            const fileName = imgObj.key.replace(/\//g, '_').replace(/\?.*/, '');
+            const fileUrl = uploadFile(url, fileName, description);
+            attachments.push(fileUrl);
+        });
+    }
+
+    if (containerObj.videos && containerObj.videos.length) {
+        attachments.push(...containerObj.videos);
+    }
+
+    return attachments;
+}
+
+function uploadFile(fileUrl, fileName, additionalDescription) {
+    const response = UrlFetchApp.fetch(fileUrl);
+    if (!GLOBALS_VARIABLES.googleDrive) {
+        GLOBALS_VARIABLES.googleDrive = DriveApp.getFolderById(GLOBALS_VARIABLES.folderId);
+    }
+    const blob = response.getBlob();
+    const file = GLOBALS_VARIABLES.googleDrive.createFile(blob);
+    file.setName(fileName);
+    file.setDescription(`Download from ${fileUrl} on ${new Date()}\n\n${additionalDescription}`);
+    return file.getUrl();
+}
+
 const amountToDescription = {
    1: "Little",
    2: "Half",
    3: "Most",
    4: "All",
    5: "All+",
+}
+
+function isLogged(messageId, type) {
+    return messageId in GLOBALS_VARIABLES.familyLoggedEvents[type];
 }
 
 function processEvent(event) {
@@ -158,6 +335,15 @@ function padNumber(num) {
     return num < 10 ? `0${num}` : num.toString();
 }
 
+function appendRows(sheet, newData) {
+    const startRow = sheet.getLastRow() + 1;
+    const startCol = 1;
+    const numRows = newData.length;
+    const numCols = newData[0].length;
+    const newRange = sheet.getRange(startRow, startCol, numRows, numCols);
+    newRange.setValues(newData);
+}
+
 // SHEET CUSTOM FUNCTION
 // Based on https://stackoverflow.com/a/16086964
 // https://github.com/darkskyapp/tz-lookup-oss/ -> https://github.com/darkskyapp/tz-lookup-oss/blob/master/tz.js from 8f09dc19104a006fa386ad86a69d26781ce31637
@@ -176,10 +362,6 @@ function getTimezoneTime(sheetDate, lat, long) {
 
     return convertFromPacific(sheetDate, lat, long);
 }
-
-// Array filter
-
-// Array filter
 
 // Array filter
 function customArrayFilterJoin(joinText, prependText, range, ...restArguments) {
