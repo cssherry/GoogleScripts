@@ -93,10 +93,14 @@ function sendSummaryEmail() {
   // Include weight, height, head, number of baths (and whether he needs to be re-measured)
   const weekNum = summaryDate.getDay();
   const includeSummary = weekNum === 1;
-  let summaryText = '';
-  if (includeSummary) {
-    summaryText = calculateSummary();
-  }
+  const summaryText = includeSummary
+    ? calculateSummary({ allSheet })
+    : calculateSummary({
+      allSheet,
+      numDays: 1,
+      headerText: 'Summary from overview tab:\n',
+      includeNotes: false,
+    });
 
   const weeklyText = includeSummary ? ' & Weekly' : '';
   MailApp.sendEmail({
@@ -106,9 +110,9 @@ function sendSummaryEmail() {
   });
 }
 
-function calculateSummary(allSheet) {
+function calculateSummary({allSheet, numDays=7, headerText='Weekly Averages and summaries:\n', includeNotes=true}) {
   let summaryDateEnd = getPastDate(0);
-  let summaryDateStart = getPastDate(7);
+  let summaryDateStart = getPastDate(numDays);
 
   allSheet = allSheet || SpreadsheetApp.getActiveSpreadsheet();
   const summarySheet = allSheet.getSheetByName('overview w/ notes');
@@ -157,7 +161,7 @@ function calculateSummary(allSheet) {
     if (sumDate && sumDate < summaryDateEnd && sumDate >= summaryDateStart) {
       // Add note if it exists
       const note = chronologicalData[generalNoteIdx];
-      if (note) {
+      if (note && includeNotes) {
         includedDatesNotes.push(`${chronologicalData[summaryDateIdx]}\n${note}`);
       }
 
@@ -190,7 +194,7 @@ function calculateSummary(allSheet) {
   // Add summary data to top
   let summaryNotes = includedDatesNotes.filter((dateNote) => !!dateNote).join(lineSeparators);
   summaryNotes = summaryNotes ? `${lineSeparators} ${summaryNotes}  \n\n=============================\n\n` : summaryNotes;
-  return `Weekly Averages and summaries:\n${weeklyAvg} ${summaryNotes}`;
+  return `${headerText}${weeklyAvg} ${summaryNotes}`;
 }
 
 // HELPER FUNCTIONS
