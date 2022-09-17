@@ -522,7 +522,9 @@ function appendRows(sheet, newData, attachmentIdx) {
                   const version = parseInt(numImg / 40);
                   const start = newText[version].length;
 
-                  newText[version] += `image${numImg}, `;
+                  let fileType = url.match(/\.(.*)$/);
+                  fileType = fileType ? fileType[1] : 'image';
+                  newText[version] += `${fileType}${numImg}, `;
                   numImg += 1;
 
                   const end = newText[version].length - 2;
