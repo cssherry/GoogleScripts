@@ -491,10 +491,8 @@ function appendRows(sheet, newData, attachmentIdx) {
     if (attachmentIdx !== undefined) {
         newData.forEach((data) => {
           const attachmentLink = data[attachmentIdx];
-          if (attachmentLink) {
-            attachments.push(attachmentLink);
-            data[attachmentIdx] = '';
-          }
+          attachments.push(attachmentLink);
+          data[attachmentIdx] = '';
         });
     }
 
@@ -504,35 +502,39 @@ function appendRows(sheet, newData, attachmentIdx) {
     if (attachments.length) {
         const newRange = sheet.getRange(startRow, attachmentIdx +  1, numRows, 3);
         const richTextAttachments = attachments.map((attachment) => {
-            const allAttachments = attachment.split(attachDelimiter);
             const newRichText = {
               0: SpreadsheetApp.newRichTextValue(),
               1: SpreadsheetApp.newRichTextValue(),
               2: SpreadsheetApp.newRichTextValue(),
             }
+
             const newText = {
               0: '',
               1: '',
               2: '',
             };
             const links = [];
-            let numImg = 0;
-            allAttachments.forEach((url) => {
-                const version = parseInt(numImg / 40);
-                const start = newText[version].length;
 
-                newText[version] += `image${numImg}, `;
-                numImg += 1;
+            if (attachment) {
+              const allAttachments = attachment.split(attachDelimiter);
+              let numImg = 0;
+              allAttachments.forEach((url) => {
+                  const version = parseInt(numImg / 40);
+                  const start = newText[version].length;
 
-                const end = newText[version].length - 2;
+                  newText[version] += `image${numImg}, `;
+                  numImg += 1;
 
-                links.push({
-                    start,
-                    end,
-                    url,
-                    version,
-                });
-            });
+                  const end = newText[version].length - 2;
+
+                  links.push({
+                      start,
+                      end,
+                      url,
+                      version,
+                  });
+              });
+            }
 
             newRichText[0].setText(newText[0]);
             newRichText[1].setText(newText[1]);
