@@ -435,8 +435,11 @@ function appendRows(sheet, newData, attachmentIdx) {
     let attachments = [];
     if (attachmentIdx !== undefined) {
         newData.forEach((data) => {
-            attachments.push(data[attachmentIdx]);
+          const attachmentLink = data[attachmentIdx];
+          if (attachmentLink) {
+            attachments.push(attachmentLink);
             data[attachmentIdx] = '';
+          }
         });
     }
 
