@@ -373,13 +373,15 @@ function addInfo(dataArray, info) {
   const infoJson = JSON.stringify(info);
   dataArray[infoIdx] = infoJson.substr(0, 45000);
   dataArray[infoIdx + 1] = infoJson.substr(45000, 45000);
-  dataArray[infoIdx + 2] = infoJson.substr(45000 + 45000);
+  dataArray[infoIdx + 2] = infoJson.substr(45000 * 2, 45000);
+  dataArray[infoIdx + 3] = infoJson.substr(45000 * 3);
 }
 
 function uploadFile(fileUrl, fileName, additionalDescription, keepExtension = false) {
     const response = UrlFetchApp.fetch(fileUrl);
     if (!GLOBALS_VARIABLES.googleDrive) {
         GLOBALS_VARIABLES.googleDriveExistingFiles = {};
+        GLOBALS_VARIABLES.googleDriveExistingFilesByUrl = {};
         GLOBALS_VARIABLES.googleDrive = DriveApp.getFolderById(GLOBALS_VARIABLES.folderId);
         const existingFiles = GLOBALS_VARIABLES.googleDrive.getFiles();
         while (existingFiles.hasNext()) {
@@ -387,6 +389,7 @@ function uploadFile(fileUrl, fileName, additionalDescription, keepExtension = fa
             const fileName = file.getName();
             const fileUrl = file.getUrl();
             GLOBALS_VARIABLES.googleDriveExistingFiles[fileName] = fileUrl;
+            GLOBALS_VARIABLES.googleDriveExistingFilesByUrl[fileUrl] = fileName;
         }
     }
 
@@ -406,7 +409,11 @@ function uploadFile(fileUrl, fileName, additionalDescription, keepExtension = fa
 
     file.setName(fileName);
     file.setDescription(`Download from ${fileUrl} on ${new Date()}\n\n${additionalDescription}`);
-    return file.getUrl();
+    const driveLink = file.getUrl()
+
+    GLOBALS_VARIABLES.googleDriveExistingFiles[fileName] = driveLink;
+    GLOBALS_VARIABLES.googleDriveExistingFilesByUrl[driveLink] = fileName;
+    return driveLink;
 }
 
 const amountToDescription = {
@@ -522,7 +529,7 @@ function appendRows(sheet, newData, attachmentIdx) {
                   const version = parseInt(numImg / 40);
                   const start = newText[version].length;
 
-                  let fileType = url.match(/\.(.*)$/);
+                  let fileType = (GLOBALS_VARIABLES.googleDriveExistingFilesByUrl[url] || '').match(/\.(.*)$/);
                   fileType = fileType ? fileType[1] : 'image';
                   newText[version] += `${fileType}${numImg}, `;
                   numImg += 1;
