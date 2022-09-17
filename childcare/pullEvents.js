@@ -275,7 +275,7 @@ function getAndParsePosts() {
         addInfo(newMessages, postData);
 
         newMessages[contentIdx] = postData.feedItem.body;
-        newMessages[attachmentIdx] = downloadFiles(postData.feedItem).join('\n');
+        newMessages[attachmentIdx] = downloadFiles(postData.feedItem).join(attachDelimiter);
         GLOBALS_VARIABLES.newFamilyData.push(newMessages);
     });
 
