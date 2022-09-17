@@ -118,7 +118,7 @@ function pullAndUpdateEvents() {
         const attachments = row[GLOBALS_VARIABLES.familyIndex.Attachments];
         let fromInfo = row[GLOBALS_VARIABLES.familyIndex.From];
         fromInfo = fromInfo ? `from ${fromInfo}` : '';
-        const header = `${type} ${fromInfo}\n${content}`
+        const header = `${type} ${fromInfo}\n\n${content}`
         famlySummary += header + lineSeparators;
 
         return `${header}\n\n${attachments}`;
