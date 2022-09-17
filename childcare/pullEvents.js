@@ -92,17 +92,7 @@ function pullAndUpdateEvents() {
     // Save changes if there are any
     if (!GLOBALS_VARIABLES.newData.length && !GLOBALS_VARIABLES.newFamilyData.length) return;
 
-    if (GLOBALS_VARIABLES.newData.length) {
-      appendRows(sheet, GLOBALS_VARIABLES.newData);
-    }
-
-    if (GLOBALS_VARIABLES.newFamilyData.length) {
-      appendRows(familySheet, GLOBALS_VARIABLES.newFamilyData);
-    }
-
-    const newDate = sheet.getRange(1, dateIdx + 1, 1, 1);
-    newDate.setValues([[currDate]]);
-
+    // SEND EMAIL
     let famlySummary = '';
     const loggedData = GLOBALS_VARIABLES.newData.map((row) => {
       famlySummary += `${row[GLOBALS_VARIABLES.index.Note]}${lineSeparators}`;
@@ -122,19 +112,29 @@ function pullAndUpdateEvents() {
         const type = row[GLOBALS_VARIABLES.familyIndex.Type];
         const content = row[GLOBALS_VARIABLES.familyIndex.Content];
         const attachments = row[GLOBALS_VARIABLES.familyIndex.Attachments];
-        const jsonData = JSON.stringify(JSON.parse(row[GLOBALS_VARIABLES.familyIndex.FamilyInfo]), null, '    ');
         const header = `${type}\n${content}`
         famlySummary += header + lineSeparators;
 
         return `${header}\n\n${attachments}`;
     }).join(lineSeparators);
 
-    // SEND EMAIL
     MailApp.sendEmail({
         to: GLOBALS_VARIABLES.myEmails.join(','),
         subject: `[Famly] New Events Logged ${GLOBALS_VARIABLES.endDate}`,
         body: famlySummary + loggedData + separator + daycareGeneral,
-      });
+    });
+
+    // UPDATE ROWS
+    if (GLOBALS_VARIABLES.newData.length) {
+      appendRows(sheet, GLOBALS_VARIABLES.newData);
+    }
+
+    if (GLOBALS_VARIABLES.newFamilyData.length) {
+      appendRows(familySheet, GLOBALS_VARIABLES.newFamilyData, GLOBALS_VARIABLES.familyIndex.Attachments);
+    }
+
+    const newDate = sheet.getRange(1, dateIdx + 1, 1, 1);
+    newDate.setValues([[currDate]]);
 }
 
 function getAndParseEvents(baseUrl) {
