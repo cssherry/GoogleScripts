@@ -36,6 +36,7 @@ function pullAndUpdateEvents() {
       return;
     }
 
+    GLOBALS_VARIABLES.startTime = new Date();
     const allSheet = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = allSheet.getSheetByName('Tracker');
     const currRange = sheet.getDataRange();
@@ -182,6 +183,7 @@ function getAndParseMessages() {
     const contentIdx = GLOBALS_VARIABLES.familyIndex.Content;
     const attachmentIdx = GLOBALS_VARIABLES.familyIndex.Attachments;
     hasChanged.forEach((newConvoId) => {
+        if (exceedingTimeLimit()) return;
         const conversationUrl = `${GLOBALS_VARIABLES.messagesUrl}/${newConvoId}`;
         const conversationData = JSON.parse(UrlFetchApp.fetch(conversationUrl, {
             method: 'get',
@@ -201,16 +203,18 @@ function getAndParseMessages() {
         newMessages[typeIdx] = messageType;
         addInfo(newMessages, conversationData);
 
-        const {
-            newMessageIds,
-            newContent,
-            attachmentUrls,
-        } = processMessage(conversationData.messages);
+        tryCatchTimeout(() => {
+            const {
+                newMessageIds,
+                newContent,
+                attachmentUrls,
+            } = processMessage(conversationData.messages);
 
-        newMessages[selfId] = newMessageIds.join(idDelimiter);
-        newMessages[contentIdx] = newContent;
-        newMessages[attachmentIdx] = attachmentUrls.join(attachDelimiter);
-        GLOBALS_VARIABLES.newFamilyData.push(newMessages);
+            newMessages[selfId] = newMessageIds.join(idDelimiter);
+            newMessages[contentIdx] = newContent;
+            newMessages[attachmentIdx] = attachmentUrls.join(attachDelimiter);
+            GLOBALS_VARIABLES.newFamilyData.push(newMessages);
+        });
     });
 }
 
@@ -255,6 +259,7 @@ function getAndParsePosts() {
     const contentIdx = GLOBALS_VARIABLES.familyIndex.Content;
     const attachmentIdx = GLOBALS_VARIABLES.familyIndex.Attachments;
     postList.forEach((post) => {
+        if (exceedingTimeLimit()) return;
         const messageId = post.target.feedItemId || post.notificationId;
         if (!isLogged(messageId, postType)) {
             if (post.target.feedItemId) {
@@ -274,6 +279,7 @@ function getAndParsePosts() {
     });
 
     hasChanged.forEach((newPostId) => {
+        if (exceedingTimeLimit()) return;
         const postUrl = `${GLOBALS_VARIABLES.feedItemUrl}?feedItemId=${newPostId}`;
         const postData = JSON.parse(UrlFetchApp.fetch(postUrl, {
             method: 'get',
@@ -290,8 +296,11 @@ function getAndParsePosts() {
         addInfo(newMessages, postData);
 
         newMessages[contentIdx] = postData.feedItem.body;
-        newMessages[attachmentIdx] = downloadFiles(postData.feedItem).join(attachDelimiter);
-        GLOBALS_VARIABLES.newFamilyData.push(newMessages);
+
+        tryCatchTimeout(() => {
+            newMessages[attachmentIdx] = downloadFiles(postData.feedItem).join(attachDelimiter);
+            GLOBALS_VARIABLES.newFamilyData.push(newMessages);
+        });
     });
 
 }
@@ -314,20 +323,23 @@ function getAndParseBookmarks() {
     const contentIdx = GLOBALS_VARIABLES.familyIndex.Content;
     const attachmentIdx = GLOBALS_VARIABLES.familyIndex.Attachments;
     postList.forEach((post) => {
-        if (GLOBALS_VARIABLES.newFamilyData.length > 5) return;
+        if (exceedingTimeLimit()) return;
         const messageId = post.feedItemId || post.originatorId;
         if (!isLogged(messageId, postType)) {
-          const newMessage = [];
-          newMessage[dateIdx] = new Date();
-          newMessage[fromId] = getFrom(post);
-          newMessage[chainIdx] = post.originatorId || post.feedItemId;
-          newMessage[selfId] = messageId;
-          newMessage[lastUpdateIdx] = post.createdDate;
-          newMessage[typeIdx] = postType;
-          newMessage[contentIdx] = post.body;
-          addInfo(newMessage, post);
-          newMessage[attachmentIdx] = downloadFiles(post).join(attachDelimiter);
-          GLOBALS_VARIABLES.newFamilyData.push(newMessage);
+            const newMessage = [];
+            newMessage[dateIdx] = new Date();
+            newMessage[fromId] = getFrom(post);
+            newMessage[chainIdx] = post.originatorId || post.feedItemId;
+            newMessage[selfId] = messageId;
+            newMessage[lastUpdateIdx] = post.createdDate;
+            newMessage[typeIdx] = postType;
+            newMessage[contentIdx] = post.body;
+            addInfo(newMessage, post);
+
+            tryCatchTimeout(() => {
+                newMessage[attachmentIdx] = downloadFiles(post).join(attachDelimiter);
+                GLOBALS_VARIABLES.newFamilyData.push(newMessage);
+            });
         }
     });
 }
@@ -378,6 +390,10 @@ function addInfo(dataArray, info) {
 }
 
 function uploadFile(fileUrl, fileName, additionalDescription, keepExtension = false) {
+    if (exceedingTimeLimit()) {
+        throw new TimeoutError('Exceeded 5 minutes');
+    }
+
     const response = UrlFetchApp.fetch(fileUrl);
     if (!GLOBALS_VARIABLES.googleDrive) {
         GLOBALS_VARIABLES.googleDriveExistingFiles = {};
@@ -428,6 +444,32 @@ function isLogged(messageId, type) {
     return messageId in GLOBALS_VARIABLES.familyLoggedEvents[type];
 }
 
+// Times out after 6 minutes (360s)
+// Mark as true after 5 minutes
+function exceedingTimeLimit() {
+    return (new Date() - GLOBALS_VARIABLES.startTime) / 1000 > 300;
+}
+
+class TimeoutError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = 'TimeOutError';
+    }
+}
+
+function tryCatchTimeout(cb) {
+    try {
+        cb();
+    } catch (error) {
+        if (error instanceof TimeoutError) {
+            console.log('Timed Out While Processing');
+        } else {
+            throw error;
+        }
+    }
+}
+
+// Process all logged events
 function processEvent(event) {
     if (!event.from) return;
 
