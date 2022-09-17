@@ -321,7 +321,7 @@ function getAndParseBookmarks() {
           newMessage[dateIdx] = new Date();
           newMessage[fromId] = getFrom(post);
           newMessage[chainIdx] = post.originatorId || post.feedItemId;
-          newMessage[selfId] = post.messageId;
+          newMessage[selfId] = messageId;
           newMessage[lastUpdateIdx] = post.createdDate;
           newMessage[typeIdx] = postType;
           newMessage[contentIdx] = post.body;
