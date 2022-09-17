@@ -17,6 +17,7 @@
 //
 //   messageUrl: '',
 //   postUrl: '',
+//   missedPostUrl: '',
 //   feedItemUrl: '',
 // };
 
@@ -88,6 +89,9 @@ function pullAndUpdateEvents() {
 
     // Check for new posts
     getAndParsePosts();
+
+    // Add bookmarks
+    getAndParseBookmarks();
 
     // Save changes if there are any
     if (!GLOBALS_VARIABLES.newData.length && !GLOBALS_VARIABLES.newFamilyData.length) return;
@@ -279,6 +283,46 @@ function getAndParsePosts() {
         GLOBALS_VARIABLES.newFamilyData.push(newMessages);
     });
 
+}
+
+// Grab info from posts that are not in the notification center for some reason
+function getAndParseBookmarks() {
+    const fullUrl = `${GLOBALS_VARIABLES.missedPostUrl}?limit=${maxLimit}`;
+    const postList = JSON.parse(UrlFetchApp.fetch(fullUrl, {
+        method: 'get',
+        followRedirects: false,
+        headers: GLOBALS_VARIABLES.headers,
+    }).getContentText()).feedItems;
+
+    const dateIdx = GLOBALS_VARIABLES.familyIndex.Date;
+    const fromId = GLOBALS_VARIABLES.familyIndex.From;
+    const chainIdx = GLOBALS_VARIABLES.familyIndex.ChainId;
+    const selfId = GLOBALS_VARIABLES.familyIndex.SelfId;
+    const lastUpdateIdx = GLOBALS_VARIABLES.familyIndex.LastDate;
+    const typeIdx = GLOBALS_VARIABLES.familyIndex.Type;
+    const contentIdx = GLOBALS_VARIABLES.familyIndex.Content;
+    const attachmentIdx = GLOBALS_VARIABLES.familyIndex.Attachments;
+    postList.forEach((post) => {
+        if (GLOBALS_VARIABLES.newFamilyData.length > 5) return;
+        const messageId = post.feedItemId || post.originatorId;
+        if (!isLogged(messageId, postType)) {
+          const newMessage = [];
+          newMessage[dateIdx] = new Date();
+          newMessage[fromId] = getFrom(post);
+          newMessage[chainIdx] = post.originatorId || post.feedItemId;
+          newMessage[selfId] = post.messageId;
+          newMessage[lastUpdateIdx] = post.createdDate;
+          newMessage[typeIdx] = postType;
+          newMessage[contentIdx] = post.body;
+          addInfo(newMessage, post);
+          newMessage[attachmentIdx] = downloadFiles(post).join(attachDelimiter);
+          GLOBALS_VARIABLES.newFamilyData.push(newMessage);
+        }
+    });
+}
+
+function getFrom(post) {
+  return post.receivers ? post.receivers.join(', ') : post.sender.id;
 }
 
 function downloadFiles(containerObj) {
