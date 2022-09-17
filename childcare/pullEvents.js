@@ -32,7 +32,7 @@ function pullAndUpdateEvents() {
     const currentHour = currDate.getHours();
     const weekNum = currDate.getDay();
     if (currentHour < 8 || currentHour >= 20 || weekNum in [0, 6]) {
-        return;
+      return;
     }
 
     const allSheet = SpreadsheetApp.getActiveSpreadsheet();
