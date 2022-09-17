@@ -116,7 +116,9 @@ function pullAndUpdateEvents() {
         const type = row[GLOBALS_VARIABLES.familyIndex.Type];
         const content = row[GLOBALS_VARIABLES.familyIndex.Content];
         const attachments = row[GLOBALS_VARIABLES.familyIndex.Attachments];
-        const header = `${type}\n${content}`
+        let fromInfo = row[GLOBALS_VARIABLES.familyIndex.From];
+        fromInfo = fromInfo ? `from ${fromInfo}` : '';
+        const header = `${type} ${fromInfo}\n${content}`
         famlySummary += header + lineSeparators;
 
         return `${header}\n\n${attachments}`;
@@ -172,6 +174,7 @@ function getAndParseMessages() {
     });
 
     const dateIdx = GLOBALS_VARIABLES.familyIndex.Date;
+    const fromId = GLOBALS_VARIABLES.familyIndex.From;
     const chainIdx = GLOBALS_VARIABLES.familyIndex.ChainId;
     const selfId = GLOBALS_VARIABLES.familyIndex.SelfId;
     const lastUpdateIdx = GLOBALS_VARIABLES.familyIndex.LastDate;
@@ -187,6 +190,12 @@ function getAndParseMessages() {
         }).getContentText());
         const newMessages = [];
         newMessages[dateIdx] = new Date();
+        newMessages[fromId] = conversationData.participants.filter((participant) => {
+          return !participant.title.include('Aneesh') && !participant.title.include('Sherry');
+        }).map((participant) => {
+          const additionalInfo = participant.subtitle ? `(${participant.subtitle})` : '';
+          return `${participant.title} ${additionalInfo}`;
+        }).join(', ');
         newMessages[chainIdx] = conversationData.conversationId;
         newMessages[lastUpdateIdx] = conversationData.lastActivityAt;
         newMessages[typeIdx] = messageType;
@@ -238,6 +247,7 @@ function getAndParsePosts() {
     }).getContentText());
 
     const dateIdx = GLOBALS_VARIABLES.familyIndex.Date;
+    const fromId = GLOBALS_VARIABLES.familyIndex.From;
     const chainIdx = GLOBALS_VARIABLES.familyIndex.ChainId;
     const selfId = GLOBALS_VARIABLES.familyIndex.SelfId;
     const lastUpdateIdx = GLOBALS_VARIABLES.familyIndex.LastDate;
@@ -272,6 +282,7 @@ function getAndParsePosts() {
         }).getContentText());
         const newMessages = [];
         newMessages[dateIdx] = new Date();
+        newMessages[fromId] = getFrom(postData.feedItem);
         newMessages[chainIdx] = postData.feedItem.originatorId;
         newMessages[selfId] = postData.feedItem.feedItemId;
         newMessages[lastUpdateIdx] = postData.feedItem.createdDate;
@@ -329,7 +340,7 @@ function downloadFiles(containerObj) {
     const attachments = [];
     const createDate = containerObj.createdDate || containerObj.createdAt || 'Unknown Date';
     const body = containerObj.body || '';
-    const description = `${body}\n\nShared on: ${createDate}`;
+    const description = `${body}\n\nShared on: ${createDate}\n\nUploaded by ${getFrom(containerObj)}`;
     if (containerObj.files.length) {
         containerObj.files.forEach((fileObj) => {
             const fileUrl = uploadFile(fileObj.url, fileObj.filename, description);
