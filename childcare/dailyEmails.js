@@ -47,7 +47,8 @@ function sendSummaryEmail() {
       }
 
       else if (description === 'Ishaan: Nappy Change - BM') {
-        dailyNums.poo += 1
+        dailyNums.poo += 1;
+        dailyNums.pee += 1;
       }
 
 
