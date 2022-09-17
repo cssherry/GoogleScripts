@@ -463,7 +463,7 @@ function appendRows(sheet, newData, attachmentIdx) {
             const links = [];
             let numImg = 0;
             allAttachments.forEach((url) => {
-                const version = parseInt(numImg / 25);
+                const version = parseInt(numImg / 40);
                 const start = newText[version].length;
 
                 newText[version] += `image${numImg}, `;
