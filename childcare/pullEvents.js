@@ -174,7 +174,6 @@ function getAndParseMessages() {
     const typeIdx = GLOBALS_VARIABLES.familyIndex.Type;
     const contentIdx = GLOBALS_VARIABLES.familyIndex.Content;
     const attachmentIdx = GLOBALS_VARIABLES.familyIndex.Attachments;
-    const infoIdx = GLOBALS_VARIABLES.familyIndex.FamilyInfo;
     hasChanged.forEach((newConvoId) => {
         const conversationUrl = `${GLOBALS_VARIABLES.messagesUrl}/${newConvoId}`;
         const conversationData = JSON.parse(UrlFetchApp.fetch(conversationUrl, {
@@ -187,7 +186,7 @@ function getAndParseMessages() {
         newMessages[chainIdx] = conversationData.conversationId;
         newMessages[lastUpdateIdx] = conversationData.lastActivityAt;
         newMessages[typeIdx] = messageType;
-        newMessages[infoIdx] = JSON.stringify(conversationData);
+        addInfo(newMessages, conversationData);
 
         const {
             newMessageIds,
@@ -241,8 +240,6 @@ function getAndParsePosts() {
     const typeIdx = GLOBALS_VARIABLES.familyIndex.Type;
     const contentIdx = GLOBALS_VARIABLES.familyIndex.Content;
     const attachmentIdx = GLOBALS_VARIABLES.familyIndex.Attachments;
-    const infoIdx = GLOBALS_VARIABLES.familyIndex.FamilyInfo;
-
     postList.forEach((post) => {
         const messageId = post.target.feedItemId || post.notificationId;
         if (!isLogged(messageId, postType)) {
@@ -255,8 +252,8 @@ function getAndParsePosts() {
                 newMessage[selfId] = post.notificationId;
                 newMessage[lastUpdateIdx] = post.createdDate;
                 newMessage[typeIdx] = postType;
-                newMessage[infoIdx] = JSON.stringify(post);
                 newMessage[contentIdx] = post.body;
+                addInfo(newMessage, post);
                 GLOBALS_VARIABLES.newFamilyData.push(newMessage);
             }
         }
@@ -275,7 +272,7 @@ function getAndParsePosts() {
         newMessages[selfId] = postData.feedItem.feedItemId;
         newMessages[lastUpdateIdx] = postData.feedItem.createdDate;
         newMessages[typeIdx] = postType;
-        newMessages[infoIdx] = JSON.stringify(postData);
+        addInfo(newMessages, postData);
 
         newMessages[contentIdx] = postData.feedItem.body;
         newMessages[attachmentIdx] = downloadFiles(postData.feedItem).join('\n');
@@ -314,6 +311,14 @@ function downloadFiles(containerObj) {
     }
 
     return attachments;
+}
+
+function addInfo(dataArray, info) {
+  const infoIdx = GLOBALS_VARIABLES.familyIndex.FamilyInfo;
+  const infoJson = JSON.stringify(info);
+  dataArray[infoIdx] = infoJson.substr(0, 45000);
+  dataArray[infoIdx + 1] = infoJson.substr(45000, 45000);
+  dataArray[infoIdx + 2] = infoJson.substr(45000 + 45000);
 }
 
 function uploadFile(fileUrl, fileName, additionalDescription, keepExtension = false) {
@@ -421,13 +426,73 @@ function padNumber(num) {
     return num < 10 ? `0${num}` : num.toString();
 }
 
-function appendRows(sheet, newData) {
+function appendRows(sheet, newData, attachmentIdx) {
     const startRow = sheet.getLastRow() + 1;
     const startCol = 1;
     const numRows = newData.length;
     const numCols = newData[0].length;
+
+    let attachments = [];
+    if (attachmentIdx !== undefined) {
+        newData.forEach((data) => {
+            attachments.push(data[attachmentIdx]);
+            data[attachmentIdx] = '';
+        });
+    }
+
     const newRange = sheet.getRange(startRow, startCol, numRows, numCols);
     newRange.setValues(newData);
+
+    if (attachments.length) {
+        const newRange = sheet.getRange(startRow, attachmentIdx +  1, numRows, 3);
+        const richTextAttachments = attachments.map((attachment) => {
+            const allAttachments = attachment.split(attachDelimiter);
+            const newRichText = {
+              0: SpreadsheetApp.newRichTextValue(),
+              1: SpreadsheetApp.newRichTextValue(),
+              2: SpreadsheetApp.newRichTextValue(),
+            }
+            const newText = {
+              0: '',
+              1: '',
+              2: '',
+            };
+            const links = [];
+            let numImg = 0;
+            allAttachments.forEach((url) => {
+                const version = parseInt(numImg / 25);
+                const start = newText[version].length;
+
+                newText[version] += `image${numImg}, `;
+                numImg += 1;
+
+                const end = newText[version].length;
+
+                links.push({
+                    start,
+                    end,
+                    url,
+                    version,
+                });
+            });
+
+            newRichText[0].setText(newText[0]);
+            newRichText[1].setText(newText[1]);
+            newRichText[2].setText(newText[2]);
+            links.forEach(({
+                start,
+                end,
+                url,
+                version,
+            }) => {
+                newRichText[version].setLinkUrl(start, end, url);
+            });
+
+            return [newRichText[0].build(), newRichText[1].build(), newRichText[2].build()];
+        });
+
+        newRange.setRichTextValues(richTextAttachments);
+    }
 }
 
 // SHEET CUSTOM FUNCTION
