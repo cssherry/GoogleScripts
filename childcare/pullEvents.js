@@ -23,6 +23,7 @@
 const lineSeparators = '\n\n-----------------------\n\n';
 const maxLimit = 100;
 const idDelimiter = ',';
+const attachDelimiter = ' ; ';
 const messageType = 'Message';
 const postType = 'Post';
 function pullAndUpdateEvents() {
@@ -125,7 +126,7 @@ function pullAndUpdateEvents() {
         const header = `${type}\n${content}`
         famlySummary += header + lineSeparators;
 
-        return `${header}\n\n${attachments}\n\n${jsonData}`;
+        return `${header}\n\n${attachments}`;
     }).join(lineSeparators);
 
     // SEND EMAIL
@@ -196,7 +197,7 @@ function getAndParseMessages() {
 
         newMessages[selfId] = newMessageIds.join(idDelimiter);
         newMessages[contentIdx] = newContent;
-        newMessages[attachmentIdx] = attachmentUrls.join('\n');
+        newMessages[attachmentIdx] = attachmentUrls.join(attachDelimiter);
         GLOBALS_VARIABLES.newFamilyData.push(newMessages);
     });
 }
