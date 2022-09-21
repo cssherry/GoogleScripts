@@ -231,6 +231,8 @@ function processMessage(messages) {
             if (newFiles.length) {
                 attachmentUrls.push(...newFiles);
             }
+
+            GLOBALS_VARIABLES.familyLoggedEvents[messageType][message.messageId] = true;
         }
     });
 
@@ -274,6 +276,7 @@ function getAndParsePosts() {
                 newMessage[contentIdx] = post.body;
                 addInfo(newMessage, post);
                 GLOBALS_VARIABLES.newFamilyData.push(newMessage);
+                GLOBALS_VARIABLES.familyLoggedEvents[messageType][post.notificationId] = true;
             }
         }
     });
@@ -300,6 +303,7 @@ function getAndParsePosts() {
         tryCatchTimeout(() => {
             newMessages[attachmentIdx] = downloadFiles(postData.feedItem).join(attachDelimiter);
             GLOBALS_VARIABLES.newFamilyData.push(newMessages);
+            GLOBALS_VARIABLES.familyLoggedEvents[messageType][postData.feedItem.feedItemId] = true;
         });
     });
 
@@ -339,6 +343,7 @@ function getAndParseBookmarks() {
             tryCatchTimeout(() => {
                 newMessage[attachmentIdx] = downloadFiles(post).join(attachDelimiter);
                 GLOBALS_VARIABLES.newFamilyData.push(newMessage);
+                GLOBALS_VARIABLES.familyLoggedEvents[messageType][messageId] = true;
             });
         }
     });
