@@ -193,7 +193,7 @@ function getAndParseMessages() {
         const newMessages = [];
         newMessages[dateIdx] = new Date();
         newMessages[fromId] = conversationData.participants.filter((participant) => {
-          return !participant.title.include('Aneesh') && !participant.title.include('Sherry');
+          return !participant.title.includes('Aneesh') && !participant.title.includes('Sherry');
         }).map((participant) => {
           const additionalInfo = participant.subtitle ? `(${participant.subtitle})` : '';
           return `${participant.title} ${additionalInfo}`;
@@ -345,7 +345,19 @@ function getAndParseBookmarks() {
 }
 
 function getFrom(post) {
-  return post.receivers ? post.receivers.join(', ') : post.sender.id;
+  if (post.receivers) {
+    return post.receivers.join(', ');
+  }
+
+  if (post.sender) {
+    return post.sender.id;
+  };
+
+  if (post.author) {
+    return post.author.subtitle || post.author.title;
+  }
+
+  return 'Unknown';
 }
 
 function downloadFiles(containerObj) {
