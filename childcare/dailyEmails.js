@@ -111,7 +111,7 @@ function sendSummaryEmail() {
   });
 }
 
-function calculateSummary({allSheet, numDays=7, headerText='Weekly Averages and summaries:\n', includeNotes=true}) {
+function calculateSummary({ allSheet, numDays = 7, headerText = 'Weekly Averages and summaries:\n', includeNotes = true }) {
   let summaryDateEnd = getPastDate(0);
   let summaryDateStart = getPastDate(numDays);
 
@@ -207,6 +207,6 @@ function appendValue(previousString, newString, joiningString = ' -> ') {
 function getPastDate(daysAgo) {
   let newDate = new Date();
   newDate.setDate(newDate.getDate() - daysAgo);
-  newDate.setHours(0,0,0,0)
+  newDate.setHours(0, 0, 0, 0)
   return newDate;
 }
