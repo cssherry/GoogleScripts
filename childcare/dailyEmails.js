@@ -201,8 +201,8 @@ function calculateSummary({ allSheet, numDays = 7, headerText = 'Weekly Averages
 
   // Add summary data to top
   let summaryNotes = includedDatesNotes.filter((dateNote) => !!dateNote).join(lineSeparators);
-  summaryNotes = summaryNotes ? `${lineSeparators} ${summaryNotes}  \n\n=============================\n\n` : summaryNotes;
-  return `${headerText}${weeklyAvg} ${summaryNotes}`;
+  summaryNotes = summaryNotes ? `${lineSeparators}${summaryNotes}\n\n=============================\n\n` : summaryNotes;
+  return `${headerText}${weeklyAvg}${summaryNotes}`;
 }
 
 // HELPER FUNCTIONS
