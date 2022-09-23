@@ -1,4 +1,8 @@
-function sendSummaryEmail() {
+function sendAbbreviatedSummaryEmail() {
+  sendSummaryEmail(false, GLOBALS_VARIABLES.myEmailsAbb);
+}
+
+function sendSummaryEmail(includeNotes = true, emails = GLOBALS_VARIABLES.summaryEmails) {
   const summaryDate = getPastDate(1);
   const summaryDateFormatted = parseDate(summaryDate);
 
@@ -30,11 +34,14 @@ function sendSummaryEmail() {
       const dateTime = dataRow[dateIdx];
       const action = dataRow[actionIdx];
       const description = dataRow[descriptionIdx];
-      currDayData.push({
-        date: dateTime,
-        action,
-        value: description,
-      });
+
+      if (includeNotes || action !== 'Note') {
+        currDayData.push({
+          date: dateTime,
+          action,
+          value: description,
+        });
+      }
 
       // Add to feed count
       if (action === 'Famly.Daycare:MealRegistration' || action === 'Feed') {
@@ -94,18 +101,18 @@ function sendSummaryEmail() {
   // Include weight, height, head, number of baths (and whether he needs to be re-measured)
   const weekNum = summaryDate.getDay();
   const includeSummary = weekNum === 1;
-  const summaryText = includeSummary
+  const summaryText = includeSummary && includeNotes
     ? calculateSummary({ allSheet })
     : calculateSummary({
       allSheet,
-      numDays: 1,
+      numDays: includeSummary ? 7 : 1,
       headerText: 'Summary from overview tab:\n',
       includeNotes: false,
     });
 
   const weeklyText = includeSummary ? ' & Weekly' : '';
   MailApp.sendEmail({
-    to: GLOBALS_VARIABLES.summaryEmails.join(','),
+    to: emails.join(','),
     subject: `[Famly] Daily${weeklyText} Summary ${summaryDateFormatted}`,
     body: summaryText + currDaySummary + currDayText,
   });
