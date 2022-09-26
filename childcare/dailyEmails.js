@@ -100,7 +100,7 @@ function sendSummaryEmail(includeNotes = true, emails = GLOBALS_VARIABLES.summar
   // Add weekly summary on Monday
   // Include weight, height, head, number of baths (and whether he needs to be re-measured)
   const weekNum = summaryDate.getDay();
-  const includeSummary = weekNum === 1;
+  const includeSummary = weekNum === 0;
   const summaryText = includeSummary && includeNotes
     ? calculateSummary({ allSheet })
     : calculateSummary({
