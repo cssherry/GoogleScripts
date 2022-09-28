@@ -100,7 +100,7 @@ function pullAndUpdateEvents() {
     // SEND EMAIL
     let famlySummary = '';
     const loggedData = GLOBALS_VARIABLES.newData.map((row) => {
-      famlySummary += `${row[GLOBALS_VARIABLES.index.Note]}${lineSeparators}`;
+      famlySummary += `${row[GLOBALS_VARIABLES.index.Note]} (${row[GLOBALS_VARIABLES.index.Date]})${lineSeparators}`;
       return row.filter(item => !!item)
                 .map(item => {
                   if (item.toString().startsWith('{') & item.toString().endsWith('}')) {
@@ -115,14 +115,17 @@ function pullAndUpdateEvents() {
     const separator = GLOBALS_VARIABLES.newFamilyData.length ? lineSeparators : '';
     const daycareGeneral = GLOBALS_VARIABLES.newFamilyData.map((row) => {
         const type = row[GLOBALS_VARIABLES.familyIndex.Type];
+        const date = row[GLOBALS_VARIABLES.familyIndex.LastDate];
         const content = row[GLOBALS_VARIABLES.familyIndex.Content];
         const attachments = row[GLOBALS_VARIABLES.familyIndex.Attachments];
         let fromInfo = row[GLOBALS_VARIABLES.familyIndex.From];
         fromInfo = fromInfo ? `from ${fromInfo}` : '';
-        const header = `${type} ${fromInfo}\n\n${content}`
+        const header = `${type} ${fromInfo} (${date})\n\n${content}`
         famlySummary += header + lineSeparators;
 
-        return `${header}\n\n${attachments}`;
+        const chainId = row[GLOBALS_VARIABLES.familyIndex.ChainId];
+        const selfId = row[GLOBALS_VARIABLES.familyIndex.SelfId];
+        return `${header}\nChain: ${chainId}\nSelf: ${selfId}\n\n${attachments}`;
     }).join(lineSeparators);
 
     MailApp.sendEmail({
