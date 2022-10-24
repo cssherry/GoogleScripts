@@ -663,7 +663,7 @@ function customArrayFilterJoin(joinText, prependText, range, ...restArguments) {
     const result = []
     let arrayLength = 1;
     restArguments.forEach((arg, idx) => {
-        if (idx % 2 == 0 & arg instanceof Array) {
+        if (idx % 2 === 1 & arg instanceof Array) {
             arrayLength = arg.length;
         }
     });
