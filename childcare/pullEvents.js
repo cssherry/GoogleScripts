@@ -702,6 +702,8 @@ function convertFromPacific(date, latitude, longitude) {
 
 // converting from time zone:https://stackoverflow.com/a/53652131
 function changeTimezone(date, oldTimezone, newTimezone) {
+    if (!date.getTime) return date;
+
     const oldDate = new Date(date.toLocaleString('en-US', {
         timeZone: oldTimezone,
     }));
