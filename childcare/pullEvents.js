@@ -411,7 +411,7 @@ function getFrom(post) {
   };
 
   if (post.createdBy) {
-    return `${report.createdBy.name} (${report.createdBy.id})`;
+    return `${post.createdBy.name} (${post.createdBy.id})`;
   };
 
   if (post.author) {
