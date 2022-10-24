@@ -431,7 +431,6 @@ function uploadFile(fileUrl, fileName, additionalDescription, keepExtension = fa
         throw new TimeoutError('Exceeded 5 minutes');
     }
 
-    const response = UrlFetchApp.fetch(fileUrl);
     if (!GLOBALS_VARIABLES.googleDrive) {
         GLOBALS_VARIABLES.googleDriveExistingFiles = {};
         GLOBALS_VARIABLES.googleDriveExistingFilesByUrl = {};
@@ -451,6 +450,7 @@ function uploadFile(fileUrl, fileName, additionalDescription, keepExtension = fa
         return existingFileUrl;
     }
 
+    const response = UrlFetchApp.fetch(fileUrl);
     const blob = response.getBlob();
     const file = GLOBALS_VARIABLES.googleDrive.createFile(blob);
 
