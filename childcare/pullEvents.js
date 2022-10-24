@@ -470,7 +470,7 @@ function addInfo(dataArray, info) {
   dataArray[infoIdx + 3] = infoJson.substr(45000 * 3);
 }
 
-function checkExistingFile(fileName) {
+function getExistingFile(fileName) {
     return GLOBALS_VARIABLES.googleDriveExistingFiles[fileName];
 }
 
@@ -493,7 +493,7 @@ function uploadFile(fileUrl, fileName, additionalDescription, keepExtension = fa
         }
     }
 
-    let existingFileUrl = checkExistingFile(fileName);
+    let existingFileUrl = getExistingFile(fileName);
     if (existingFileUrl) {
         return existingFileUrl;
     }
@@ -513,7 +513,7 @@ function uploadFile(fileUrl, fileName, additionalDescription, keepExtension = fa
     file.setDescription(`Download from ${fileUrl} on ${new Date()}\n\n${additionalDescription}`);
 
     // If the file is duplicate of one with extension, delete it
-    existingFileUrl = checkExistingFile(fileName);
+    existingFileUrl = getExistingFile(fileName);
     if (existingFileUrl) {
         file.setTrashed(true);
         return existingFileUrl;
