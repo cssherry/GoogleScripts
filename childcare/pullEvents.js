@@ -72,6 +72,7 @@ function pullAndUpdateEvents() {
     GLOBALS_VARIABLES.familyLoggedEvents = {};
     GLOBALS_VARIABLES.familyLoggedEvents[messageType] = {};
     GLOBALS_VARIABLES.familyLoggedEvents[postType] = {};
+    GLOBALS_VARIABLES.familyLoggedEvents[incidentType] = {};
 
     // Process existing posts/messages
     const typeIdx = GLOBALS_VARIABLES.familyIndex.Type;
