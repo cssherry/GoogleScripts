@@ -422,6 +422,10 @@ function addInfo(dataArray, info) {
   dataArray[infoIdx + 3] = infoJson.substr(45000 * 3);
 }
 
+function checkExistingFile(fileName) {
+    return GLOBALS_VARIABLES.googleDriveExistingFiles[fileName];
+}
+
 function uploadFile(fileUrl, fileName, additionalDescription, keepExtension = false) {
     if (exceedingTimeLimit()) {
         throw new TimeoutError('Exceeded 5 minutes');
@@ -442,8 +446,9 @@ function uploadFile(fileUrl, fileName, additionalDescription, keepExtension = fa
         }
     }
 
-    if (GLOBALS_VARIABLES.googleDriveExistingFiles[fileName]) {
-        return GLOBALS_VARIABLES.googleDriveExistingFiles[fileName];
+    let existingFileUrl = checkExistingFile(fileName);
+    if (existingFileUrl) {
+        return existingFileUrl;
     }
 
     const blob = response.getBlob();
@@ -458,6 +463,14 @@ function uploadFile(fileUrl, fileName, additionalDescription, keepExtension = fa
 
     file.setName(fileName);
     file.setDescription(`Download from ${fileUrl} on ${new Date()}\n\n${additionalDescription}`);
+
+    // If the file is duplicate of one with extension, delete it
+    existingFileUrl = checkExistingFile(fileName);
+    if (existingFileUrl) {
+        file.setTrashed(true);
+        return existingFileUrl;
+    }
+
     const driveLink = file.getUrl()
 
     GLOBALS_VARIABLES.googleDriveExistingFiles[fileName] = driveLink;
