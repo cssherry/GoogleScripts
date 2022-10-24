@@ -438,10 +438,10 @@ function uploadFile(fileUrl, fileName, additionalDescription, keepExtension = fa
         const existingFiles = GLOBALS_VARIABLES.googleDrive.getFiles();
         while (existingFiles.hasNext()) {
             const file = existingFiles.next();
-            const fileName = file.getName();
+            const curFileName = file.getName();
             const fileUrl = file.getUrl();
-            GLOBALS_VARIABLES.googleDriveExistingFiles[fileName] = fileUrl;
-            GLOBALS_VARIABLES.googleDriveExistingFilesByUrl[fileUrl] = fileName;
+            GLOBALS_VARIABLES.googleDriveExistingFiles[curFileName] = fileUrl;
+            GLOBALS_VARIABLES.googleDriveExistingFilesByUrl[fileUrl] = curFileName;
         }
     }
 
