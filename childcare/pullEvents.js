@@ -401,6 +401,15 @@ function downloadFiles(containerObj) {
         });
     }
 
+    if (containerObj.embed && containerObj.embed.invoice) {
+        const invoiceObj = containerObj.embed.invoice;
+        const invoiceName = `Invoice_${invoiceObj.coveringMonths.join('_') || invoiceObj.invoiceNo}_amount-${invoiceObj.amount.toString().replace(/\./g, '-')}`;
+        const linesText = invoiceObj.lines.map(obj => `${obj.title}: £${obj.amount}`);
+        const additionalDescription = `Total: £${invoiceObj.amount}\n${linesText.join('\n')}\n\nDue: ${invoiceObj.due}\nDate: ${invoiceObj.date}\n\n`;
+        const fileUrl = uploadFile(invoiceObj.pdf, invoiceName, additionalDescription + description, true);
+        attachments.push(fileUrl);
+    }
+
     return attachments;
 }
 
