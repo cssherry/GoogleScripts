@@ -353,12 +353,16 @@ function getAndParseBookmarks() {
 }
 
 function getFrom(post) {
-  if (post.receivers) {
+  if (post.receivers && post.receivers.length) {
     return post.receivers.join(', ');
   }
 
   if (post.sender) {
-    return post.sender.id;
+    return `${post.sender.name} (${post.sender.id})`;
+  };
+
+  if (post.createdBy) {
+    return `${report.createdBy.name} (${report.createdBy.id})`;
   };
 
   if (post.author) {
