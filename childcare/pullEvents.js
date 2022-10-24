@@ -450,7 +450,7 @@ function uploadFile(fileUrl, fileName, additionalDescription, keepExtension = fa
     const file = GLOBALS_VARIABLES.googleDrive.createFile(blob);
 
     if (keepExtension) {
-        const extension = file.getName().match(/\..*$/)[0];
+        const extension = file.getName().match(/\..*?$/)[0];
         if (extension) {
             fileName += extension;
         }
@@ -604,7 +604,7 @@ function appendRows(sheet, newData, attachmentIdx) {
                   const version = parseInt(numImg / 40);
                   const start = newText[version].length;
 
-                  let fileType = (GLOBALS_VARIABLES.googleDriveExistingFilesByUrl[url] || '').match(/\.(.*)$/);
+                  let fileType = (GLOBALS_VARIABLES.googleDriveExistingFilesByUrl[url] || '').match(/\.(.*?)$/);
                   fileType = fileType ? fileType[1] : 'image';
                   newText[version] += `${fileType}${numImg}, `;
                   numImg += 1;
