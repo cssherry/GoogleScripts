@@ -19,6 +19,7 @@
 //   postUrl: '',
 //   missedPostUrl: '',
 //   feedItemUrl: '',
+//   incidentUrl: '',
 // };
 
 const lineSeparators = '\n\n-----------------------\n\n';
@@ -27,6 +28,7 @@ const idDelimiter = ',';
 const attachDelimiter = ' ; ';
 const messageType = 'Message';
 const postType = 'Post';
+const incidentType = 'Incident';
 function pullAndUpdateEvents() {
     // Only run after 7 AM or before 7 PM on weekdays
     const currDate = new Date();
@@ -93,6 +95,9 @@ function pullAndUpdateEvents() {
 
     // Add bookmarks
     getAndParseBookmarks();
+
+    // Add any incident reports
+    getAndParseIncidents();
 
     // Save changes if there are any
     if (!GLOBALS_VARIABLES.newData.length && !GLOBALS_VARIABLES.newFamilyData.length) return;
@@ -345,6 +350,49 @@ function getAndParseBookmarks() {
 
             tryCatchTimeout(() => {
                 newMessage[attachmentIdx] = downloadFiles(post).join(attachDelimiter);
+                GLOBALS_VARIABLES.newFamilyData.push(newMessage);
+                GLOBALS_VARIABLES.familyLoggedEvents[messageType][messageId] = true;
+            });
+        }
+    });
+}
+
+// Grab info on incident reports
+function getAndParseIncidents() {
+    const fullUrl = GLOBALS_VARIABLES.incidentUrl;
+    const reportList = JSON.parse(UrlFetchApp.fetch(fullUrl, {
+        method: 'get',
+        followRedirects: false,
+        headers: GLOBALS_VARIABLES.headers,
+    }).getContentText()).reports;
+
+    const dateIdx = GLOBALS_VARIABLES.familyIndex.Date;
+    const fromId = GLOBALS_VARIABLES.familyIndex.From;
+    const chainIdx = GLOBALS_VARIABLES.familyIndex.ChainId;
+    const selfId = GLOBALS_VARIABLES.familyIndex.SelfId;
+    const lastUpdateIdx = GLOBALS_VARIABLES.familyIndex.LastDate;
+    const typeIdx = GLOBALS_VARIABLES.familyIndex.Type;
+    const contentIdx = GLOBALS_VARIABLES.familyIndex.Content;
+    const attachmentIdx = GLOBALS_VARIABLES.familyIndex.Attachments;
+    reportList.forEach((report) => {
+        if (exceedingTimeLimit()) return;
+        // Add unacknowledged and acknowledged version
+        const messageId = `${report.reportId}-${report.acknowledged.name.replace(/\s+/g, '_')}`;
+        if (!isLogged(messageId, incidentType)) {
+            const newMessage = [];
+            const reporter = getFrom(report);
+            newMessage[dateIdx] = new Date();
+            newMessage[fromId] = reporter;
+            newMessage[chainIdx] = messageId;
+            newMessage[selfId] = messageId;
+            newMessage[lastUpdateIdx] = report.createdAt;
+            newMessage[typeIdx] = incidentType;
+            const witnessText = report.witnesses.map(witness => `${witness.name.fullName} (${witness.employeeId})`);
+            newMessage[contentIdx] = `${report.description}\nReported by: ${reporter}\nFrom Arrival? ${report.onArrival ? 'Yes' : 'No'}\nWitnesses: ${witnessText.join(', ')}`;
+            addInfo(newMessage, report);
+
+            tryCatchTimeout(() => {
+                newMessage[attachmentIdx] = downloadFiles(report).join(attachDelimiter);
                 GLOBALS_VARIABLES.newFamilyData.push(newMessage);
                 GLOBALS_VARIABLES.familyLoggedEvents[messageType][messageId] = true;
             });
