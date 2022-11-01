@@ -34,8 +34,8 @@ function pullAndUpdateEvents() {
     const currDate = new Date();
     const currentHour = currDate.getHours();
     const weekNum = currDate.getDay();
-    if (currentHour < 8 || currentHour >= 20 || [0, 6].includes(weekNum)) {
-      return;
+    if (currentHour < 8 || currentHour >= 22 || [0, 6].includes(weekNum)) {
+        return;
     }
 
     GLOBALS_VARIABLES.startTime = new Date();
