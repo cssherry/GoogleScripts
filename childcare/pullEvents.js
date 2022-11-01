@@ -49,8 +49,8 @@ function pullAndUpdateEvents() {
 
     // Add previous data so we can not repeat
     GLOBALS_VARIABLES.data.forEach((row) => {
-      const eventIdentifier = getIdentifier(row);
-      GLOBALS_VARIABLES.loggedEvents.add(eventIdentifier)
+        const eventIdentifier = getIdentifier(row);
+        GLOBALS_VARIABLES.loggedEvents.add(eventIdentifier)
     });
 
     // Save dates
@@ -106,15 +106,15 @@ function pullAndUpdateEvents() {
     // SEND EMAIL
     let famlySummary = '';
     const loggedData = GLOBALS_VARIABLES.newData.map((row) => {
-      famlySummary += `${row[GLOBALS_VARIABLES.index.Note]} (${row[GLOBALS_VARIABLES.index.Date]})${lineSeparators}`;
-      return row.filter(item => !!item)
-                .map(item => {
-                  if (item.toString().startsWith('{') & item.toString().endsWith('}')) {
+        famlySummary += `${row[GLOBALS_VARIABLES.index.Note]} (${row[GLOBALS_VARIABLES.index.Date]})${lineSeparators}`;
+        return row.filter(item => !!item)
+            .map(item => {
+                if (item.toString().startsWith('{') & item.toString().endsWith('}')) {
                     return JSON.stringify(JSON.parse(item), null, '    ');
-                  }
+                }
 
-                  return item;
-                }).join('\n');
+                return item;
+            }).join('\n');
     }).join(lineSeparators);
 
     // Generate text for new messages/posts
@@ -142,11 +142,11 @@ function pullAndUpdateEvents() {
 
     // UPDATE ROWS
     if (GLOBALS_VARIABLES.newData.length) {
-      appendRows(sheet, GLOBALS_VARIABLES.newData);
+        appendRows(sheet, GLOBALS_VARIABLES.newData);
     }
 
     if (GLOBALS_VARIABLES.newFamilyData.length) {
-      appendRows(familySheet, GLOBALS_VARIABLES.newFamilyData, GLOBALS_VARIABLES.familyIndex.Attachments);
+        appendRows(familySheet, GLOBALS_VARIABLES.newFamilyData, GLOBALS_VARIABLES.familyIndex.Attachments);
     }
 
     const newDate = sheet.getRange(1, dateIdx + 1, 1, 1);
@@ -202,10 +202,10 @@ function getAndParseMessages() {
         const newMessages = [];
         newMessages[dateIdx] = new Date();
         newMessages[fromId] = conversationData.participants.filter((participant) => {
-          return !participant.title.includes('Aneesh') && !participant.title.includes('Sherry');
+            return !participant.title.includes('Aneesh') && !participant.title.includes('Sherry');
         }).map((participant) => {
-          const additionalInfo = participant.subtitle ? `(${participant.subtitle})` : '';
-          return `${participant.title} ${additionalInfo}`;
+            const additionalInfo = participant.subtitle ? `(${participant.subtitle})` : '';
+            return `${participant.title} ${additionalInfo}`;
         }).join(', ');
         newMessages[chainIdx] = conversationData.conversationId;
         newMessages[lastUpdateIdx] = conversationData.lastActivityAt;
@@ -402,23 +402,23 @@ function getAndParseIncidents() {
 }
 
 function getFrom(post) {
-  if (post.receivers && post.receivers.length) {
-    return post.receivers.join(', ');
-  }
+    if (post.receivers && post.receivers.length) {
+        return post.receivers.join(', ');
+    }
 
-  if (post.sender) {
-    return `${post.sender.name} (${post.sender.id})`;
-  };
+    if (post.sender) {
+        return `${post.sender.name} (${post.sender.id})`;
+    };
 
-  if (post.createdBy) {
-    return `${post.createdBy.name} (${post.createdBy.id})`;
-  };
+    if (post.createdBy) {
+        return `${post.createdBy.name} (${post.createdBy.id})`;
+    };
 
-  if (post.author) {
-    return post.author.subtitle || post.author.title;
-  }
+    if (post.author) {
+        return post.author.subtitle || post.author.title;
+    }
 
-  return 'Unknown';
+    return 'Unknown';
 }
 
 function downloadFiles(containerObj) {
@@ -463,12 +463,12 @@ function downloadFiles(containerObj) {
 }
 
 function addInfo(dataArray, info) {
-  const infoIdx = GLOBALS_VARIABLES.familyIndex.FamilyInfo;
-  const infoJson = JSON.stringify(info);
-  dataArray[infoIdx] = infoJson.substr(0, 45000);
-  dataArray[infoIdx + 1] = infoJson.substr(45000, 45000);
-  dataArray[infoIdx + 2] = infoJson.substr(45000 * 2, 45000);
-  dataArray[infoIdx + 3] = infoJson.substr(45000 * 3);
+    const infoIdx = GLOBALS_VARIABLES.familyIndex.FamilyInfo;
+    const infoJson = JSON.stringify(info);
+    dataArray[infoIdx] = infoJson.substr(0, 45000);
+    dataArray[infoIdx + 1] = infoJson.substr(45000, 45000);
+    dataArray[infoIdx + 2] = infoJson.substr(45000 * 2, 45000);
+    dataArray[infoIdx + 3] = infoJson.substr(45000 * 3);
 }
 
 function getExistingFile(fileName) {
@@ -528,11 +528,11 @@ function uploadFile(fileUrl, fileName, additionalDescription, keepExtension = fa
 }
 
 const amountToDescription = {
-   1: "Little",
-   2: "Half",
-   3: "Most",
-   4: "All",
-   5: "All+",
+    1: "Little",
+    2: "Half",
+    3: "Most",
+    4: "All",
+    5: "All+",
 }
 
 function isLogged(messageId, type) {
@@ -580,7 +580,7 @@ function processEvent(event) {
     newDataRow[infoIdx] = JSON.stringify(event);
 
     if (event.to) {
-        newDataRow[totalTime] = (new Date(event.to) - new Date(event.from)) /60/1000;
+        newDataRow[totalTime] = (new Date(event.to) - new Date(event.from)) / 60 / 1000;
     } else {
         newDataRow[totalTime] = undefined;
     }
@@ -634,9 +634,9 @@ function appendRows(sheet, newData, attachmentIdx) {
     let attachments = [];
     if (attachmentIdx !== undefined) {
         newData.forEach((data) => {
-          const attachmentLink = data[attachmentIdx];
-          attachments.push(attachmentLink);
-          data[attachmentIdx] = '';
+            const attachmentLink = data[attachmentIdx];
+            attachments.push(attachmentLink);
+            data[attachmentIdx] = '';
         });
     }
 
@@ -644,42 +644,42 @@ function appendRows(sheet, newData, attachmentIdx) {
     newRange.setValues(newData);
 
     if (attachments.length) {
-        const newRange = sheet.getRange(startRow, attachmentIdx +  1, numRows, 3);
+        const newRange = sheet.getRange(startRow, attachmentIdx + 1, numRows, 3);
         const richTextAttachments = attachments.map((attachment) => {
             const newRichText = {
-              0: SpreadsheetApp.newRichTextValue(),
-              1: SpreadsheetApp.newRichTextValue(),
-              2: SpreadsheetApp.newRichTextValue(),
+                0: SpreadsheetApp.newRichTextValue(),
+                1: SpreadsheetApp.newRichTextValue(),
+                2: SpreadsheetApp.newRichTextValue(),
             }
 
             const newText = {
-              0: '',
-              1: '',
-              2: '',
+                0: '',
+                1: '',
+                2: '',
             };
             const links = [];
 
             if (attachment) {
-              const allAttachments = attachment.split(attachDelimiter);
-              let numImg = 0;
-              allAttachments.forEach((url) => {
-                  const version = parseInt(numImg / 40);
-                  const start = newText[version].length;
+                const allAttachments = attachment.split(attachDelimiter);
+                let numImg = 0;
+                allAttachments.forEach((url) => {
+                    const version = parseInt(numImg / 40);
+                    const start = newText[version].length;
 
-                  let fileType = (GLOBALS_VARIABLES.googleDriveExistingFilesByUrl[url] || '').match(/\.(.*?)$/);
-                  fileType = fileType ? fileType[1] : 'image';
-                  newText[version] += `${fileType}${numImg}, `;
-                  numImg += 1;
+                    let fileType = (GLOBALS_VARIABLES.googleDriveExistingFilesByUrl[url] || '').match(/\.(.*?)$/);
+                    fileType = fileType ? fileType[1] : 'image';
+                    newText[version] += `${fileType}${numImg}, `;
+                    numImg += 1;
 
-                  const end = newText[version].length - 2;
+                    const end = newText[version].length - 2;
 
-                  links.push({
-                      start,
-                      end,
-                      url,
-                      version,
-                  });
-              });
+                    links.push({
+                        start,
+                        end,
+                        url,
+                        version,
+                    });
+                });
             }
 
             newRichText[0].setText(newText[0]);
@@ -706,15 +706,15 @@ function appendRows(sheet, newData, attachmentIdx) {
 // https://github.com/darkskyapp/tz-lookup-oss/ -> https://github.com/darkskyapp/tz-lookup-oss/blob/master/tz.js from 8f09dc19104a006fa386ad86a69d26781ce31637
 function getTimezoneTime(sheetDate, lat, long) {
     if (sheetDate instanceof Array) {
-      const result = [];
-      for (let rowIdx in sheetDate) {
-        const currDate = sheetDate[rowIdx][0];
-        const currLat = lat[rowIdx][0];
-        const currLong = long[rowIdx][0];
-        result[rowIdx] = convertFromPacific(currDate, currLat, currLong);
-      }
+        const result = [];
+        for (let rowIdx in sheetDate) {
+            const currDate = sheetDate[rowIdx][0];
+            const currLat = lat[rowIdx][0];
+            const currLong = long[rowIdx][0];
+            result[rowIdx] = convertFromPacific(currDate, currLat, currLong);
+        }
 
-      return result;
+        return result;
     }
 
     return convertFromPacific(sheetDate, lat, long);
@@ -755,7 +755,7 @@ function customArrayFilterJoin(joinText, prependText, range, ...restArguments) {
 
 // Faster isNan
 function myIsNaN(val) {
-	return !(val <= 0) && !(val > 0);
+    return !(val <= 0) && !(val > 0);
 }
 
 function convertFromPacific(date, latitude, longitude) {
