@@ -20,6 +20,8 @@
 //   missedPostUrl: '',
 //   feedItemUrl: '',
 //   incidentUrl: '',
+//   graphqlUrl: '',
+//   graphqlQuery: { query, operationName, variables: {observationIds:[]}, },
 // };
 
 const lineSeparators = '\n\n-----------------------\n\n';
@@ -252,6 +254,16 @@ function processMessage(messages) {
     }
 }
 
+// Check if it's an observation
+function isObservation(postData) {
+  if (postData.embed.observationId) {
+    GLOBALS_VARIABLES.graphqlQuery.variables.observationIds.push(postData.embed.observationId);
+    return true;
+  }
+
+  return false;
+}
+
 function getAndParsePosts() {
     const hasChanged = [];
     const fullUrl = `${GLOBALS_VARIABLES.postUrl}?limit=${maxLimit}`;
@@ -299,6 +311,11 @@ function getAndParsePosts() {
             headers: GLOBALS_VARIABLES.headers,
         }).getContentText());
         const newMessages = [];
+
+        if (isObservation(postData.feedItem)) {
+          return;
+        }
+
         newMessages[dateIdx] = new Date();
         newMessages[fromId] = getFrom(postData.feedItem);
         newMessages[chainIdx] = postData.feedItem.originatorId;
@@ -339,6 +356,10 @@ function getAndParseBookmarks() {
         if (exceedingTimeLimit()) return;
         const messageId = post.feedItemId || post.originatorId;
         if (!isLogged(messageId, postType)) {
+            if (isObservation(post)) {
+              return;
+            }
+
             const newMessage = [];
             newMessage[dateIdx] = new Date();
             newMessage[fromId] = getFrom(post);
@@ -401,6 +422,51 @@ function getAndParseIncidents() {
     });
 }
 
+function getAndParseObservations() {
+  const observationsData = JSON.parse(UrlFetchApp.fetch(GLOBALS_VARIABLES.graphqlUrl, {
+    method: 'POST',
+    payload: JSON.stringify(GLOBALS_VARIABLES.graphqlQuery),
+    headers: {
+      ...GLOBALS_VARIABLES.headers,
+      'Content-Type': 'application/json',
+    },
+  }).getContentText());
+
+  const observations = observationsData.data.childDevelopment.observations.results;
+
+  const dateIdx = GLOBALS_VARIABLES.familyIndex.Date;
+  const fromId = GLOBALS_VARIABLES.familyIndex.From;
+  const chainIdx = GLOBALS_VARIABLES.familyIndex.ChainId;
+  const selfId = GLOBALS_VARIABLES.familyIndex.SelfId;
+  const lastUpdateIdx = GLOBALS_VARIABLES.familyIndex.LastDate;
+  const typeIdx = GLOBALS_VARIABLES.familyIndex.Type;
+  const contentIdx = GLOBALS_VARIABLES.familyIndex.Content;
+  const attachmentIdx = GLOBALS_VARIABLES.familyIndex.Attachments;
+
+  observations.forEach((observation) => {
+    const messageId = `Observation:${observation.id}`;
+    const newMessage = [];
+    newMessage[dateIdx] = new Date();
+    newMessage[fromId] = observation.createdBy.name.fullName;
+    newMessage[chainIdx] = messageId;
+    newMessage[selfId] = messageId;
+    newMessage[lastUpdateIdx] = observation.status.createdAt;
+    newMessage[typeIdx] = postType;
+
+    const areas = observation.remark.areas ? `\nAreas: ${observation.remark.areas.map(area => area.area.title).join(', ')}` : '';
+    const nextSteps = observation.nextStep ? `\nNext Steps: ${observation.nextStep.body}` : '';
+
+    newMessage[contentIdx] = `${observation.remark.body}${areas}${nextSteps}`;
+    addInfo(newMessage, observation);
+
+    tryCatchTimeout(() => {
+      newMessage[attachmentIdx] = downloadFiles(observation).join(attachDelimiter);
+      GLOBALS_VARIABLES.newFamilyData.push(newMessage);
+      GLOBALS_VARIABLES.familyLoggedEvents[messageType][messageId] = true;
+    });
+  });
+}
+
 function getFrom(post) {
     if (post.receivers && post.receivers.length) {
         return post.receivers.join(', ');
@@ -435,10 +501,21 @@ function downloadFiles(containerObj) {
 
     if (containerObj.images.length) {
         containerObj.images.forEach((imgObj) => {
-            const url = `${imgObj.prefix}/${imgObj.width}x${imgObj.height}/${imgObj.key}`;
-            const fileName = imgObj.key.replace(/\//g, '_').replace(/\?.*/, '');
-            const fileUrl = uploadFile(url, fileName, description);
-            attachments.push(fileUrl);
+
+          let url;
+          let fileNameSource;
+          if (imgObj.prefix) {
+            url = `${imgObj.prefix}/${imgObj.width}x${imgObj.height}/${imgObj.key}`;
+            fileNameSource = imgObj.key;
+          } else {
+            // This is observation url, needs custom url
+            fileNameSource = imgObj.secret.path;
+            url = `${imgObj.secret.prefix}/${imgObj.secret.key}/${imgObj.width}x${imgObj.height}/${fileNameSource}?expires=${imgObj.secret.expires}`;
+          }
+
+          const fileName = fileNameSource.replace(/\//g, '_').replace(/\?.*/, '');
+          const fileUrl = uploadFile(url, fileName, description);
+          attachments.push(fileUrl);
         });
     }
 
