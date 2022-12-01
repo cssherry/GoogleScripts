@@ -266,7 +266,8 @@ function updateSheet() {
   // --------------------------------------------
   // SF LISTINGS
   // Log in to SF
-  var loginSfPage = UrlFetchApp.fetch(urls.sfLogin, {
+  try {
+    var loginSfPage = UrlFetchApp.fetch(urls.sfLogin, {
       method: 'post',
       followRedirects: false,
       payload: {
@@ -274,36 +275,47 @@ function updateSheet() {
         password: sjcl.decrypt(fetchPayload.salt, fetchPayload.sfPassword),
       },
     });
-  var loginSfCode = loginSfPage.getResponseCode();
-  var sfHeaders = loginSfPage.getAllHeaders();
-  if (loginSfCode === 200) { //could not log in.
-    removeAndEmail(urls.sf);
-  } else if (loginSfCode === 303 || loginSfCode === 302) {
-    fetchPayload.sfCookie = sfHeaders['Set-Cookie'];
-    // Process AC Listings
-    var sfHTML = UrlFetchApp.fetch(urls.sfMain,
-                                    {
-                                      headers: {
-                                        Cookie: fetchPayload.sfCookie,
-                                      },
-                                    });
-    var sfPage = cleanupHTMLElement(sfHTML);
-    var sfDoc = Xml.parse(sfPage, true).getElement();
-    getElementByClassName(sfDoc, 'showcasebox').forEach(addOrUpdateSf);
+    var loginSfCode = loginSfPage.getResponseCode();
+    var sfHeaders = loginSfPage.getAllHeaders();
+    if (loginSfCode === 200) { //could not log in.
+      removeAndEmail(urls.sf);
+    } else if (loginSfCode === 303 || loginSfCode === 302) {
+      fetchPayload.sfCookie = sfHeaders['Set-Cookie'];
+      // Process AC Listings
+      var sfHTML = UrlFetchApp.fetch(urls.sfMain,
+                                     {
+                                       headers: {
+                                         Cookie: fetchPayload.sfCookie,
+                                       },
+                                     });
+      var sfPage = cleanupHTMLElement(sfHTML);
+      var sfDoc = Xml.parse(sfPage, true).getElement();
+      getElementByClassName(sfDoc, 'showcasebox').forEach(addOrUpdateSf);
+    }
+  } catch (e) {
+    printError(e)
+    removeAndEmail(urls.sf, 'errorLoadingPage');
   }
 
   // --------------------------------------------
   // CT LISTINGS
-  var mainPage = cleanupHTML(getMainPageCT());
-  var ctError = 'Member Login';
-  if (mainPage.indexOf(ctError) === -1) {
-    var doc = Xml.parse(mainPage, true).getElement();
-    var mainList = getElementsByTagName(doc, 'ul');
-    var items = getElementsByTagName(mainList[0], 'li');
-    items.forEach(addOrUpdateCT);
+
+  var mainPage = getMainPageCT();
+  if (mainPage) {
+    try {
+      var ctJSON = mainPage.match(/var\s+res\s*=\s*([\s\S]*?}]);/);
+      console.log(ctJSON);
+      var jsonWithoutMuchSpace = ctJSON[1].replace(/\s+/g," ");
+      var items = JSON.parse(jsonWithoutMuchSpace)
+      items.forEach(addOrUpdateCT);
+    } catch (e) {
+      printError(e)
+      removeAndEmail(urls.ctDomain, 'errorParsingPage');
+    }
   } else {
     removeAndEmail(urls.ctDomain);
   }
+
 
   addNewCellItemsRow();
   updateAllCells();
