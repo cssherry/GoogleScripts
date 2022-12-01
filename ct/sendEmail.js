@@ -66,7 +66,7 @@ function updateSheet() {
   var fmPage = cleanupHTML(fmHTML.getContentText());
   var errorMessage = 'You do not have the required permissions to read topics within this forum';
   if (fmPage.indexOf(errorMessage) === -1) {
-    var fmDoc = Xml.parse(fmPage, true).getElement();
+    var fmDoc = XmlService.parse(fmPage);
     var fmList = getElementsByTagName(fmDoc, 'table');
     var fmItems = getElementsByTagName(fmList[5], 'tr');
     fmItems.forEach(addOrUpdateFm);
@@ -149,7 +149,7 @@ function updateSheet() {
                                         },
                                       });
       var acReviewPage = cleanupHTMLElement(acReviewHTML);
-      var acReviewDoc = Xml.parse(acReviewPage, true).getElement();
+      var acReviewDoc = XmlService.parse(acReviewPage);
       var ratingItems = getElementByClassName(acReviewDoc, 'bg-review');
       contextValues.newRatings = [];
       contextValues.updatedRatings = [];
@@ -203,7 +203,7 @@ function updateSheet() {
       var acFreePage = cleanupHTMLElement(acFreeHTML);
       contextValues.freeAC = {};
 
-      var acFreeDoc = Xml.parse(acFreePage, true).getElement();
+      var acFreeDoc = XmlService.parse(acFreePage);
       var acFreeItem = getElementByClassName(acFreeDoc, 'newShowPane');
       if (acFreeItem && acFreeItem.length) {
         acFreeItem.forEach(processFreeItems);
@@ -218,7 +218,7 @@ function updateSheet() {
                                      });
       var acPage = cleanupHTMLElement(acHTML);
 
-      var acDoc = Xml.parse(acPage, true).getElement();
+      var acDoc = XmlService.parse(acPage);
       var acTable = getElementByClassName(acDoc, 'container')[0];
       var acItems = getElementByClassName(acTable, 'ladder-rung');
       acItems.forEach(parseAcItems);
@@ -245,7 +245,7 @@ function updateSheet() {
 
     var pbpError = 'images/EnquiryBlue.jpg';
     if (pbpPage.indexOf('Login') === -1) {
-      var pbpDoc = Xml.parse(pbpPage, true).getElement();
+      var pbpDoc = XmlService.parse(pbpPage);
       var pbpItems = getElementByClassName(pbpDoc, 'showlist');
       contextValues.pbpByUrl = {};
       pbpItems.forEach(processPBP);
@@ -289,7 +289,7 @@ function updateSheet() {
                                        },
                                      });
       var sfPage = cleanupHTMLElement(sfHTML);
-      var sfDoc = Xml.parse(sfPage, true).getElement();
+      var sfDoc = XmlService.parse(sfPage);
       getElementByClassName(sfDoc, 'showcasebox').forEach(addOrUpdateSf);
     }
   } catch (e) {
@@ -1229,9 +1229,10 @@ function getImageUrl(imageFormula) {
 }
 
 // Work with HTML
-function getElementsByTagName(element, tagName, onlyFirstLevel) {
-  var data = element.getElements(tagName);
-  var elList = element.getElements();
+function getElementsByTagName(document, tagName, onlyFirstLevel) {
+  var baseElement = document.getRootElement();
+  var data = baseElement.getChildren();
+  var elList = baseElement.getChildren(tagName);
   var i = elList.length;
   while (i-- && (!onlyFirstLevel || !data.length)) {
     // (Recursive) Check each child, in document order.
@@ -1244,7 +1245,7 @@ function getElementsByTagName(element, tagName, onlyFirstLevel) {
   return data;
 }
 
-function getElementByClassName(element, className) {
+function getElementByClassName(document, className) {
   function containsClass(element) {
     var currClass = element.getAttribute('class');
     if (!currClass) {
@@ -1257,8 +1258,9 @@ function getElementByClassName(element, className) {
            currClass.indexOf(className + ' ') !== -1;
   }
 
-  var elList = element.getElements();
-  var data = elList.filter(containsClass);
+  var baseElement = document.getRootElement();
+  var elList = baseElement.getChildren();
+  var data = baseElement.filter(containsClass);
 
   var i = elList.length;
   while (i--) {
