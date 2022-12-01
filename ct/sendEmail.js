@@ -5,6 +5,9 @@ var contextValues = {
   currAcItems: {},
 };
 
+const date = new Date();
+const currYear = date.getFullYear();
+
 var fetchPayload = {
 
 
@@ -501,15 +504,14 @@ function processRatingItem(item) {
       var location = cleanupLocation(fullTitle.substr(lastIndex + 4).replace(/\s*\(the\)\s*$/i, ''));
       var newItems = [];
 
-      const date = new Date();
       data[fullTitleIdx] = fullTitle;
       data[titleIdx] = cleanupTitle(title);
       data[locationIdx] = location;
       data[ratingIdx] = rating;
       data[numberReviewsIdx] = numberReviews;
       data[urlIdx] = url;
-      data[addedIdx] = date;
-      data[yearIdx] = date.getFullYear();
+      data[addedIdx] = new Date();
+      data[yearIdx] = currYear;
       data[countColIdx] = 1;
       noteArray = [];
       for (var i = 0; i < data.length;) noteArray[i++] = '';
