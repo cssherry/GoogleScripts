@@ -466,14 +466,15 @@ function processRatingItem(item) {
       var location = ratingTitle[1];
       var newItems = [];
 
+      const date = new Date();
       data[fullTitleIdx] = fullTitle;
       data[titleIdx] = cleanupTitle(title);
       data[locationIdx] = location;
       data[ratingIdx] = rating;
       data[numberReviewsIdx] = numberReviews;
       data[urlIdx] = url;
-      data[addedIdx] = new Date();
-      data[yearIdx] = 2022;
+      data[addedIdx] = date;
+      data[yearIdx] = date.getFullYear();
       data[countColIdx] = 1;
       noteArray = [];
       for (var i = 0; i < data.length;) noteArray[i++] = '';
