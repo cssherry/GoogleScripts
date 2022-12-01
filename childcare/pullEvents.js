@@ -519,7 +519,7 @@ function getAndParseObservations() {
     newMessage[dateIdx] = new Date();
     newMessage[fromId] = observation.createdBy.name.fullName;
     newMessage[chainIdx] = messageId;
-    newMessage[selfId] = messageId;
+    newMessage[selfId] = observation.feedItem.id;
     newMessage[lastUpdateIdx] = observation.status.createdAt;
     newMessage[typeIdx] = postType;
 
