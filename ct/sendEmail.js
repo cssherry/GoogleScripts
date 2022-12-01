@@ -669,8 +669,8 @@ function processFreeItems(item) {
 // PbP Helpers
 // Process PBP rows -- pretty complicated because everything is nested tables
 function processPBP(rowEl) {
-  var rowString = rowEl.toXmlString();
-  var pbpId = getPbpId(rowString);
+  var header = getElementsByTagName(getElementByClassName(rowEl, 'card-header', true)[0], 'a', true)[0];
+  var pbpId = header.getAttribute('href').getValue();
   if (!pbpId) {
     return;
   }
@@ -679,13 +679,12 @@ function processPBP(rowEl) {
 
   // If this already exists, get location, time, and picture
   if (contextValues.pbpByUrl[url]) {
-    getLocationTimePicture(rowEl, rowString, contextValues.pbpByUrl[url]);
+    getLocationTimePicture(rowEl, contextValues.pbpByUrl[url]);
   } else {
-    var title = trimHtml(rowString).trim();
     contextValues.pbpByUrl[url] = [];
-    getLocationTimePicture(rowEl, rowString, contextValues.pbpByUrl[url]);
+    getLocationTimePicture(rowEl, contextValues.pbpByUrl[url]);
     contextValues.pbpByUrl[url][contextValues.sheetIndex.Url] = url;
-    contextValues.pbpByUrl[url][contextValues.sheetIndex.Rating] = getRating(title);
+    contextValues.pbpByUrl[url][contextValues.sheetIndex.Rating] = getRating(contextValues.pbpByUrl[url][contextValues.sheetIndex.Title]);
   }
 }
 
@@ -696,6 +695,11 @@ function addOrUpdatePbPItem(pbpItem) {
     var currentItem = [];
     var date = pbpItem[contextValues.sheetIndex.Date];
     var title = pbpItem[contextValues.sheetIndex.Title];
+
+    if (title !== itemInfo.title) {
+      markCellForUpdate(itemInfo.row, 'Title', title);
+      currentItem[contextValues.sheetIndex.title] = boldWord(title) + '<br><em>(Previously ' + boldWord(itemInfo.title) + ')</em>';
+    }
 
     if (date !== itemInfo.date) {
       markCellForUpdate(itemInfo.row, 'Date', date);
@@ -712,33 +716,30 @@ function addOrUpdatePbPItem(pbpItem) {
   }
 }
 
-function getLocationTimePicture(rowEl, rowString, elData) {
+function getLocationTimePicture(rowEl, elData) {
   var image = getElementsByTagName(rowEl, 'img', true)[0];
   var imageUrl = image.getAttribute('src').getValue();
   var title = image.getAttribute('alt').getValue();
-  var locationString = locationHTML.toXmlString();
-  var locationHTML = getElementByClassName(rowEl, 'col-md-3', true)[0];
-  var location = trimHtml(locationString.replace(/<br.*?>|<\/h4>/g, '; ')).trim();
-  var dateAll = getElementByClassName(rowEl, 'col-md-7')[0];
-  var dateArray = getElementByClassName(dateAll, 'row').map(function(row) {
-    return trimHtml(row.toXmlString());
+  var locationEl = getElementByClassName(rowEl, 'col-md-3', true)[0];
+  var locationName = locationEl.getChildren('h4')[0].getValue();
+  var location = `${locationName}; ${locationEl.getText().replace(/([a-z])([A-Z])/g, '$1; $2')}`
+  var dateAll = getElementByClassName(rowEl, 'col-md-7', true)[0];
+  var isFull = true;
+  var dateArray = getElementByClassName(dateAll, 'row', true).map(function(row) {
+    const fullText = getFullText(row, ' - ');
+    const isCurrFull = !fullText.match(/reserve/i);
+    isFull = isFull && !!isCurrFull;
+    return fullText;
   });
-  elData[contextValues.sheetIndex.Image] = '=Image("' + getFullPbpUrl(imageUrl) + '")';
+  elData[contextValues.sheetIndex.Image] = imageUrl ? '=Image("' + getFullPbpUrl(imageUrl) + '")' : '';
   elData[contextValues.sheetIndex.Date] = dateArray.join('; ');
-  elData[contextValues.sheetIndex.Title] = title;
+  elData[contextValues.sheetIndex.Title] = isFull ? `${title} (FULLY BOOKED)` : title;
   elData[contextValues.sheetIndex.Location] = location;
   elData[contextValues.sheetIndex.LocationRating] = getLocationRating(location);
 }
 
-function getPbpId(rowString) {
-  var idMatch = rowString.match(/<a .*?href="(\/show\/\?id=.*?)".*?>/);
-  if (idMatch) {
-    return idMatch[1];
-  }
-}
-
 function getFullPbpUrl(locationString) {
-  return urls.pbpDomain + '/' + locationString;
+  return urls.pbpDomain + (locationString.indexOf('/') === 0 ? '' : '/') + locationString;
 }
 
 // --------------------------------------------
@@ -1222,6 +1223,11 @@ function removeAndEmail(domain, specificErrorMessage) {
 // =====================================
 // HTML HELPER FUNCTIONS
 // =====================================
+function getFullText(element, separator='; ') {
+  const result = element.getText().trim();
+  const remainingText = element.getChildren().map((child) => child.getValue().trim()).filter(val => !!val);
+  return `${result}${result && remainingText.length ? separator : ''}${remainingText.join(separator)}`
+}
 
 function trimHtml(text) {
   return text.replace(/<.*?>|&amp|\n|\r/g, '');
