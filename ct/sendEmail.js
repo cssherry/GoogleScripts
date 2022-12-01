@@ -767,28 +767,75 @@ function addOrUpdateSf(item) {
 // CT Helpers
 // Get the main CT page
 function getMainPageCT() {
+  /*
+  var ctToken = UrlFetchApp.fetch(urls.login);
+  var headers1 = ctToken.getAllHeaders();
+  fetchPayload.ctPasswordCookie = headers1['Set-Cookie'].join('');
+  var keyInfo = ctToken.getContentText().match(/type="hidden" value="(.*?)"/)[1];
+  var loginCtPage = UrlFetchApp.fetch(urls.ctLoginApi, {
+      method: 'POST',
+      followRedirects: false,
+      headers: {
+        Cookie: fetchPayload.ctPasswordCookie,
+      },
+      payload: {
+        email: fetchPayload.email,
+        ci_csrf_token: "",
+        key_info: keyInfo,
+        password: sjcl.decrypt(fetchPayload.salt, fetchPayload.password),
+      },
+    });
+
+  var ctHeaders = loginCtPage.getAllHeaders();
+  fetchPayload.ctPasswordCookie = ctHeaders['Set-Cookie'];
+  */
   var mainPage = UrlFetchApp.fetch(urls.main,
                                   {
                                     headers: {
-                                      Cookie: fetchPayload.ctPassword,
+                                      Cookie: fetchPayload.ctCookie,
                                     },
                                   });
-  return mainPage.getContentText();
+  var mainPageText = mainPage.getContentText();
+
+  if (mainPageText.indexOf('>sign up<') >= 0) {
+    return null;
+  }
+
+  return mainPageText;
 }
 
 // Updates or calls add new listing
 function addOrUpdateCT(item) {
   // Get href
-  var aElement = getElementsByTagName(item, 'a')[0];
-  var url = aElement.getAttribute('href').getValue().trim();
+  var url = urls.ctEvent + item.evid;
   var itemInfo = contextValues.previousListings[url];
-  var htmlText = item.toXmlString();
+  var ticketsLeft = item.leftTickets;
+
+  // Better show actual time/date
+  var scheduledDates = item.schedule_dates.split(/\s*,\s*/);
+  var schedulePurchased = item.schedule_purchased.split(/\s*,\s*/);
+  var scheduledTickets = item.schedule_tickets.split(/\s*,\s*/);
+  var maxIdx = Math.max(scheduledDates.length, schedulePurchased.length, scheduledTickets.length);
+  var scheduledResult = [];
+  var dateShown;
+  for (var schIdx = 0; schIdx < maxIdx; schIdx++) {
+    dateShown = maxIdx > 1 ? scheduledDates[schIdx] + ' - ' : ''; // Only show date if more than 1 available
+    scheduledResult.push(dateShown + (scheduledTickets[schIdx] - schedulePurchased[schIdx]) + '/' + scheduledTickets[schIdx] + ' free');
+  }
+  var date = scheduledResult.join(' ||| ') + ' : ' + item.display_date;
+
+  var fee = '£' + item.per_ticket;
+  var title = item.title;
+
+  if (!ticketsLeft) {
+    title += ' (FULLY BOOKED)'
+  } else if (ticketsLeft < 20) {
+    title += ' (' + ticketsLeft + ' Tickets Left)'
+  }
+
   if (itemInfo) {
     // see if there's anything to update, if not, then just delete
-    var title = getTitleCT(item),
-        rating = getRating(title),
-        fee = getFeeCT(htmlText),
-        date = getDateCT(htmlText),
+    var rating = getRating(title),
         currentItem = [];
     if (fee !== itemInfo.fee) {
       markCellForUpdate(itemInfo.row, 'AdminFee', fee);
@@ -797,61 +844,44 @@ function addOrUpdateCT(item) {
 
     if (date !== itemInfo.date) {
       markCellForUpdate(itemInfo.row, 'Date', date);
-      currentItem[contextValues.sheetIndex.Date] = boldWord(date) + '<br><em>(Previously ' + boldWord(itemInfo.date) + ')</em>';
+      // Only flag date change in email if date changed or booked status changed
+      var oldItemHasTickets = itemInfo.title.indexOf('(FULLY BOOKED)') === -1;
+      if (date.match(/\s+:\s+(.*?)$/)[1] !== itemInfo.date.match(/\s+:\s+(.*?)$/)[1] || oldItemHasTickets === ticketsLeft) {
+        currentItem[contextValues.sheetIndex.Date] = boldWord(date) + '<br><em>(Previously ' + boldWord(itemInfo.date) + ')</em>';
+      } else if (fee !== itemInfo.fee) {
+        // Update if fee has also changed
+        currentItem[contextValues.sheetIndex.Date] = date;
+      }
     }
-
     checkRatingAndDeletePreviousListing(itemInfo, url, currentItem, title);
   } else if (!contextValues.alreadyDeleted[url]) {
-    addNewListingCT(item, htmlText, url);
+    addNewListingCT(item, url, fee, title, date);
   }
 }
 
 // Process CT
-function addNewListingCT(item, htmlText, url) {
-  var ImageUrl = getElementsByTagName(item, 'img')[0].getAttribute('src').getValue();
+function addNewListingCT(item, url, fee, title, date) {
+  var ImageUrl = item.image;
   var listingInfo = [];
-  var title = getTitleCT(item);
+  var title = item.title;
 
   if (!title) {
     return;
   }
 
-  var location = getColonSeparatedTextCT(htmlText, 'Location');
+  var location = item.address_nm + '; ' + item.address_nm1 + '; ' + item.address_nm3 + '; ' + item.venue_city1 + ' ' + item.venue_postcode1;
   listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl + '")';
   listingInfo[contextValues.sheetIndex.Title] = title;
   listingInfo[contextValues.sheetIndex.Rating] = getRating(title);
   listingInfo[contextValues.sheetIndex.LocationRating] = getLocationRating(location);
-  listingInfo[contextValues.sheetIndex.AdminFee] = getFeeCT(htmlText);
-  listingInfo[contextValues.sheetIndex.Date] = getDateCT(htmlText);
-  listingInfo[contextValues.sheetIndex.Category] = getColonSeparatedTextCT(htmlText, 'Category');
+  listingInfo[contextValues.sheetIndex.AdminFee] = '£' + item.per_ticket;
+  listingInfo[contextValues.sheetIndex.Date] = date;
+  listingInfo[contextValues.sheetIndex.Category] = item.category;
   listingInfo[contextValues.sheetIndex.Location] = location;
   listingInfo[contextValues.sheetIndex.Url] = url;
-  listingInfo[contextValues.sheetIndex.EventManager] = getColonSeparatedTextCT(htmlText, 'Event Manager');
+  listingInfo[contextValues.sheetIndex.EventManager] = item.event_manager + ': ' + item.collection_instruction;
   listingInfo[contextValues.sheetIndex.UploadDate] = new Date();
   newItemsForUpdate.push(listingInfo);
-}
-
-// Parse with text
-function getTitleCT(item) {
-  return getElementsByTagName(getElementsByTagName(item, 'h4')[0], 'a')[0].getText().trim();
-}
-
-function getFeeCT(htmlText) {
-  return getColonSeparatedTextCT(htmlText, 'Admin Fee');
-}
-
-function getDateCT(htmlText) {
-  return getColonSeparatedTextCT(htmlText, 'Event Date');
-}
-
-function getColonSeparatedTextCT(text, expression) {
-  var regexExpr = new RegExp(expression + '\\s*:[\\s\\S]*?</p>', 'im');
-  var match = text.match(regexExpr);
-  if (match) {
-    return trimHeader(trimHtml(match[0]));
-  }
-
-  return 'None';
 }
 
 // --------------------------------------------
