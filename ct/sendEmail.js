@@ -422,21 +422,34 @@ function processRatingItem(item) {
 
   var data = [];
   var noteArray;
-  var url = item.match(/<a href="(.*?)"/);
+  var itemText = item.toXmlString();
+  var url = itemText.match(/<a href="(.*?)"/);
   if (url) {
     url = getACUrl(url[1]);
     var rowIdx = contextValues.ratings[url];
-    var rating = item.match(/<img /g);
+    var rating = itemText.match(/<img /g);
     rating = rating ? rating.length : 0;
-    var numberReviews = item.match(/see\s+(\d*)\s+review/i);
+    var numberReviews = itemText.match(/see\s+(\d*)\s+review/i);
     if (numberReviews) {
       numberReviews = +numberReviews[1];
     }
 
-    var fullTitle = item.match(/<h3>(.*?)<\/h3>/);
-    if (fullTitle) {
-      fullTitle = fullTitle[1];
+    var color = 'darkgrey';
+    if (rating >= 5) {
+      if (numberReviews >= 40) {
+        color = 'forestgreen';
+      } else if (numberReviews >= 20) {
+        color = 'limegreen';
+      } else if (numberReviews >= 10) {
+        color = 'greenyellow';
+      } else {
+        color = 'black';
+      }
     }
+
+    var headerOpening = '<h4 style="color:' + color + ';">';
+
+    var fullTitle = getElementByClassName(item, 'text-ac')[0].getText();
 
     if (rowIdx !== undefined) {
       data = contextValues.ratingData[rowIdx];
@@ -455,15 +468,25 @@ function processRatingItem(item) {
         data[numberReviewsIdx] = numberReviews;
       }
 
+      // TODO: Remove after first run
+      // cleanup old location
+      // var lastIndex = fullTitle.lastIndexOf(' at ');
+      // var cleanedLocation = cleanupLocation(fullTitle.substr(lastIndex + 4).replace(/\s*\(the\)\s*$/i, ''));
+      // if (cleanedLocation !== data[locationIdx]) {
+      //   updated.push('Location: ' + boldWord(cleanedLocation) + '<em>(previously ' + boldWord(data[locationIdx]) + ')</em>');
+      //   noteArray[locationIdx] = new Date().toISOString() + ' overwrote: ' + data[locationIdx] + '\n' + noteArray[locationIdx];
+      //   data[locationIdx] = cleanedLocation;
+      // }
+
       if (updated.length) {
         updated.push('url: ' + url);
-        contextValues.updatedRatings.push('<h4>' + fullTitle + '  <small>' + rating + '</small></h4>' + updated.join('<br>'));
+        contextValues.updatedRatings.push(headerOpening + fullTitle + '  <small>' + rating + '</small></h4>' + updated.join('<br>'));
         contextValues.ratingMin = Math.min(rowIdx + 1, contextValues.ratingMin);
       }
     } else {
-      var ratingTitle = fullTitle.split(/\s+at\s+/);
-      var title = ratingTitle[0];
-      var location = ratingTitle[1];
+      var lastIndex = fullTitle.lastIndexOf(' at ');
+      var title = fullTitle.substr(0, lastIndex).trim();
+      var location = cleanupLocation(fullTitle.substr(lastIndex + 4).replace(/\s*\(the\)\s*$/i, ''));
       var newItems = [];
 
       const date = new Date();
@@ -487,7 +510,7 @@ function processRatingItem(item) {
 
       newItems.push('NumberReviews: ' + numberReviews)
       newItems.push('url: ' + url)
-      contextValues.newRatings.push('<h4>' + fullTitle + '  <small>' + rating + '</small></h4>' + newItems.join('<br>'));
+      contextValues.newRatings.push(headerOpening + fullTitle + '  <small>' + rating + '</small></h4>' + newItems.join('<br>'));
     }
   }
 }
@@ -605,27 +628,9 @@ function addOrUpdateAc(acUrl) {
       currentItem[contextValues.sheetIndex.Category] = boldWord(description) + '<br><em>(Previously ' + boldWord(itemInfo.category) + ')</em>';
     }
 
-    checkRatingAndDeletePreviousListing(itemInfo, url, currentItem, title);
-  } else if (!contextValues.alreadyDeleted[url]) {
-    var ImageElements = getElementByClassName(item, 'pic');
-    var ImageUrl = ImageElements[1] ? urls.acDomain + ImageElements[1].getAttribute('src').getValue() : '';
-
-    var venue = getElementByClassName(item, 'venue');
-    venue = trimHtml(venue[0].toXmlString()).trim();
-
-    var listingInfo = [];
-    listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl + '")';
-    listingInfo[contextValues.sheetIndex.Title] = title;
-    listingInfo[contextValues.sheetIndex.Rating] = rating;
-    listingInfo[contextValues.sheetIndex.LocationRating] = getLocationRating(venue);
-    listingInfo[contextValues.sheetIndex.AdminFee] = contextValues.freeAC[url] ? 'FREE' : '~£3.60';
-    listingInfo[contextValues.sheetIndex.Date] = date;
-    listingInfo[contextValues.sheetIndex.Category] = description;
-    listingInfo[contextValues.sheetIndex.Location] = venue;
-    listingInfo[contextValues.sheetIndex.Url] = url;
-    listingInfo[contextValues.sheetIndex.EventManager] = '';
-    listingInfo[contextValues.sheetIndex.UploadDate] = new Date();
-    newItemsForUpdate.push(listingInfo);
+    checkRatingAndDeletePreviousListing(itemInfo, acUrl, currentItem, title);
+  } else if (!contextValues.alreadyDeleted[acUrl]) {
+    newItemsForUpdate.push(currItem);
   }
 }
 
