@@ -222,8 +222,7 @@ function updateSheet() {
       var acPage = cleanupHTMLElement(acHTML);
 
       var acDoc = XmlService.parse(acPage).getRootElement();
-      var acTable = getElementByClassName(acDoc, 'container', true)[0];
-      var acItems = getElementByClassName(acTable, 'ladder-rung', true);
+      var acItems = getElementByClassName(acDoc, 'col-lg-3', true);
       acItems.forEach(parseAcItems);
       Object.keys(contextValues.currAcItems).forEach(addOrUpdateAc)
     } catch (e) {
@@ -533,7 +532,7 @@ function processRatingItem(item) {
 // AC Helpers
 // Figure out of the page which listings are new
 function parseAcItems(item) {
-  var header = getElementsByTagName(item, 'h4', true)[0];
+  var header = getElementsByTagName(item, 'h5', true)[0];
   var aElement = getElementsByTagName(header, 'a', true)[0];
   var title = aElement.getText().trim();
 
@@ -541,33 +540,37 @@ function parseAcItems(item) {
     return;
   }
 
-  var dateElement = getElementByClassName(item, 'text-center')[0];
+  var bookElement = getElementByClassName(item, 'ladder-book-now', true)[0];
+  var dateElement = getElementByClassName(bookElement, 'text-center', true)[0];
   var date = dateElement
-              .getText()
-              .replace('Check dates and availability...', '')
-              .replace(/- WAITLIST AVAILABLE|(OR)?\s*Get full price tickets at venue/gi, '')
+              .getValue()
+              .replace(/\s*shows from\s*/i, '')
               .replace(/\s+/g, ' ')
               .trim();
 
-  var dateText = dateElement.toXmlString();
-  if (isSold(dateText, 'isHtml')) {
+  var bookText = bookElement.getValue();
+  if (isSold(bookText)) {
     date += " SOLD OUT";
   }
 
   var url = getACUrl(aElement.getAttribute('href').getValue());
   var listingInfo = contextValues.currAcItems[url];
   if (listingInfo) {
-    // Update the date only
+    // Updated the date only with new date
     var previousDate = listingInfo[contextValues.sheetIndex.Date];
     listingInfo[contextValues.sheetIndex.Date] = previousDate + '; ' + date;
   } else if (!contextValues.alreadyDeleted[url]) {
     var ImageElements = getElementsByTagName(item, 'img', true)[0];
     var ImageUrl = ImageElements ? urls.acDomain + ImageElements.getAttribute('src').getValue() : '';
-    var description = getElementsByTagName(item, 'p', true)[0].getValue().trim();
-    var venue = getElementsByTagName(getElementsByTagName(item, 'h5', true)[0], 'a')[0].getText();
+
+    var contentElement = getElementByClassName(item, 'ladder-rung-content', true)[0];
+    var allContent = getElementsByTagName(contentElement, 'p', true);
+    var locationIdx = allContent.length - 2; // second from last typically
+    var description = contentElement.getValue().replace(/\bmore\s+info\b/i, '').replace(/\s+/g, ' ').trim();
+    var venue = allContent[locationIdx].getValue();
     var rating = getRating(title);
     listingInfo = [];
-    listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl + '")';
+    listingInfo[contextValues.sheetIndex.Image] = ImageUrl ? '=Image("' + ImageUrl + '")' : '';
     listingInfo[contextValues.sheetIndex.Title] = title;
     listingInfo[contextValues.sheetIndex.Rating] = rating;
     listingInfo[contextValues.sheetIndex.LocationRating] = getLocationRating(venue);
@@ -1373,10 +1376,10 @@ function getLocationRating(location) {
 
 function cleanupLocation(location, thoroughReplace) {
   if (location.replace) {
-    location = location.trim().replace(/\([\s\S]*|,[\s\S]*|\s-\s[\s\S]*|;[\s\S]*|^the\s*/ig, '');
+    location = location.trim().replace(/\([\s\S]*|,[\s\S]*|\s-\s[\s\S]*|;[\s\S]*|^the\s*|/ig, '');
 
     if (thoroughReplace) {
-      location = location.trim().replace(/\s\s[\s\S]*/, '');
+      location = location.trim().replace(/\s+[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/, '').replace(/\s\s[\s\S]*/, '');
     }
 
     return location.trim()
