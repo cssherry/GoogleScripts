@@ -1328,11 +1328,11 @@ function cleanupHTML(htmlText) {
   return htmlText.match(/<body[\s\S]*?<\/body>/)[0]
                  .replace(/<(no)?script[\s\S]*?<\/(no)?script>|<link[\s\S]*?<\/link>|<footer[\s\S]*?<\/footer>|<button[\s\S]*?<\/button>|&copy;/g, '')
                  .replace(/&nbsp;|<\/?span[\s\S]*?>|<table[\s\S]*?width=(?!")[\s\S]*?<\/table>/g, ' ') // ugh sf
-                 .replace(/<img(.*?)\/?>/, '<img$1 />') // ugh sf
+                 .replace(/<img([\s\S]*?)\/?>/ig, '<img$1 />') // ugh sf
                  .replace(/ & /g, ' and ') // ugh sf
                  .replace(/&/g, '&amp;') // ugh sf
                  .replace(/�/g, "'") // ugh sf
-                 .replace(/<br>/g, "<br/>") // ugh sf
+                 .replace(/<br>/ig, "<br/>") // ugh sf
                  .replace(/<!--\s*?(?!<)[\s\S]*?-->/g, '')
                  .replace(/<!--|-->/g, '');
 }
