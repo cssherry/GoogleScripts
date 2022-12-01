@@ -69,9 +69,9 @@ function updateSheet() {
   var fmPage = cleanupHTML(fmHTML.getContentText());
   var errorMessage = 'You do not have the required permissions to read topics within this forum';
   if (fmPage.indexOf(errorMessage) === -1) {
-    var fmDoc = XmlService.parse(fmPage);
+    var fmDoc = XmlService.parse(fmPage).getRootElement();
     var fmList = getElementsByTagName(fmDoc, 'table');
-    var fmItems = getElementsByTagName(fmList[5], 'tr');
+    var fmItems = getElementsByTagName(fmList[5], 'tr', true);
     fmItems.forEach(addOrUpdateFm);
   } else {
     removeAndEmail(urls.fmDomain);
@@ -87,7 +87,7 @@ function updateSheet() {
       return;
     }
 
-    var links = getElementsByTagName(item, 'a')
+    var links = getElementsByTagName(item, 'a', true)
     var aElement = links[0];
     var title = aElement.getText().trim();
     if (!title) {
@@ -152,8 +152,8 @@ function updateSheet() {
                                         },
                                       });
       var acReviewPage = cleanupHTMLElement(acReviewHTML);
-      var acReviewDoc = XmlService.parse(acReviewPage);
-      var ratingItems = getElementByClassName(acReviewDoc, 'bg-review');
+      var acReviewDoc = XmlService.parse(acReviewPage).getRootElement();
+      var ratingItems = getElementByClassName(acReviewDoc, 'bg-review', true);
       contextValues.newRatings = [];
       contextValues.updatedRatings = [];
       ratingItems.forEach(processRatingItem);
@@ -206,8 +206,8 @@ function updateSheet() {
       var acFreePage = cleanupHTMLElement(acFreeHTML);
       contextValues.freeAC = {};
 
-      var acFreeDoc = XmlService.parse(acFreePage);
-      var acFreeItem = getElementByClassName(acFreeDoc, 'newShowPane');
+      var acFreeDoc = XmlService.parse(acFreePage).getRootElement();
+      var acFreeItem = getElementByClassName(acFreeDoc, 'newShowPane', true);
       if (acFreeItem && acFreeItem.length) {
         acFreeItem.forEach(processFreeItems);
       }
@@ -221,9 +221,9 @@ function updateSheet() {
                                      });
       var acPage = cleanupHTMLElement(acHTML);
 
-      var acDoc = XmlService.parse(acPage);
-      var acTable = getElementByClassName(acDoc, 'container')[0];
-      var acItems = getElementByClassName(acTable, 'ladder-rung');
+      var acDoc = XmlService.parse(acPage).getRootElement();
+      var acTable = getElementByClassName(acDoc, 'container', true)[0];
+      var acItems = getElementByClassName(acTable, 'ladder-rung', true);
       acItems.forEach(parseAcItems);
       Object.keys(contextValues.currAcItems).forEach(addOrUpdateAc)
     } catch (e) {
@@ -248,8 +248,8 @@ function updateSheet() {
 
     var pbpError = 'images/EnquiryBlue.jpg';
     if (pbpPage.indexOf('Login') === -1) {
-      var pbpDoc = XmlService.parse(pbpPage);
-      var pbpItems = getElementByClassName(pbpDoc, 'showlist');
+      var pbpDoc = XmlService.parse(pbpPage).getRootElement();
+      var pbpItems = getElementByClassName(pbpDoc, 'showlist', true);
       contextValues.pbpByUrl = {};
       pbpItems.forEach(processPBP);
 
@@ -292,8 +292,8 @@ function updateSheet() {
                                        },
                                      });
       var sfPage = cleanupHTMLElement(sfHTML);
-      var sfDoc = XmlService.parse(sfPage);
-      getElementByClassName(sfDoc, 'showcasebox').forEach(addOrUpdateSf);
+      var sfDoc = XmlService.parse(sfPage).getRootElement();
+      getElementByClassName(sfDoc, 'showcasebox', true).forEach(addOrUpdateSf);
     }
   } catch (e) {
     printError(e)
@@ -437,14 +437,14 @@ function processRatingItem(item) {
 
   var data = [];
   var noteArray;
-  var itemText = item.toXmlString();
-  var url = itemText.match(/<a href="(.*?)"/);
+  var urlElement = getElementsByTagName(item, 'a', true)[0];
+  var url = urlElement && urlElement.getAttribute('href').getValue();
   if (url) {
-    url = getACUrl(url[1]);
+    url = getACUrl(url);
     var rowIdx = contextValues.ratings[url];
-    var rating = itemText.match(/<img /g);
+    var rating = getElementsByTagName(item, 'img', true);
     rating = rating ? rating.length : 0;
-    var numberReviews = itemText.match(/see\s+(\d*)\s+review/i);
+    var numberReviews = urlElement.getText().match(/see\s+(\d*)\s+review/i);
     if (numberReviews) {
       numberReviews = +numberReviews[1];
     }
@@ -464,7 +464,7 @@ function processRatingItem(item) {
 
     var headerOpening = '<h4 style="color:' + color + ';">';
 
-    var fullTitle = getElementByClassName(item, 'text-ac')[0].getText();
+    var fullTitle = getElementByClassName(item, 'text-ac', true)[0].getText();
 
     if (rowIdx !== undefined) {
       data = contextValues.ratingData[rowIdx];
@@ -533,8 +533,8 @@ function processRatingItem(item) {
 // AC Helpers
 // Figure out of the page which listings are new
 function parseAcItems(item) {
-  var header = getElementsByTagName(item, 'h4')[0];
-  var aElement = getElementsByTagName(header, 'a')[0];
+  var header = getElementsByTagName(item, 'h4', true)[0];
+  var aElement = getElementsByTagName(header, 'a', true)[0];
   var title = aElement.getText().trim();
 
   if (!title) {
@@ -561,10 +561,10 @@ function parseAcItems(item) {
     var previousDate = listingInfo[contextValues.sheetIndex.Date];
     listingInfo[contextValues.sheetIndex.Date] = previousDate + '; ' + date;
   } else if (!contextValues.alreadyDeleted[url]) {
-    var ImageElements = getElementsByTagName(item, 'img')[0];
+    var ImageElements = getElementsByTagName(item, 'img', true)[0];
     var ImageUrl = ImageElements ? urls.acDomain + ImageElements.getAttribute('src').getValue() : '';
-    var description = getElementsByTagName(item, 'p')[0].getText().trim();
-    var venue = getElementsByTagName(getElementsByTagName(item, 'h5')[0], 'a')[0].getText();
+    var description = getElementsByTagName(item, 'p', true)[0].getValue().trim();
+    var venue = getElementsByTagName(getElementsByTagName(item, 'h5', true)[0], 'a')[0].getText();
     var rating = getRating(title);
     listingInfo = [];
     listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl + '")';
@@ -653,9 +653,9 @@ function getACUrl(urlEnd) {
 }
 
 function processFreeItems(item) {
-  var containsFreeBooking = item.toXmlString().match(/no booking fee/i);
+  var containsFreeBooking = item.getValue().match(/no booking fee/i);
   if (containsFreeBooking) {
-    var freeUrl = getElementsByTagName(item, 'a')[0].getAttribute('href').getValue();
+    var freeUrl = getElementsByTagName(item, 'a', true)[0].getAttribute('href').getValue();
     contextValues.freeAC[getACUrl(freeUrl)] = true;
   }
 }
@@ -708,11 +708,11 @@ function addOrUpdatePbPItem(pbpItem) {
 }
 
 function getLocationTimePicture(rowEl, rowString, elData) {
-  var image = getElementsByTagName(rowEl, 'img')[0];
+  var image = getElementsByTagName(rowEl, 'img', true)[0];
   var imageUrl = image.getAttribute('src').getValue();
   var title = image.getAttribute('alt').getValue();
-  var locationHTML = getElementByClassName(rowEl, 'col-md-3')[0];
   var locationString = locationHTML.toXmlString();
+  var locationHTML = getElementByClassName(rowEl, 'col-md-3', true)[0];
   var location = trimHtml(locationString.replace(/<br.*?>|<\/h4>/g, '; ')).trim();
   var dateAll = getElementByClassName(rowEl, 'col-md-7')[0];
   var dateArray = getElementByClassName(dateAll, 'row').map(function(row) {
@@ -740,13 +740,13 @@ function getFullPbpUrl(locationString) {
 // SF Helpers
 // Figure out if the page which listings are new
 function addOrUpdateSf(item) {
-  var title = getElementsByTagName(item, 'h2');
+  var title = getElementsByTagName(item, 'h2', true);
   title = title[0].getText().trim();
   if (!title) {
     return;
   }
 
-  var aElement = getElementsByTagName(item, 'a')[0];
+  var aElement = getElementsByTagName(item, 'a', true)[0];
   var url = aElement.getAttribute('href').getValue().trim();
   var itemInfo = contextValues.previousListings[url];
   if (itemInfo) {
@@ -755,8 +755,8 @@ function addOrUpdateSf(item) {
     var itemHtml = item.toXmlString();
     var ImageUrl = itemHtml.match(/background-image:url\(.*?(http:\/\/.*?\.jpg)/i);
 
-    var date = getElementByClassName(item, 'date-event');
-    var description = getElementByClassName(item, 'internal_content');
+    var date = getElementByClassName(item, 'date-event', true);
+    var description = getElementByClassName(item, 'internal_content', true);
 
     var detailPage = cleanupHTMLElement(UrlFetchApp.fetch(url));
     var detailError = 'Sorry, this offer has now ended';
@@ -1231,23 +1231,27 @@ function getImageUrl(imageFormula) {
 }
 
 // Work with HTML
-function getElementsByTagName(document, tagName, onlyFirstLevel) {
-  var baseElement = document.getRootElement();
-  var data = baseElement.getChildren();
-  var elList = baseElement.getChildren(tagName);
+function getElementsByTagName(baseElement, tagName, onlyFirstLevel) {
+  var data = baseElement.getChildren(tagName);
+
+  var elList = baseElement.getChildren();
   var i = elList.length;
   while (i-- && (!onlyFirstLevel || !data.length)) {
     // (Recursive) Check each child, in document order.
-    var found = getElementsByTagName(elList[i], tagName);
-    if (found) {
+    var found = getElementsByTagName(elList[i], tagName, onlyFirstLevel);
+    if (found.length) {
       data = data.concat(found);
+
+      if (onlyFirstLevel) {
+        return data;
+      }
     }
   }
 
   return data;
 }
 
-function getElementByClassName(document, className) {
+function getElementByClassName(baseElement, className, stopAfterFind) {
   function containsClass(element) {
     var currClass = element.getAttribute('class');
     if (!currClass) {
@@ -1260,16 +1264,23 @@ function getElementByClassName(document, className) {
            currClass.indexOf(className + ' ') !== -1;
   }
 
-  var baseElement = document.getRootElement();
   var elList = baseElement.getChildren();
-  var data = baseElement.filter(containsClass);
+  var data = elList.filter(containsClass);
+
+  if (stopAfterFind && data.length) {
+    return data;
+  }
 
   var i = elList.length;
   while (i--) {
     // (Recursive) Check each child, in document order.
-    var found = getElementByClassName(elList[i], className);
-    if (found) {
+    var found = getElementByClassName(elList[i], className, stopAfterFind);
+    if (found.length) {
       data = data.concat(found);
+
+      if (stopAfterFind) {
+        return data;
+      }
     }
   }
 
@@ -1315,8 +1326,9 @@ function cleanupHTML(htmlText) {
   return htmlText.match(/<body[\s\S]*?<\/body>/)[0]
                  .replace(/<(no)?script[\s\S]*?<\/(no)?script>|<link[\s\S]*?<\/link>|<footer[\s\S]*?<\/footer>|<button[\s\S]*?<\/button>|&copy;/g, '')
                  .replace(/&nbsp;|<\/?span[\s\S]*?>|<table[\s\S]*?width=(?!")[\s\S]*?<\/table>/g, ' ') // ugh sf
-                 .replace(/<img([\s\S]*?)(?!\/)>/g, '<img$1 />') // ugh sf
+                 .replace(/<img(.*?)\/?>/, '<img$1 />') // ugh sf
                  .replace(/ & /g, ' and ') // ugh sf
+                 .replace(/&/g, '&amp;') // ugh sf
                  .replace(/�/g, "'") // ugh sf
                  .replace(/<br>/g, "<br/>") // ugh sf
                  .replace(/<!--\s*?(?!<)[\s\S]*?-->/g, '')
