@@ -888,6 +888,7 @@ function sortByWeight(a, b) {
 function sortEmailItems(items) {
   var locationIdx = contextValues.sheetIndex.Location;
   var categoryIdx = contextValues.sheetIndex.Category;
+  var feeIdx = contextValues.sheetIndex.AdminFee;
   var locationSearch = getRegexpAndWeight(contextValues.sheetNotes[0][locationIdx]);
   var locationWords = locationSearch.regexpStr.split('|');
   var locationRegexp = new RegExp('\\b' + locationWords.join('\\b|\\b') + '\\b', 'i');
@@ -896,18 +897,27 @@ function sortEmailItems(items) {
   var pattern = '<em style="color: darkred;">$&</em>';
   var numberFound = 0;
 
-  var currloc, currcat, locationFound, catFound, weight;
+  var currloc, currcat, locationFound, catFound, currFee, currFeeMatch, currFeeWeight;
   items.map(function addRating(itm) {
     currloc = itm[locationIdx];
     currcat = itm[categoryIdx];
+    currFee = itm[feeIdx];
     locationFound = currloc.match(locationRegexp) ? locationSearch.weight : 0;
     catFound = currcat.match(categoryRegexp)
     catFound = catFound ? catFound.length : 0;
-    weight = locationFound + catFound * categorySearch.weight;
+
+    // Put events that cost a lot at the bottom
+    currFeeMatch = currFee.match(/\d+/);
+    currFee = currFeeMatch ? +currFeeMatch[0] : 0;
+    currFeeWeight = currFee ? 0 : 1; // Add weight for free events
+    weight = currFee < 10 ? locationFound + catFound * categorySearch.weight + currFeeWeight: -1;
 
     // Update email values
     itm[locationIdx] = currloc.replace(locationRegexp, pattern);
     itm[categoryIdx] = currcat.replace(categoryRegexp, pattern);
+    if (currFeeWeight) {
+      itm[feeIdx] = pattern.replace('$&', itm[feeIdx]);
+    }
 
     // add weight
     itm.weight = weight;
