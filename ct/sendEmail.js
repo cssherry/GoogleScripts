@@ -244,7 +244,7 @@ function updateSheet() {
     var pbpPage = cleanupHTMLElement(pbpHTML);
 
     var pbpError = 'images/EnquiryBlue.jpg';
-    if (pbpPage.indexOf('Click Here for Membership Enquiry') === -1) {
+    if (pbpPage.indexOf('Login') === -1) {
       var pbpDoc = Xml.parse(pbpPage, true).getElement();
       var pbpItems = getElementByClassName(pbpDoc, 'showlist');
       contextValues.pbpByUrl = {};
