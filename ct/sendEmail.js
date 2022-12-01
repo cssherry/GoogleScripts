@@ -1,6 +1,8 @@
 var startHour = 6; // This is the hour ratings will be calculated
+var endHour = 23;
 var contextValues = {
   alreadyDeleted: {},
+  currAcItems: {},
 };
 
 var fetchPayload = {
@@ -20,7 +22,7 @@ function updateSheet() {
   // Only run after 7 AM or before 11 PM
   var currentDate = new Date();
   var currentHour = currentDate.getHours();
-  if (currentHour < startHour || currentHour >= 23) {
+  if (currentHour < startHour || currentHour >= endHour) {
     return;
   }
 
@@ -140,13 +142,15 @@ function updateSheet() {
     var customTimeToRun = currentHour % contextValues.sheetData[0][lastIdx] === 0;
     if (isFirstRun || customTimeToRun) {
       contextValues.ratingMin = contextValues.ratingData.length + 1;
-      var acReviewString = UrlFetchApp.fetch(urls.acReviews,
+      var acReviewHTML = UrlFetchApp.fetch(urls.acReviews,
                                       {
                                         headers: {
                                           Cookie: fetchPayload.acCookie,
                                         },
                                       });
-      var ratingItems = acReviewString.getContentText().match(/<table.*?>[\s\S]*?<\/table>/g);
+      var acReviewPage = cleanupHTMLElement(acReviewHTML);
+      var acReviewDoc = Xml.parse(acReviewPage, true).getElement();
+      var ratingItems = getElementByClassName(acReviewDoc, 'bg-review');
       contextValues.newRatings = [];
       contextValues.updatedRatings = [];
       ratingItems.forEach(processRatingItem);
@@ -186,37 +190,43 @@ function updateSheet() {
       return;
     }
 
-    // --------------------------------------------
-    // AC LISTINGS
-    // Process free items
-    var acFreeHTML = UrlFetchApp.fetch(urls.acFree,
-                                    {
-                                      headers: {
-                                        Cookie: fetchPayload.acCookie,
-                                      },
-                                    });
-    var acFreePage = cleanupHTMLElement(acFreeHTML);
-    contextValues.freeAC = {};
+    try {
+      // --------------------------------------------
+      // AC LISTINGS
+      // Process free items
+      var acFreeHTML = UrlFetchApp.fetch(urls.acFree,
+                                         {
+                                           headers: {
+                                             Cookie: fetchPayload.acCookie,
+                                           },
+                                         });
+      var acFreePage = cleanupHTMLElement(acFreeHTML);
+      contextValues.freeAC = {};
 
-    var acFreeDoc = Xml.parse(acFreePage, true).getElement();
-    var acFreeItem = getElementByClassName(acFreeDoc, 'newShowPane');
-    if (acFreeItem && acFreeItem.length) {
-      acFreeItem.forEach(processFreeItems);
+      var acFreeDoc = Xml.parse(acFreePage, true).getElement();
+      var acFreeItem = getElementByClassName(acFreeDoc, 'newShowPane');
+      if (acFreeItem && acFreeItem.length) {
+        acFreeItem.forEach(processFreeItems);
+      }
+
+      // Process new items
+      var acHTML = UrlFetchApp.fetch(urls.acMain,
+                                     {
+                                       headers: {
+                                         Cookie: fetchPayload.acCookie,
+                                       },
+                                     });
+      var acPage = cleanupHTMLElement(acHTML);
+
+      var acDoc = Xml.parse(acPage, true).getElement();
+      var acTable = getElementByClassName(acDoc, 'container')[0];
+      var acItems = getElementByClassName(acTable, 'ladder-rung');
+      acItems.forEach(parseAcItems);
+      Object.keys(contextValues.currAcItems).forEach(addOrUpdateAc)
+    } catch (e) {
+      printError(e)
+      removeAndEmail(urls.acDomain, 'errorParsingPage');
     }
-
-    // Process new items
-    var acHTML = UrlFetchApp.fetch(urls.acMain,
-                                    {
-                                      headers: {
-                                        Cookie: fetchPayload.acCookie,
-                                      },
-                                    });
-    var acPage = cleanupHTMLElement(acHTML);
-
-    var acDoc = Xml.parse(acPage, true).getElement();
-    var acTable = getElementByClassName(acDoc, 'page_content')[0];
-    var acItems = getElementByClassName(acTable, 'ladderrung');
-    acItems.forEach(addOrUpdateAc);
   } else {
     removeAndEmail(urls.acDomain);
   }
@@ -482,32 +492,80 @@ function processRatingItem(item) {
 // --------------------------------------------
 // AC Helpers
 // Figure out of the page which listings are new
-function addOrUpdateAc(item) {
-  var header = getElementByClassName(item, 'showtitle')
-  var aElement = getElementsByTagName(header[0], 'a')[0];
+function parseAcItems(item) {
+  var header = getElementsByTagName(item, 'h4')[0];
+  var aElement = getElementsByTagName(header, 'a')[0];
   var title = aElement.getText().trim();
-  var soldOut = getElementByClassName(item, 'soldOut');
 
   if (!title) {
     return;
   }
 
-  var rating = getRating(title);
-  if (soldOut.length) {
+  var dateElement = getElementByClassName(item, 'text-center')[0];
+  var date = dateElement
+              .getText()
+              .replace('Check dates and availability...', '')
+              .replace(/- WAITLIST AVAILABLE|(OR)?\s*Get full price tickets at venue/gi, '')
+              .replace(/\s+/g, ' ')
+              .trim();
+
+  var dateText = dateElement.toXmlString();
+  if (isSold(dateText, 'isHtml')) {
+    date += " SOLD OUT";
+  }
+
+  var url = getACUrl(aElement.getAttribute('href').getValue());
+  var listingInfo = contextValues.currAcItems[url];
+  if (listingInfo) {
+    // Update the date only
+    var previousDate = listingInfo[contextValues.sheetIndex.Date];
+    listingInfo[contextValues.sheetIndex.Date] = previousDate + '; ' + date;
+  } else if (!contextValues.alreadyDeleted[url]) {
+    var ImageElements = getElementsByTagName(item, 'img')[0];
+    var ImageUrl = ImageElements ? urls.acDomain + ImageElements.getAttribute('src').getValue() : '';
+    var description = getElementsByTagName(item, 'p')[0].getText().trim();
+    var venue = getElementsByTagName(getElementsByTagName(item, 'h5')[0], 'a')[0].getText();
+    var rating = getRating(title);
+    listingInfo = [];
+    listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl + '")';
+    listingInfo[contextValues.sheetIndex.Title] = title;
+    listingInfo[contextValues.sheetIndex.Rating] = rating;
+    listingInfo[contextValues.sheetIndex.LocationRating] = getLocationRating(venue);
+    listingInfo[contextValues.sheetIndex.AdminFee] = contextValues.freeAC[url] ? 'FREE' : '~£3.60';
+    listingInfo[contextValues.sheetIndex.Date] = date;
+    listingInfo[contextValues.sheetIndex.Category] = description;
+    listingInfo[contextValues.sheetIndex.Location] = venue;
+    listingInfo[contextValues.sheetIndex.Url] = url;
+    listingInfo[contextValues.sheetIndex.EventManager] = '';
+    listingInfo[contextValues.sheetIndex.UploadDate] = new Date();
+    contextValues.currAcItems[url] = listingInfo;
+  }
+}
+
+function isSold(singleDate, isHtml) {
+  if (isHtml) {
+    return singleDate.match(/>sold out</i);
+  }
+
+  return singleDate.match(/SOLD OUT$/i);
+}
+
+function addOrUpdateAc(acUrl) {
+  var currItem = contextValues.currAcItems[acUrl];
+  var itemInfo = contextValues.previousListings[acUrl];
+
+  // Update title depending on whether it's sold out
+  var title = currItem[contextValues.sheetIndex.Title];
+  var date = currItem[contextValues.sheetIndex.Date];
+  var isSoldOut = date.split(/\s*;\s+/g).every(isSold);
+  if (isSoldOut) {
     title += ' (SOLD OUT)';
   }
 
-  var date = getElementByClassName(item, 'dateTime')[0]
-              .getText()
-              .replace('Check dates and availability...', '')
-              .trim();
-  var description = getElementByClassName(item, 'showdescription')[0].getText().trim();
-  var url = getACUrl(aElement.getAttribute('href').getValue());
-  var itemInfo = contextValues.previousListings[url];
-  var currentItem = [];
   if (itemInfo) {
-    var isNowFree = contextValues.freeAC[url] && itemInfo[contextValues.sheetIndex.AdminFee] !== 'FREE';
-    var isNowPaid = !contextValues.freeAC[url] && itemInfo[contextValues.sheetIndex.AdminFee] === 'FREE';
+    var currentItem = [];
+    var isNowFree = contextValues.freeAC[acUrl] && itemInfo[contextValues.sheetIndex.AdminFee] !== 'FREE';
+    var isNowPaid = !contextValues.freeAC[acUrl] && itemInfo[contextValues.sheetIndex.AdminFee] === 'FREE';
     if (isNowFree || isNowPaid) {
       var newFee = isNowFree ? 'FREE' : '~£3.60';
       var oldFee = isNowFree ? '~£3.60' : 'FREE';
@@ -520,6 +578,19 @@ function addOrUpdateAc(item) {
       currentItem[contextValues.sheetIndex.Date] = boldWord(date) + '<br><em>(Previously ' + boldWord(itemInfo.date) + ')</em>';
     }
 
+    if (title !== itemInfo.title) {
+      markCellForUpdate(itemInfo.row, 'Title', title);
+      currentItem[contextValues.sheetIndex.title] = boldWord(title) + '<br><em>(Previously ' + boldWord(itemInfo.title) + ')</em>';
+    }
+
+    // Fill out incorrectly empty locations
+    var location = currItem[contextValues.sheetIndex.Location];
+    if (location && location !== itemInfo.location) {
+      markCellForUpdate(itemInfo.row, 'Location', location);
+      currentItem[contextValues.sheetIndex.Date] = boldWord(location) + '<br><em>(Previously ' + boldWord(itemInfo.location) + ')</em>';
+    }
+
+    var description = currItem[contextValues.sheetIndex.Category];
     if (description !== itemInfo.category &&
         description !== "'" + itemInfo.category &&
         description !== "'" + itemInfo.category + "'" &&
