@@ -1071,6 +1071,10 @@ function checkRatingAndDeletePreviousListing(itemInfo, url, currentItem, title) 
       currentItem[contextValues.sheetIndex.Title] = title;
     }
 
+    if (!currentItem[contextValues.sheetIndex.AdminFee]) {
+      currentItem[contextValues.sheetIndex.AdminFee] = itemInfo.fee;
+    }
+
     if (!currentItem[contextValues.sheetIndex.Date]) {
       currentItem[contextValues.sheetIndex.Date] = itemInfo.date;
     }
