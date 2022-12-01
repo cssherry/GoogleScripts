@@ -291,10 +291,18 @@ function processMessage(messages) {
 
 // Check if it's an observation
 function isObservation(postData) {
-  if (postData.embed.observationId) {
-    GLOBALS_VARIABLES.graphqlQuery.variables.observationIds.push(
-      postData.embed.observationId
-    );
+  const observationId = postData.embed?.observationId;
+  if (observationId) {
+    if (
+      !GLOBALS_VARIABLES.graphqlQuery.variables.observationIds.includes(
+        observationId
+      )
+    ) {
+      GLOBALS_VARIABLES.graphqlQuery.variables.observationIds.push(
+        observationId
+      );
+    }
+
     return true;
   }
 
