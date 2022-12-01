@@ -532,7 +532,9 @@ function getAndParseObservations() {
       ? `\nNext Steps: ${observation.nextStep.body}`
       : '';
 
-    newMessage[contentIdx] = `${observation.remark.body}${areas}${nextSteps}`;
+    newMessage[
+      contentIdx
+    ] = `New Observation:\n${observation.remark.body}${areas}${nextSteps}`;
     addInfo(newMessage, observation);
 
     tryCatchTimeout(() => {
