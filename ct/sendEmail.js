@@ -679,7 +679,7 @@ function addOrUpdatePbPItem(pbpItem) {
 
     checkRatingAndDeletePreviousListing(itemInfo, url, currentItem, title);
   } else if (!contextValues.alreadyDeleted[url]) {
-    pbpItem[contextValues.sheetIndex.AdminFee] = '~£2';
+    pbpItem[contextValues.sheetIndex.AdminFee] = '~£3';
     pbpItem[contextValues.sheetIndex.Category] = '';
     pbpItem[contextValues.sheetIndex.EventManager] = '';
     pbpItem[contextValues.sheetIndex.UploadDate] = new Date();
