@@ -306,7 +306,6 @@ function updateSheet() {
   if (mainPage) {
     try {
       var ctJSON = mainPage.match(/var\s+res\s*=\s*([\s\S]*?}]);/);
-      console.log(ctJSON);
       var jsonWithoutMuchSpace = ctJSON[1].replace(/\s+/g," ");
       var items = JSON.parse(jsonWithoutMuchSpace)
       items.forEach(addOrUpdateCT);
