@@ -566,7 +566,10 @@ function parseAcItems(item) {
     var allContent = getElementsByTagName(contentElement, 'p', true);
     var locationIdx = allContent.length - 2; // second from last typically
     var description = contentElement.getValue().replace(/\bmore\s+info\b/i, '').replace(/\s+/g, ' ').trim();
-    var venue = allContent[locationIdx].getValue();
+
+    // Add semi colon in front of zipcode for easier parsing later
+    // Zipcode cleanup if needed: .replace(/\s+[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/, '')
+    var venue = allContent[locationIdx].getValue().trim().replace(/\s+([A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2})$/, '; $1');
     var rating = getRating(title);
     listingInfo = [];
     listingInfo[contextValues.sheetIndex.Image] = ImageUrl ? '=Image("' + ImageUrl + '")' : '';
@@ -1378,7 +1381,7 @@ function cleanupLocation(location, thoroughReplace) {
     location = location.trim().replace(/\([\s\S]*|,[\s\S]*|\s-\s[\s\S]*|;[\s\S]*|^the\s*|/ig, '');
 
     if (thoroughReplace) {
-      location = location.trim().replace(/\s+[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/, '').replace(/\s\s[\s\S]*/, '');
+      location = location.trim().replace(/\s\s[\s\S]*/, '');
     }
 
     return location.trim()
