@@ -573,12 +573,19 @@ function parseAcItems(item) {
     var contentElement = getElementByClassName(item, 'ladder-rung-content', true)[0];
     var allContent = getElementsByTagName(contentElement, 'p', true);
     var locationIdx = allContent.length - 2; // second from last typically
-    var description = contentElement.getValue().replace(/\bmore\s+info\b/i, '').replace(/\s+/g, ' ').trim();
 
     // Add semi colon in front of zipcode for easier parsing later
     // Zipcode cleanup if needed: .replace(/\s+[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/, '')
     // https://stackoverflow.com/questions/164979/regex-for-matching-uk-postcodes
-    var venue = allContent[locationIdx].getValue().trim().replace(/\s+([A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2})$/, '; $1');
+    function getPostcodeRegexp(isAtEnd) {
+      const endChar = isAtEnd ? '$' : '\\b';
+      return new RegExp(`\\s+([A-Z]{1,2}\\d[A-Z\\d]? ?\\d[A-Z]{2})${endChar}`);
+    }
+
+    getElementByClassName(contentElement, 'newShowStar', true).detach();
+    var description = contentElement.getValue().replace(/\bmore\s+info\b/i, '').replace(/\s+/g, ' ').replace(getPostcodeRegexp(false), ': ').trim();
+
+    var venue = allContent[locationIdx].getValue().trim().replace(getPostcodeRegexp(true), '; $1');
     var rating = getRating(title);
     listingInfo = [];
     listingInfo[contextValues.sheetIndex.Image] = ImageUrl ? '=Image("' + ImageUrl + '")' : '';
