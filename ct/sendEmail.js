@@ -577,6 +577,7 @@ function parseAcItems(item) {
 
     // Add semi colon in front of zipcode for easier parsing later
     // Zipcode cleanup if needed: .replace(/\s+[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/, '')
+    // https://stackoverflow.com/questions/164979/regex-for-matching-uk-postcodes
     var venue = allContent[locationIdx].getValue().trim().replace(/\s+([A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2})$/, '; $1');
     var rating = getRating(title);
     listingInfo = [];
