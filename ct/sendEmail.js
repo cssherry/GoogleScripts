@@ -595,12 +595,8 @@ function parseAcItems(item) {
   }
 }
 
-function isSold(singleDate, isHtml) {
-  if (isHtml) {
-    return singleDate.match(/>sold out</i);
-  }
-
-  return singleDate.match(/SOLD OUT$/i);
+function isSold(singleDate) {
+  return singleDate.match(/\bsold\s+out\b/i);
 }
 
 function addOrUpdateAc(acUrl) {
