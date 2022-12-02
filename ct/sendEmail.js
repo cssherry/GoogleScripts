@@ -223,11 +223,16 @@ function updateSheet() {
 
       var acDoc = XmlService.parse(acPage).getRootElement();
       var acItems = getElementByClassName(acDoc, 'col-lg-3', true);
+
+      if (!acItems.length) {
+        throw new Error('Nothing found for AC -- something is probably wrong');
+      }
+
       acItems.forEach(parseAcItems);
       Object.keys(contextValues.currAcItems).forEach(addOrUpdateAc)
     } catch (e) {
       printError(e)
-      removeAndEmail(urls.acDomain, 'errorParsingPage');
+      removeAndEmail(urls.acDomain, `errorParsingPage: ${e}`);
     }
   } else {
     removeAndEmail(urls.acDomain);
@@ -244,11 +249,14 @@ function updateSheet() {
                                       },
                                     });
     var pbpPage = cleanupHTMLElement(pbpHTML);
-
-    var pbpError = 'images/EnquiryBlue.jpg';
     if (pbpPage.indexOf('Login') === -1) {
-      var pbpDoc = XmlService.parse(pbpPage).getRootElement();
-      var pbpItems = getElementByClassName(pbpDoc, 'showlist', true);
+      var pbpDoc = XmlService.parse(pbpPage.match(/<main[\s\S]*<\/main>/)[0]).getRootElement();
+      var pbpItems = getElementByClassName(getElementByClassName(pbpDoc, 'col-lg-12', true)[0], 'row', true);
+
+      if (!pbpItems.length) {
+        throw new Error('Nothing found for PbP -- something is probably wrong');
+      }
+
       contextValues.pbpByUrl = {};
       pbpItems.forEach(processPBP);
 
@@ -262,7 +270,7 @@ function updateSheet() {
     }
   } catch (e) {
     printError(e)
-    removeAndEmail(urls.pbpDomain, 'errorLoadingPage');
+    removeAndEmail(urls.pbpDomain, `errorParsingPage: ${e}`);
   }
 
   // --------------------------------------------
@@ -296,7 +304,7 @@ function updateSheet() {
     }
   } catch (e) {
     printError(e)
-    removeAndEmail(urls.sf, 'errorLoadingPage');
+    removeAndEmail(urls.sf, `errorParsingPage: ${e}`);
   }
 
   // --------------------------------------------
@@ -311,7 +319,7 @@ function updateSheet() {
       items.forEach(addOrUpdateCT);
     } catch (e) {
       printError(e)
-      removeAndEmail(urls.ctDomain, 'errorParsingPage');
+      removeAndEmail(urls.ctDomain, `errorParsingPage: ${e}`);
     }
   } else {
     removeAndEmail(urls.ctDomain);
@@ -1189,12 +1197,12 @@ function removeAndEmail(domain, specificErrorMessage) {
   // If it hasn't been emailed today
   var lastRow = contextValues.errorData[contextValues.lastErrorRow - 1];
   var lastEmailedDate = lastRow[contextValues.errorDateIdx];
-  var sameErrorMessage = lastRow[contextValues.errorSitesIdx] === domain && lastRow[contextValues.errorIndex.errorMessage] === specificErrorMessage;
+  var sameErrorMessage = lastRow[contextValues.errorSitesIdx].includes(domain) && lastRow[contextValues.errorIndex.errorMessage] === specificErrorMessage;
   if ((specificErrorMessage && !sameErrorMessage) || !lastEmailedDate.toDateString || lastEmailedDate.toDateString() !== new Date().toDateString()) {
     var updateMessage = 'Update ' + domain + ' Token';
 
     if (specificErrorMessage) {
-      updateMessage = 'Error loading page for :' + domain + ' (' + specificErrorMessage + ')';
+      updateMessage = 'Error loading page for : ' + domain + ' (' + specificErrorMessage + ')';
     }
 
     var email = MailApp.sendEmail({
@@ -1215,7 +1223,7 @@ function removeAndEmail(domain, specificErrorMessage) {
   var currentData = contextValues.errorData[contextValues.lastErrorRow - 1][contextValues.errorSitesIdx];
   if (specificErrorMessage || !currentData || currentData.indexOf(domain) === -1) {
     var cells = contextValues.errorSheet.getRange(contextValues.lastErrorRow, 1, 1, 3);
-    currentData = currentData ? currentData + ', ' + domain : domain;
+    currentData = currentData && !currentData.includes(domain) ? currentData + ', ' + domain : domain;
     cells.setValues([[new Date(), currentData, specificErrorMessage || 'updateToken']]);
   }
 }
