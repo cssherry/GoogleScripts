@@ -454,7 +454,7 @@ function processRatingItem(item) {
 
     if (rowIdx !== undefined) {
       const currData = contextValues.ratingData[rowIdx];
-      if (currData[yearIdx] === currYear) {
+      if (currData[yearIdx] >= currYear - 1) {
         data = currData;
       }
     }
