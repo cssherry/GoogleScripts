@@ -153,7 +153,7 @@ function updateSheet() {
                                       });
       var acReviewPage = cleanupHTMLElement(acReviewHTML);
       var acReviewDoc = XmlService.parse(acReviewPage).getRootElement();
-      var ratingItems = getElementByClassName(acReviewDoc, 'bg-review', true);
+      var ratingItems = getElementByClassName(acReviewDoc, 'mt-3', true);
       contextValues.newRatings = [];
       contextValues.updatedRatings = [];
       ratingItems.forEach(processRatingItem);
@@ -431,6 +431,9 @@ function processOldLocationRatings(ratingData, idx) {
 }
 
 function processRatingItem(item) {
+  item = getElementByClassName(item, 'bg-review', true)[0];
+  if (!item) return;
+
   var fullTitleIdx = contextValues.ratingIndex.FullTitle;
   var titleIdx = contextValues.ratingIndex.Title;
   var locationIdx = contextValues.ratingIndex.Location;
@@ -448,6 +451,14 @@ function processRatingItem(item) {
   if (url) {
     url = getACUrl(url);
     var rowIdx = contextValues.ratings[url];
+
+    if (rowIdx !== undefined) {
+      const currData = contextValues.ratingData[rowIdx];
+      if (currData[yearIdx] === currYear) {
+        data = currData;
+      }
+    }
+
     var rating = getElementsByTagName(item, 'img', true);
     rating = rating ? rating.length : 0;
     var numberReviews = urlElement.getText().match(/see\s+(\d*)\s+review/i);
@@ -472,8 +483,7 @@ function processRatingItem(item) {
 
     var fullTitle = getElementByClassName(item, 'text-ac', true)[0].getText();
 
-    if (rowIdx !== undefined) {
-      data = contextValues.ratingData[rowIdx];
+    if (data.length) {
       noteArray = contextValues.ratingNotes[rowIdx];
       var updated = [];
 
@@ -586,7 +596,7 @@ function parseAcItems(item) {
     var description = contentElement.getValue().replace(/\bmore\s+info\b/i, '').replace(/\s+/g, ' ').replace(getPostcodeRegexp(false), ': ').trim();
 
     var venue = allContent[locationIdx].getValue().trim().replace(getPostcodeRegexp(true), '; $1');
-    var rating = getRating(title);
+    var rating = getRating(title, url);
     listingInfo = [];
     listingInfo[contextValues.sheetIndex.Image] = ImageUrl ? '=Image("' + ImageUrl + '")' : '';
     listingInfo[contextValues.sheetIndex.Title] = title;
@@ -1103,9 +1113,22 @@ function archiveExpiredItems() {
 // GENERAL HELPER FUNCTIONS
 // =====================================
 
-function getRating(title) {
-  title = cleanupTitle(title);
-  var currItem = contextValues.ratings[title];
+function getRating(title, acShowUrl) {
+  var currItem;
+  if (acShowUrl) {
+    let id = acShowUrl.match(/recid=(\d+)/);
+    if (id) {
+      const reviewUrl = urls.acReviews.replace(/\?year=.*/, `?sid=${id[1]}`).replace('viewReview', 'viewShowReview');
+      const ratingIdx = contextValues.ratings[reviewUrl];
+      currItem = contextValues.ratingData[ratingIdx];
+    }
+  }
+
+  if (!currItem) {
+    title = cleanupTitle(title);
+    currItem = contextValues.ratings[title];
+  }
+
   return currItem ?
          currItem[contextValues.ratingIndex.Rating] + '/5 (' +
             currItem[contextValues.ratingIndex.NumberReviews] + ' reviews - ' +
