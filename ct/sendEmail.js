@@ -592,7 +592,7 @@ function parseAcItems(item) {
       return new RegExp(`\\s+([A-Z]{1,2}\\d[A-Z\\d]? ?\\d[A-Z]{2})${endChar}`);
     }
 
-    getElementByClassName(contentElement, 'newShowStar', true).detach();
+    getElementByClassName(contentElement, 'newShowStar', true)[0]?.detach();
     var description = contentElement.getValue().replace(/\bmore\s+info\b/i, '').replace(/\s+/g, ' ').replace(getPostcodeRegexp(false), ': ').trim();
 
     var venue = allContent[locationIdx].getValue().trim().replace(getPostcodeRegexp(true), '; $1');
@@ -1373,7 +1373,7 @@ function cleanupHTMLElement(html) {
 function cleanupHTML(htmlText) {
   return htmlText.match(/<body[\s\S]*?<\/body>/)[0]
                  .replace(/<(no)?script[\s\S]*?<\/(no)?script>|<link[\s\S]*?<\/link>|<footer[\s\S]*?<\/footer>|<button[\s\S]*?<\/button>|&copy;/g, '')
-                 .replace(/&nbsp;|<\/?span[\s\S]*?>|<table[\s\S]*?width=(?!")[\s\S]*?<\/table>/g, ' ') // ugh sf
+                 .replace(/&nbsp;|<\/?span[\s\S]*?>|<table[\s\S]+?<\/table>/g, ' ') // ugh sf
                  .replace(/<img([\s\S]*?)\/?>/ig, '<img$1 />') // ugh sf
                  .replace(/ & /g, ' and ') // ugh sf
                  .replace(/&/g, '&amp;') // ugh sf
