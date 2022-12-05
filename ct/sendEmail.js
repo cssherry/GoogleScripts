@@ -1217,6 +1217,7 @@ function removeAndEmail(domain, specificErrorMessage) {
     });
 
     contextValues.lastErrorRow++;
+    contextValues.errorData.push([new Date(), domain, specificErrorMessage || 'updateToken'])
   }
 
   // Add current page to list of pages needing update
@@ -1228,6 +1229,7 @@ function removeAndEmail(domain, specificErrorMessage) {
   if (specificErrorMessage || !currentData || currentData.indexOf(domain) === -1) {
     var cells = contextValues.errorSheet.getRange(contextValues.lastErrorRow, 1, 1, 3);
     currentData = currentData && !currentData.includes(domain) ? currentData + ', ' + domain : domain;
+    lastRowData[1] = currentData;
     cells.setValues([[new Date(), currentData, specificErrorMessage || 'updateToken']]);
   }
 }
