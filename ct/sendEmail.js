@@ -152,8 +152,7 @@ function updateSheet() {
                                         },
                                       });
       var acReviewPage = cleanupHTMLElement(acReviewHTML);
-      var acReviewDoc = XmlService.parse(acReviewPage).getRootElement();
-      var ratingItems = getElementByClassName(acReviewDoc, 'mt-3', true);
+      var ratingItems = acReviewPage.match(/<div.*?bg-review([\s\S]+?)(<\/div>\s+){5}/g);
       contextValues.newRatings = [];
       contextValues.updatedRatings = [];
       ratingItems.forEach(processRatingItem);
@@ -430,10 +429,7 @@ function processOldLocationRatings(ratingData, idx) {
   contextValues.locationRatings[cleanedLocation] = ratingData;
 }
 
-function processRatingItem(item) {
-  item = getElementByClassName(item, 'bg-review', true)[0];
-  if (!item) return;
-
+function processRatingItem(itemText) {
   var fullTitleIdx = contextValues.ratingIndex.FullTitle;
   var titleIdx = contextValues.ratingIndex.Title;
   var locationIdx = contextValues.ratingIndex.Location;
@@ -446,10 +442,9 @@ function processRatingItem(item) {
 
   var data = [];
   var noteArray;
-  var urlElement = getElementsByTagName(item, 'a', true)[0];
-  var url = urlElement && urlElement.getAttribute('href').getValue();
+  var url = itemText.match(/<a href="(.*?)"/);
   if (url) {
-    url = getACUrl(url);
+    url = getACUrl(url[1]);
     var rowIdx = contextValues.ratings[url];
 
     if (rowIdx !== undefined) {
@@ -459,9 +454,9 @@ function processRatingItem(item) {
       }
     }
 
-    var rating = getElementsByTagName(item, 'img', true);
+    var rating = itemText.match(/<img /g);
     rating = rating ? rating.length : 0;
-    var numberReviews = urlElement.getText().match(/see\s+(\d*)\s+review/i);
+    var numberReviews = itemText.match(/see\s+(\d*)\s+review/i);
     if (numberReviews) {
       numberReviews = +numberReviews[1];
     }
@@ -481,7 +476,7 @@ function processRatingItem(item) {
 
     var headerOpening = '<h4 style="color:' + color + ';">';
 
-    var fullTitle = getElementByClassName(item, 'text-ac', true)[0].getText();
+    var fullTitle = itemText.match(/text-ac.*?>(.*?)</)[1];
 
     if (data.length) {
       noteArray = contextValues.ratingNotes[rowIdx];
