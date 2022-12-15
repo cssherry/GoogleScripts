@@ -308,21 +308,21 @@ function updateSheet() {
 
   // --------------------------------------------
   // CT LISTINGS
-
-  var mainPage = getMainPageCT();
-  if (mainPage) {
-    try {
+  try {
+    var mainPage = getMainPageCT();
+    if (mainPage) {
       var ctJSON = mainPage.match(/var\s+res\s*=\s*([\s\S]*?}]);/);
       var jsonWithoutMuchSpace = ctJSON[1].replace(/\s+/g," ");
       var items = JSON.parse(jsonWithoutMuchSpace)
       items.forEach(addOrUpdateCT);
-    } catch (e) {
-      printError(e)
-      removeAndEmail(urls.ctDomain, `errorParsingPage: ${e}`);
+    } else {
+      removeAndEmail(urls.ctDomain);
     }
-  } else {
-    removeAndEmail(urls.ctDomain);
+  } catch (e) {
+    printError(e)
+    removeAndEmail(urls.ctDomain, `errorParsingPage: ${e}`);
   }
+
 
 
   addNewCellItemsRow();
