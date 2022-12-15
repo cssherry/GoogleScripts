@@ -81,7 +81,7 @@ function updateSheet() {
   // Figure out of the page which listings are new
   var hasPassedTopic;
   function addOrUpdateFm(item) {
-    var htmlText = item.toXmlString();
+    var htmlText = item.getText();
     if (!hasPassedTopic) {
       hasPassedTopic = htmlText.indexOf('Topics') !== -1;
       return;
@@ -775,7 +775,7 @@ function addOrUpdateSf(item) {
   if (itemInfo) {
     checkRatingAndDeletePreviousListing(itemInfo, url, [], title);
   } else if (!contextValues.alreadyDeleted[url]) {
-    var itemHtml = item.toXmlString();
+    var itemHtml = item.getText();
     var ImageUrl = itemHtml.match(/background-image:url\(.*?(http:\/\/.*?\.jpg)/i);
 
     var date = getElementByClassName(item, 'date-event', true);
@@ -799,7 +799,7 @@ function addOrUpdateSf(item) {
     listingInfo[contextValues.sheetIndex.LocationRating] = getLocationRating(location);
     listingInfo[contextValues.sheetIndex.AdminFee] = price;
     listingInfo[contextValues.sheetIndex.Date] = date[0].getText().trim() + time;
-    listingInfo[contextValues.sheetIndex.Category] = trimHtml(description[0].toXmlString()).trim();
+    listingInfo[contextValues.sheetIndex.Category] = trimHtml(description[0].getText()).trim();
     listingInfo[contextValues.sheetIndex.Location] = location;
     listingInfo[contextValues.sheetIndex.Url] = url;
     listingInfo[contextValues.sheetIndex.EventManager] = '';
