@@ -968,20 +968,39 @@ function convertFromPacific(date, latitude, longitude) {
   );
 }
 
+function changeTimezone(timeZone) {
+  if (timeZone == 'Europe/London') {
+    return 'Etc/GMT'
+  } else if (timeZone.startsWith('Europe/')) {
+    return 'Etc/GMT+1'
+  } else {
+    return 'Etc/GMT';
+  }
+}
+
 // converting from time zone:https://stackoverflow.com/a/53652131
 function changeTimezone(date, oldTimezone, newTimezone) {
   if (!date.getTime) return date;
 
-  const oldDate = new Date(
-    date.toLocaleString('en-US', {
-      timeZone: oldTimezone,
-    })
+  let oldDate = new Date(
+    new Date(Utilities.formatDate(date, oldTimezone, 'YYYY-MM-dd hh:mm a'))
   );
-  const newDate = new Date(
-    date.toLocaleString('en-US', {
-      timeZone: newTimezone,
-    })
+
+  let newDate = new Date(
+    new Date(Utilities.formatDate(date, newTimezone, 'YYYY-MM-dd hh:mm a'))
   );
+
+  if (isNaN(newDate.valueOf()) || isNaN(oldDate.valueOf())) {
+    console.error(`ERROR: newDate ${newDate} (${newTimezone}); oldDate ${oldDate} (${oldTimezone})`);
+    // Hopefully not necessary now that I've changed to Utlities.formatDate
+    // if (isNaN(newDate.valueOf())) {
+    //   newDate = new Date(Utilities.formatDate(date, changeTimezone(newTimezone), 'YYYY-MM-dd hh:mm a'));
+    // }
+
+    // if (isNaN(oldDate.valueOf())) {
+    //   oldDate = new Date(Utilities.formatDate(date, changeTimezone(oldTimezone), 'YYYY-MM-dd hh:mm a'));
+    // }
+  }
 
   const diff = newDate.getTime() - oldDate.getTime();
   return new Date(date.getTime() + diff);
