@@ -485,10 +485,12 @@ convertUponNewRow.prototype.getOnlineRate = function (convertTo, _convertFrom, r
     };
   }
 
-  var url = 'https://data.fixer.io/api/latest?' + fixerKey + '&base=' + convertTo + '&symbols=' + _convertFrom;
+  // TODO: Use different api that supports base_currency_access_restricted: https://currencylayer.com/, https://exchangeratesapi.io/, https://free.currencyconverterapi.com/free-api-key
+  var url = 'http://data.fixer.io/api/latest?' + fixerKey + '&symbols=' + _convertFrom + ',' + convertTo;
   var response = UrlFetchApp.fetch(url);
   var conversionData = JSON.parse(response.getContentText());
-  var rate = conversionData.rates[_convertFrom];
+  var originalRate = conversionData.rates[convertTo];
+  var rate = conversionData.rates[_convertFrom] / originalRate;
   var dateUpdated = 'Rate from: ' + conversionData.date;
   var row = rowIdx + 1;
   var RateIdx = this.ItemizedBudgetIndex.Rate;
@@ -549,12 +551,12 @@ function evaluate(cellValue) {
         if (currValue && myIsNaN(currValue) && currValue.match) {
           cellValue[i][0] = eval(currValue);
         }
-      }
+      //}
     }
     return cellValue;
   }
 
-  if (cellValue && isNaN(cellValue) && cellValue.match) {
+  if (cellValue && myIsNaN(cellValue) && cellValue.match) {
     return eval(cellValue);
   }
 
