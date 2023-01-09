@@ -562,3 +562,39 @@ function evaluate(cellValue) {
 
   return cellValue;
 }
+
+// from https://ikaisays.com/2012/07/27/apps-script-quick-tips-building-a-stock-price-spreadsheet-2/
+function getStockPrice(symbol) {
+  return FinanceApp.getStockInfo(symbol)["price"];
+}
+function getStockPriceChangePct(symbol) {
+  return FinanceApp.getStockInfo(symbol)["changepct"];
+}
+
+function getStockPriceChange(symbol) {
+  return FinanceApp.getStockInfo(symbol)["change"];
+}
+
+function getGoogleFinanceLink(symbol) {
+  return "http://www.google.com/finance?q=" + symbol;
+}
+
+// Use google finance in array
+function googlefinance_array(ticker, type, additional) {
+  var results = [];
+  if (ticker instanceof Array) {
+    var i, j, currTicker, currType, currAddition;
+    for (i in ticker) {
+      for (j in ticker[i]) {
+        currTicker = ticker[i][j];
+        currType = type[i][j];
+        currAddition = additional ? additional[i][j] : undefined;
+        currValue = FinanceApp.getStockInfo(currTicker, currAddition)[currType];
+        results[i][j] = currValue;
+      }
+    }
+    return results;
+  }
+
+  return FinanceApp.getStockInfo(symbol);
+}
