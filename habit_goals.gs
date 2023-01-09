@@ -1,3 +1,4 @@
+const weeklyPlanningSheetName = 'Week Planner';
 function appendToCellOnTheRight(spreadsheet, currentRange, appendText) {
   const currentColumn = currentRange.getColumn();
   const currentRow = currentRange.getRow();
@@ -12,9 +13,9 @@ function appendToCellOnTheRight(spreadsheet, currentRange, appendText) {
 
 function onEdit(e) {
   const allSheet = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = allSheet.getSheetByName('Week Planner');
+  const sheet = allSheet.getSheetByName(weeklyPlanningSheetName);
 
-  if (e.source.getSheetName() !== 'Week Planner') return;
+  if (e.source.getSheetName() !== weeklyPlanningSheetName) return;
 
   if (e.value === '✅') {
     appendToCellOnTheRight(sheet, e.range, `Completed`);
