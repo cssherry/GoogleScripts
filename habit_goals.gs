@@ -40,18 +40,25 @@ function addIncompleteItems() {
   const weekNum = parseInt(weekString);
   const startRow = 26 * (weekNum - 1) + 2;
   const currWeekRange = sheet.getRange(
-    `A${26 * weekNum + 3}:B${26 * weekNum + 23}`
+    `A${26 * weekNum + 3}:B${26 * weekNum + 22 + 3}`
   );
   const currWeekValues = currWeekRange.getValues();
-  let currIdx = 0;
 
-  for (let rowNum = startRow; rowNum < startRow + 3; rowNum++) {
-    const incompleteItems = sheet.getRange(`N${rowNum}`);
-    const incompleteItemValue = incompleteItems.getValue();
+  const taskSummaryRange = sheet.getRange(`L${startRow}:N${startRow + 4}`);
+  const taskSummaryRangeValues = taskSummaryRange.getValues();
+
+  let currIdx = 0;
+  const incompleteReport = {};
+  let incompleteNum = 0;
+
+  for (let rowNum = 0; rowNum < 3; rowNum++) {
+    const incompleteItemValue = taskSummaryRangeValues[rowNum][2];
     if (incompleteItemValue && incompleteItemValue !== '#N/A') {
-      const sign = sheet.getRange(`L${rowNum}`).getValue();
+      const sign = taskSummaryRangeValues[rowNum][0];
+      incompleteReport[sign] = incompleteItemValue;
 
       incompleteItemValue.split('\n').forEach((item) => {
+        incompleteNum++;
         while (
           currIdx < currWeekValues.length &&
           (currWeekValues[currIdx][1] || currWeekValues[currIdx][0])
