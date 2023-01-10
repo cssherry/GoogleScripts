@@ -101,9 +101,9 @@ function sendReport(
   notes,
   allSheet
 ) {
-  function formatBullets(list) {
-    const listItems = list.split('\n').map((text) => `<li>${text.replace('- ', '').replace(/\((.*)\)$/, '<small style="color:gray;""><em>($1)</em></small>')}</li>`).join('\n');
-    return `<ul>${listItems}</ul>`;
+  function formatListSection(header, list) {
+    const listItems = list.split('\n').map((text) => `<li>${text.replace('- ', '').replace(/\((.*)\)$/, '<small style="color:gray;""><em>($1)</em></small>')}</li>`);
+    return `<h2>${header} (${listItems.length}):</h2>\n<ul>${listItems.join('\n')}</ul>`;
   }
 
     // Returns back correct styling given actual versus expected number
@@ -122,7 +122,7 @@ function sendReport(
   }
 
   const incompleteText = Object.keys(incompleteReport)
-    .map((keyVal) => `<h2>${keyVal}:</h2>\n${formatBullets(incompleteReport[keyVal])}`)
+    .map((keyVal) => formatListSection(keyVal, incompleteReport[keyVal]))
     .join('\n\n');
   const sheet = allSheet.getSheetByName(habitsSheetName);
 
@@ -136,10 +136,9 @@ function sendReport(
     .getRange(`AS${startRow}:AS${endRow}`)
     .getValues();
 
-  let habitText = '';
   let habitCompleted = 0;
   const currDate = new Date().getDate();
-  monthHabitRange.forEach((row, idx) => {
+  const habitFormatted = monthHabitRange.map((row, idx) => {
     let currHabitComplete = 0;
     let currHabitIncomplete = 0;
     for (let dayIdx = 1; dayIdx < row.length; dayIdx++) {
@@ -155,19 +154,25 @@ function sendReport(
     const percentageOfGoal =
       monthGoalRange[idx][0] / (currHabitComplete + currHabitIncomplete);
     const minKeepOnTrack = currDate * percentageOfGoal
+    const completedPercentage = currHabitComplete / minKeepOnTrack;
 
-    habitText += `<h2>${
-      row[0]
-    }\n</h2>Completed: <b ${getColorStyle(currHabitComplete / minKeepOnTrack)}>${currHabitComplete.toFixed(2)}</b><br/>Needed: <b>${(
-      minKeepOnTrack
-    ).toFixed(2)}</b>`;
+    return {
+      text: `<h2>${
+            row[0]
+          }\n</h2>Completed: <b ${getColorStyle(completedPercentage)}>${currHabitComplete.toFixed(2)}</b><br/>Needed: <b>${(
+            minKeepOnTrack
+          ).toFixed(2)}</b>`,
+      completedPercentage,
+    };
   });
+
+  const habitText = habitFormatted.sort((a, b) => a.completedPercentage - b.completedPercentage).map((item) => item.text).join('\n');
 
   MailApp.sendEmail({
     to: myEmail,
     subject: `[Habit + Goals] Completed ${completedNumber} | Incomplete ${incompleteNum} | ${habitCompleted} Habits Completed (${new Date().toLocaleString()})`,
     htmlBody:
-      `<h1>Habits</h1>${habitText}\n\n\n<h1>Goals</h1>${incompleteText}\n\n<h2>COMPLETED:</h2>\n${formatBullets(completedItems)}<h1>NOTES: </h1>${notes.replaceAll('\n', '<br/>') || 'None'}` +
+      `<h1>Habits</h1>${habitText}\n\n\n<h1>Goals</h1>${incompleteText}\n\n${formatListSection('COMPLETED', completedItems)}<h1>NOTES: </h1>${notes.replaceAll('\n', '<br/>') || 'None'}` +
       `<p><em>Link: ${excelLink}</em></p>`,
   });
 }
