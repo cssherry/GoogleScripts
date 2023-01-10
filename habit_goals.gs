@@ -81,34 +81,16 @@ function addIncompleteItems() {
 
   currWeekRange.setValues(currWeekValues);
 
+  const notes = sheet.getRange(`F${26 * (weekNum - 1) + 19}`).getValue();
+
   sendReport(
     incompleteNum,
     incompleteReport,
     taskSummaryRangeValues[3][1],
     taskSummaryRangeValues[3][2],
+    notes,
     allSheet
   );
-}
-
-
-function formatBullets(list) {
-  const listItems = list.split('\n').map((text) => `<li>${text.replace('- ', '')}</li>`).join('\n');
-  return `<ul>${listItems}</ul>`;
-}
-
-  // Returns back correct styling given actual versus expected number
-function getColorStyle (percentage) {
-  if (percentage > .95) {
-    styleColor = 'darkgreen';
-  } else if (percentage > .85) {
-    styleColor = 'green';
-  } else if (percentage > .60) {
-    styleColor = 'orange';
-  } else {
-    styleColor = 'mediumvioletred';
-  }
-
-  return 'style="color:' + styleColor + ';"';
 }
 
 function sendReport(
@@ -116,8 +98,29 @@ function sendReport(
   incompleteReport,
   completedNumber,
   completedItems,
+  notes,
   allSheet
 ) {
+  function formatBullets(list) {
+    const listItems = list.split('\n').map((text) => `<li>${text.replace('- ', '').replace(/\((.*)\)$/, '<small style="color:gray;""><em>($1)</em></small>')}</li>`).join('\n');
+    return `<ul>${listItems}</ul>`;
+  }
+
+    // Returns back correct styling given actual versus expected number
+  function getColorStyle (percentage) {
+    if (percentage >= .90) {
+      styleColor = 'darkgreen';
+    } else if (percentage >= .80) {
+      styleColor = 'green';
+    } else if (percentage >= .60) {
+      styleColor = 'orange';
+    } else {
+      styleColor = 'mediumvioletred';
+    }
+
+    return 'style="color:' + styleColor + ';"';
+  }
+
   const incompleteText = Object.keys(incompleteReport)
     .map((keyVal) => `<h2>${keyVal}:</h2>\n${formatBullets(incompleteReport[keyVal])}`)
     .join('\n\n');
@@ -164,7 +167,7 @@ function sendReport(
     to: myEmail,
     subject: `[Habit + Goals] Completed ${completedNumber} | Incomplete ${incompleteNum} | ${habitCompleted} Habits Completed (${new Date().toLocaleString()})`,
     htmlBody:
-      `<h1>Habits</h1>${habitText}\n\n\n<h1>Goals</h1>${incompleteText}\n\n<h2>COMPLETED:</h2>\n${formatBullets(completedItems)}` +
+      `<h1>Habits</h1>${habitText}\n\n\n<h1>Goals</h1>${incompleteText}\n\n<h2>COMPLETED:</h2>\n${formatBullets(completedItems)}<h1>NOTES: </h1>${notes.replaceAll('\n', '<br/>') || 'None'}` +
       `<p><em>Link: ${excelLink}</em></p>`,
   });
 }
