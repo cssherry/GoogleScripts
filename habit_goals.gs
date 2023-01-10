@@ -9,9 +9,25 @@ function appendToCellOnTheRight(spreadsheet, currentRange, appendText) {
     parseInt(currentRow),
     currentColumn + 1
   );
-  nextCell.setValue(
-    `${nextCell.getValue()} (${appendText}: ${new Date().toLocaleString()})`
-  );
+
+  const richText = nextCell.getRichTextValue();
+  const richTextBuilder = SpreadsheetApp.newRichTextValue();
+  richTextBuilder.setText(`${richText.getText()} (${appendText}: ${new Date().toLocaleString()})`);
+
+  let totalIdx = 0;
+  richText.getRuns().map((currRichText) => {
+    const url = currRichText.getLinkUrl();
+    const text = currRichText.getText();
+    if (url) {
+      richTextBuilder.setLinkUrl(totalIdx, totalIdx + text.length, url);
+    }
+
+    totalIdx += text.length;
+  });
+
+  const richTextNew = richTextBuilder.build();
+
+  nextCell.setRichTextValue(richTextNew);
 }
 
 function onEdit(e) {
