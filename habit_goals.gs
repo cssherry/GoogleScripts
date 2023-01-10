@@ -155,16 +155,16 @@ function sendReport(
 
     habitText += `<h2>${
       row[0]
-    }\n</h2>Completed: <em ${getColorStyle(currHabitComplete / minKeepOnTrack)}>${currHabitComplete}</em><br/>Needed: <em>${(
+    }\n</h2>Completed: <b ${getColorStyle(currHabitComplete / minKeepOnTrack)}>${currHabitComplete.toFixed(2)}</b><br/>Needed: <b>${(
       minKeepOnTrack
-    ).toFixed(2)}</em>`;
+    ).toFixed(2)}</b>`;
   });
 
   MailApp.sendEmail({
     to: myEmail,
     subject: `[Habit + Goals] Completed ${completedNumber} | Incomplete ${incompleteNum} | ${habitCompleted} Habits Completed (${new Date().toLocaleString()})`,
     htmlBody:
-      `<h1>Goals</h1>\n<h2>COMPLETED:</h2>\n${formatBullets(completedItems)}\n\n\n${incompleteText}\n\n\n<h1>Habits</h1>${habitText}` +
+      `<h1>Habits</h1>${habitText}\n\n\n<h1>Goals</h1>${incompleteText}\n\n<h2>COMPLETED:</h2>\n${formatBullets(completedItems)}` +
       `<p><em>Link: ${excelLink}</em></p>`,
   });
 }
