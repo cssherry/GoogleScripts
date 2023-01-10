@@ -95,7 +95,9 @@ function addIncompleteItems() {
     }
   }
 
+  const preservedStyles = currWeekRange.getTextStyles();
   currWeekRange.setValues(currWeekValues);
+  currWeekRange.setTextStyles(preservedStyles);
 
   const notes = sheet.getRange(`F${26 * (weekNum - 1) + 19}`).getValue();
 
