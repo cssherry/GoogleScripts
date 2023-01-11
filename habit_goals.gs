@@ -30,6 +30,38 @@ function appendToCellOnTheRight(spreadsheet, currentRange, appendText) {
   nextCell.setRichTextValue(richTextNew);
 }
 
+function reorderEvents() {
+  const allSheet = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = allSheet.getSheetByName(weeklyPlanningSheetName);
+  const weekNum = getCurrWeek();
+
+  const todos = {
+    Monday: sheet.getRange(`A${26 * weekNum + 3}:B${26 * weekNum + 14 + 3}`),
+    Tuesday: sheet.getRange(`C${26 * weekNum + 3}:D${26 * weekNum + 14 + 3}`),
+    Wednesday: sheet.getRange(`E${26 * weekNum + 3}:F${26 * weekNum + 14 + 3}`),
+    Thursday: sheet.getRange(`G${26 * weekNum + 3}:H${26 * weekNum + 14 + 3}`),
+    Friday: sheet.getRange(`I${26 * weekNum + 3}:J${26 * weekNum + 14 + 3}`),
+    Saturday: sheet.getRange(`A${26 * weekNum + 14 + 3 + 2}:B${26 * weekNum + 14 + 3 + 2 + 6}`),
+    Sunday: sheet.getRange(`C${26 * weekNum + 14 + 3 + 2}:D${26 * weekNum + 14 + 3 + 2 + 6}`),
+  }
+
+  const statusOrder = ['💬', 'In Progress', '', '✅'];
+  for (let day in todos) {
+    const richText = todos[day].getRichTextValues()
+    richText.sort(([iconA, _A], [iconB, _B]) => {
+      if (_A.getText() === '' && _B.getText() !== '') return 1;
+      if (_A.getText() !== '' && _B.getText() === '') return -1;
+      const iconTextA = iconA.getText();
+      const iconTextB = iconB.getText();
+      const valueA = statusOrder.indexOf(iconTextA);
+      const valueB = statusOrder.indexOf(iconTextB)
+      return valueA - valueB;
+    });
+
+    todos[day].setRichTextValues(richText);
+  }
+}
+
 function onEdit(e) {
   const allSheet = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = allSheet.getSheetByName(weeklyPlanningSheetName);
