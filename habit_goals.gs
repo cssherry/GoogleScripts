@@ -52,14 +52,13 @@ function onEdit(e) {
 function addIncompleteItems() {
   const allSheet = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = allSheet.getSheetByName(weeklyPlanningSheetName);
-  const weekString = Utilities.formatDate(new Date(), 'GMT', 'w');
-  const weekNum = parseInt(weekString);
-  const startRow = 26 * (weekNum - 1) + 2;
+  const weekNum = getCurrWeek();
   const currWeekRange = sheet.getRange(
     `A${26 * weekNum + 3}:B${26 * weekNum + 22 + 3}`
   );
   const currWeekValues = currWeekRange.getValues();
 
+  const startRow = 26 * (weekNum - 1) + 2;
   const taskSummaryRange = sheet.getRange(`L${startRow}:N${startRow + 4}`);
   const taskSummaryRangeValues = taskSummaryRange.getValues();
 
@@ -194,4 +193,9 @@ function sendReport(
       `<h1>Habits</h1>${habitText}\n\n\n<h1>Goals <small><em ${getColorStyle(percentageCompletedGoals)}>(${(percentageCompletedGoals * 100).toFixed(1)}%)</em></small></h1>${incompleteText}\n\n${formatListSection('COMPLETED', completedItems)}<h1>NOTES: </h1>${notes.replaceAll('\n', '<br/>') || 'None'}` +
       `<p><em>Link: ${excelLink}</em></p>`,
   });
+}
+
+function getCurrWeek() {
+  const weekString = Utilities.formatDate(new Date(), 'GMT', 'w');
+  return parseInt(weekString);
 }
