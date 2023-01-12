@@ -378,6 +378,13 @@ function getAndParsePosts() {
 
     newMessages[contentIdx] = postData.feedItem.body;
 
+    // Handle vacations
+    if (postData.feedItem.embed && postData.feedItem.embed.vacationId) {
+      const toPeriod = postData.feedItem.embed.period.from_localdate === postData.feedItem.embed.period.to_localdate ? '' : ` - ${postData.feedItem.embed.period.to_localdate}`;
+      const period = `${postData.feedItem.embed.period.from_localdate}${toPeriod}`;
+      newMessages[contentIdx] += `\n${postData.feedItem.embed.title} (${period})\nResponse needed by: ${postData.feedItem.embed.deadline_localdate}\n${postData.feedItem.embed.vacationId}: ${postData.feedItem.embed.type}`;
+    }
+
     tryCatchTimeout(() => {
       newMessages[attachmentIdx] = downloadFiles(postData.feedItem).join(
         attachDelimiter
