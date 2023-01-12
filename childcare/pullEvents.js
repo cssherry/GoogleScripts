@@ -621,10 +621,10 @@ function downloadFiles(containerObj) {
     containerObj.videos.forEach((videoObj) => {
       const currDate = createDate === 'Unknown Date' ? new Date() : new Date(createDate);
       const videoName = `${parseDate(currDate)}_video_${
-        videoObj.videoId
+        videoObj.videoId || videoObj.id
       }`;
       const fileUrl = uploadFile(
-        videoObj.videoUrl || videoObj.videoId,
+        videoObj.videoUrl,
         videoName,
         description,
         true
