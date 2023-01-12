@@ -886,7 +886,7 @@ function appendRows(sheet, newData, attachmentIdx) {
           newText[version] += `${fileType}${numImg}, `;
           numImg += 1;
 
-          const end = newText[version].length - 2;
+          const end = newText[version].length - 4;
 
           links.push({
             start,
