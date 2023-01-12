@@ -557,6 +557,10 @@ function getFrom(post) {
   }
 
   if (post.createdBy) {
+    if (post.createdBy.name.fullName) {
+      return post.createdBy.name.fullName;
+    }
+
     return `${post.createdBy.name} (${post.createdBy.id})`;
   }
 
@@ -570,7 +574,7 @@ function getFrom(post) {
 function downloadFiles(containerObj) {
   const attachments = [];
   const createDate =
-    containerObj.createdDate || containerObj.createdAt || 'Unknown Date';
+    containerObj.createdDate || containerObj.createdAt || containerObj.status?.createdAt || 'Unknown Date';
   const body = containerObj.body || '';
   const description = `${body}\n\nShared on: ${createDate}\n\nUploaded by ${getFrom(
     containerObj
@@ -601,13 +605,19 @@ function downloadFiles(containerObj) {
     });
   }
 
+  // Handle weird naming in observations
+  if (containerObj.video && !containerObj.videos) {
+    containerObj.videos = [containerObj.video];
+  }
+
   if (containerObj.videos && containerObj.videos.length) {
     containerObj.videos.forEach((videoObj) => {
-      const videoName = `${parseDate(new Date(createDate))}_video_${
+      const currDate = createDate === 'Unknown Date' ? new Date() : new Date(createDate);
+      const videoName = `${parseDate(currDate)}_video_${
         videoObj.videoId
       }`;
       const fileUrl = uploadFile(
-        videoObj.videoUrl,
+        videoObj.videoUrl || videoObj.videoId,
         videoName,
         description,
         true
