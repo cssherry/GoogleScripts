@@ -73,6 +73,15 @@ function onEdit(e) {
   const allSheet = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = allSheet.getSheetByName(weeklyPlanningSheetName);
 
+  if (!e || !e.range) {
+    const range = sheet.getActiveRange();
+    e = {
+      source: sheet,
+      value: range.getValue(),
+      range,
+    };
+  }
+
   if (e.source.getSheetName() !== weeklyPlanningSheetName) return;
 
   if (e.value === '✅') {
@@ -248,4 +257,14 @@ function sendReport(
 function getCurrWeek() {
   const weekString = Utilities.formatDate(new Date(), 'GMT', 'w');
   return parseInt(weekString);
+}
+
+// custom menu
+function onOpen() {
+  var ui = SpreadsheetApp.getUi();
+  ui.createMenu('Manage Habits')
+    .addItem('Order Habits', 'reorderEvents')
+    .addSeparator()
+    .addItem('Add current status time', 'onEdit')
+    .addToUi();
 }
