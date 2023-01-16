@@ -95,55 +95,60 @@ function addIncompleteItems() {
   const currWeekRange = sheet.getRange(
     `A${26 * weekNum + 3}:B${26 * weekNum + 22 + 3}`
   );
-  const currWeekValues = currWeekRange.getValues();
+  const currWeekValues = currWeekRange.getRichTextValues();
 
-  const startRow = 26 * (weekNum - 1) + 2;
-  const taskSummaryRange = sheet.getRange(`L${startRow}:N${startRow + 4}`);
-  const taskSummaryRangeValues = taskSummaryRange.getValues();
+  const todos = getTodos(-1)
 
   let currIdx = 0;
   const incompleteReport = {};
   let incompleteNum = 0;
+  let completedNum = 0;
+  let completedItems = '';
 
-  for (let rowNum = 0; rowNum < 3; rowNum++) {
-    const incompleteItemValue = taskSummaryRangeValues[rowNum][2];
-    if (incompleteItemValue && incompleteItemValue !== '#N/A') {
-      const sign = taskSummaryRangeValues[rowNum][0];
-      incompleteReport[sign] = incompleteItemValue;
+  for (let day in todos) {
+    const richTexts = todos[day].getRichTextValues();
+    richTexts.forEach(([sign, task]) => {
+      const signText = sign.getText();
+      const signTextForReport = signText || notStarted;
+      const taskText = task.getText();
 
-      incompleteItemValue.split('\n').forEach((item) => {
+      if (signText === '💬' || signText === 'In Progress' || (!signText && !!taskText)) {
         incompleteNum++;
         while (
           currIdx < currWeekValues.length &&
-          (currWeekValues[currIdx][1] || currWeekValues[currIdx][0])
+          (currWeekValues[currIdx][1].getText() || currWeekValues[currIdx][0].getText())
         ) {
           currIdx++;
         }
 
-        if (currIdx < currWeekValues.length) {
-          if (sign !== notStarted) {
-            currWeekValues[currIdx][0] = sign;
-          }
-
-          currWeekValues[currIdx][1] = item;
-        } else {
-          console.log('Unable to find spot for: ', item);
+        if (!incompleteReport[signTextForReport]) {
+          incompleteReport[signTextForReport] = '';
         }
-      });
-    }
+
+        incompleteReport[signTextForReport] += `- ${taskText}\n`;
+
+        if (currIdx < currWeekValues.length) {
+          currWeekValues[currIdx][0] = sign;
+          currWeekValues[currIdx][1] = recreateText(task, '- ');
+        } else {
+          console.log(`Unable to find spot for: ${signText || notStarted}: ${taskText}`);
+        }
+      } else if (!!taskText) {
+        completedNum += 1;
+        completedItems += `- ${taskText}\n`;
+      }
+    });
   }
 
-  const preservedStyles = currWeekRange.getTextStyles();
-  currWeekRange.setValues(currWeekValues);
-  currWeekRange.setTextStyles(preservedStyles);
+  currWeekRange.setRichTextValues(currWeekValues);
 
   const notes = sheet.getRange(`F${26 * (weekNum - 1) + 19}`).getValue();
 
   sendReport(
     incompleteNum,
     incompleteReport,
-    taskSummaryRangeValues[3][1],
-    taskSummaryRangeValues[3][2],
+    completedNum,
+    completedItems,
     notes,
     allSheet
   );
