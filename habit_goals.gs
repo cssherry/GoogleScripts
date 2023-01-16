@@ -140,7 +140,13 @@ function addIncompleteItems() {
     });
   }
 
-  currWeekRange.setRichTextValues(currWeekValues);
+  const firstDay = currWeekValues.slice(0, 15);
+  const weekend = currWeekValues.slice(16)
+  firstDay.sort(sortTasks);
+  weekend.sort(sortTasks);
+
+  const newWeek = [...firstDay, currWeekValues[15], ...weekend];
+  currWeekRange.setRichTextValues(newWeek);
 
   const notes = sheet.getRange(`F${26 * (weekNum - 1) + 19}`).getValue();
 
