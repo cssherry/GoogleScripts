@@ -164,7 +164,7 @@ function sendReport(
 ) {
   function formatListSection(header, list) {
     const listItems = list.split('\n').map((text) => text ? `<li>${text.replace('- ', '').replace(/\((.*)\)$/, '<small style="color:gray;""><em>($1)</em></small>')}</li>` : '');
-    return `<h2>${header} (${listItems.length}):</h2>\n<ul>${listItems.join('\n')}</ul>`;
+    return `<h2>${header} (${listItems.length}):</h2>\n<ol>${listItems.join('\n')}</ol>`;
   }
 
     // Returns back correct styling given actual versus expected number
