@@ -2,19 +2,11 @@ const weeklyPlanningSheetName = 'Week Planner';
 const habitsSheetName = 'Habits Tracker';
 const notStarted = 'Not Started';
 
-function appendToCellOnTheRight(spreadsheet, currentRange, appendText) {
-  const currentColumn = currentRange.getColumn();
-  const currentRow = currentRange.getRow();
-  const nextCell = spreadsheet.getRange(
-    parseInt(currentRow),
-    currentColumn + 1
-  );
-
-  const richText = nextCell.getRichTextValue();
+function recreateText(richText, prefix = '', suffix = '') {
   const richTextBuilder = SpreadsheetApp.newRichTextValue();
-  richTextBuilder.setText(`${richText.getText()} (${appendText}: ${new Date().toLocaleString()})`);
+  richTextBuilder.setText(`${prefix}${richText.getText()}${suffix}`);
 
-  let totalIdx = 0;
+  let totalIdx = prefix.length;
   richText.getRuns().map((currRichText) => {
     const url = currRichText.getLinkUrl();
     const text = currRichText.getText();
@@ -25,17 +17,28 @@ function appendToCellOnTheRight(spreadsheet, currentRange, appendText) {
     totalIdx += text.length;
   });
 
-  const richTextNew = richTextBuilder.build();
+  return richTextBuilder.build();
+}
 
+function appendToCellOnTheRight(spreadsheet, currentRange, appendText) {
+  const currentColumn = currentRange.getColumn();
+  const currentRow = currentRange.getRow();
+  const nextCell = spreadsheet.getRange(
+    parseInt(currentRow),
+    currentColumn + 1
+  );
+
+  const richText = nextCell.getRichTextValue();
+  const richTextNew = recreateText(richText, '', ` (${appendText}: ${new Date().toLocaleString()})`);
   nextCell.setRichTextValue(richTextNew);
 }
 
-function reorderEvents() {
+function getTodos(offset = 0) {
   const allSheet = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = allSheet.getSheetByName(weeklyPlanningSheetName);
-  const weekNum = getCurrWeek();
+  const weekNum = getCurrWeek() + offset;
 
-  const todos = {
+  return {
     Monday: sheet.getRange(`A${26 * weekNum + 3}:B${26 * weekNum + 14 + 3}`),
     Tuesday: sheet.getRange(`C${26 * weekNum + 3}:D${26 * weekNum + 14 + 3}`),
     Wednesday: sheet.getRange(`E${26 * weekNum + 3}:F${26 * weekNum + 14 + 3}`),
@@ -44,6 +47,10 @@ function reorderEvents() {
     Saturday: sheet.getRange(`A${26 * weekNum + 14 + 3 + 2}:B${26 * weekNum + 14 + 3 + 2 + 6}`),
     Sunday: sheet.getRange(`C${26 * weekNum + 14 + 3 + 2}:D${26 * weekNum + 14 + 3 + 2 + 6}`),
   }
+}
+
+function reorderEvents() {
+  const todos = getTodos()
 
   const statusOrder = ['💬', 'In Progress', '', '✅'];
   for (let day in todos) {
