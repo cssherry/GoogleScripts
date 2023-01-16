@@ -49,22 +49,22 @@ function getTodos(offset = 0) {
   }
 }
 
+const statusOrder = ['💬', 'In Progress', '', '✅'];
+function sortTasks([iconA, _A], [iconB, _B]) {
+  if (_A.getText() === '' && _B.getText() !== '') return 1;
+  if (_A.getText() !== '' && _B.getText() === '') return -1;
+  const iconTextA = iconA.getText();
+  const iconTextB = iconB.getText();
+  const valueA = statusOrder.indexOf(iconTextA);
+  const valueB = statusOrder.indexOf(iconTextB)
+  return valueA - valueB;
+}
+
 function reorderEvents() {
   const todos = getTodos()
-
-  const statusOrder = ['💬', 'In Progress', '', '✅'];
   for (let day in todos) {
     const richText = todos[day].getRichTextValues()
-    richText.sort(([iconA, _A], [iconB, _B]) => {
-      if (_A.getText() === '' && _B.getText() !== '') return 1;
-      if (_A.getText() !== '' && _B.getText() === '') return -1;
-      const iconTextA = iconA.getText();
-      const iconTextB = iconB.getText();
-      const valueA = statusOrder.indexOf(iconTextA);
-      const valueB = statusOrder.indexOf(iconTextB)
-      return valueA - valueB;
-    });
-
+    richText.sort(sortTasks);
     todos[day].setRichTextValues(richText);
   }
 }
