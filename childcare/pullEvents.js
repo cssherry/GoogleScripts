@@ -142,7 +142,7 @@ function pullAndUpdateEvents() {
       const date = row[GLOBALS_VARIABLES.familyIndex.LastDate];
       const content = row[GLOBALS_VARIABLES.familyIndex.Content];
       const attachments = row[GLOBALS_VARIABLES.familyIndex.Attachments];
-      const attachmentText = attachments.split(attachDelimiter).map((link, idx) => `#${idx + 1}: ${link} `).join(' \n');
+      const attachmentText = attachments.split(attachDelimiter).map((link, idx) => link ? `#${idx + 1}: ${link} ` : '').join(' \n');
       let fromInfo = row[GLOBALS_VARIABLES.familyIndex.From];
       fromInfo = fromInfo ? `from ${fromInfo}` : '';
       const header = `${type} ${fromInfo} (${date})\n\n${content}`;
