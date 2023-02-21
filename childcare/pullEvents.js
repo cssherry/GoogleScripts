@@ -141,7 +141,7 @@ function pullAndUpdateEvents() {
       const type = row[GLOBALS_VARIABLES.familyIndex.Type];
       const date = row[GLOBALS_VARIABLES.familyIndex.LastDate];
       const content = row[GLOBALS_VARIABLES.familyIndex.Content];
-      const attachments = row[GLOBALS_VARIABLES.familyIndex.Attachments];
+      const attachments = row[GLOBALS_VARIABLES.familyIndex.Attachments] || '';
       const attachmentText = attachments.split(attachDelimiter).map((link, idx) => link ? `#${idx + 1}: ${link} ` : '').join(' \n');
       let fromInfo = row[GLOBALS_VARIABLES.familyIndex.From];
       fromInfo = fromInfo ? `from ${fromInfo}` : '';
@@ -465,10 +465,10 @@ function getAndParseIncidents() {
   reportList.forEach((report) => {
     if (exceedingTimeLimit()) return;
     // Add unacknowledged and acknowledged version
-    const messageId = `${report.reportId}-${report.acknowledged.name.replace(
+    const messageId = `${report.reportId}-${report.acknowledged ? report.acknowledged.name.replace(
       /\s+/g,
       '_'
-    )}`;
+    ) : 'None'}`;
     if (!isLogged(messageId, incidentType)) {
       const newMessage = [];
       const reporter = getFrom(report);
