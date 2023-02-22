@@ -203,13 +203,13 @@ function sendReport(
   const sheet = allSheet.getSheetByName(habitsSheetName);
 
   const monthNum = new Date().getMonth();
-  const startRow = 20 * monthNum + 3;
-  const endRow = 20 * monthNum + 8;
+  const startRow = 10 * monthNum + 3;
+  const endRow = 10 * monthNum + 8;
   const monthHabitRange = sheet
     .getRange(`I${startRow}:AN${endRow}`)
     .getValues();
   const monthGoalRange = sheet
-    .getRange(`AS${startRow}:AS${endRow}`)
+    .getRange(`AU${startRow}:AU${endRow}`)
     .getValues();
 
   let habitCompleted = 0;
