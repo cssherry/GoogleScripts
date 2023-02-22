@@ -249,7 +249,7 @@ function sendReport(
     to: myEmail,
     subject: `[Habit + Goals] Completed ${completedNumber} | Incomplete ${incompleteNum} | ${habitCompleted} Habits Completed (${new Date().toLocaleString()})`,
     htmlBody:
-      `<h1>Habits</h1>${habitText}\n\n\n<h1>Goals <small><em ${getColorStyle(percentageCompletedGoals)}>(${(percentageCompletedGoals * 100).toFixed(1)}%)</em></small></h1>${incompleteText}\n\n${formatListSection('COMPLETED', completedItems)}<h1>NOTES: </h1>${notes.replaceAll('\n', '<br/>') || 'None'}` +
+      `<h1>Habits</h1>${habitText}\n\n\n<h1>Goals <small><em ${getColorStyle(percentageCompletedGoals)}>(${(percentageCompletedGoals * 100).toFixed(1)}% | ${timeTakenHours(completedItems, 'avg')} hrs avg)</em></small></h1>${incompleteText}\n\n${formatListSection('COMPLETED', completedItems)}<h1>NOTES: </h1>${notes.replaceAll('\n', '<br/>') || 'None'}` +
       `<p><em>Link: ${excelLink}</em></p>`,
   });
 }
@@ -267,4 +267,50 @@ function onOpen() {
     .addSeparator()
     .addItem('Add current status time', 'onEdit')
     .addToUi();
+}
+
+
+// FUNCTIONS
+// Converts text in format "1/6/2023, 3:00:35 PM" to date
+function convertToDate(text) {
+  return new Date(text.replace(/:\d+\s(PM|AM)/, ' $1'));
+}
+
+function timeTakenHours(text, operation) {
+  let sum = 0;
+  let count = 0;
+  text.split('\n').forEach((currText) => {
+    const strippedText = currText.trim();
+    if (!strippedText.length) return;
+
+    if (operation === 'count') {
+      count += 1;
+    } else {
+      // Return
+      // 0: "(Waiting: 1/6/2023, 2:11:27 PM) (Completed: 1/6/2023, 3:00:35 PM)"
+      // 1: "1/6/2023, 2:11:27 PM"
+      // 2: ", 2:11:27 PM"
+      // 3: "PM"
+      // 4: "1/6/2023, 3:00:35 PM"
+      // 5: ", 3:00:35 PM"
+      // 6: "PM"
+      const timesMatch = strippedText.match(/\(.+?: (\d+\/\d+\/\d+(,\s+\d+:\d+:\d+\s+(PM|AM))?).*?(\d+\/\d+\/\d+(,\s+\d+:\d+:\d+\s+(PM|AM))?)?\)$/);
+      if (!timesMatch || !timesMatch[4]) return;
+      const timeEnd = convertToDate(timesMatch[4]);
+      const timeStart = convertToDate(timesMatch[1]);
+      const diff = timeEnd - timeStart;
+
+      sum += diff;
+      count += 1;
+    }
+  })
+
+  switch (operation) {
+    case 'avg':
+      return sum / count / 60 / 60 / 1000;
+    case 'sum':
+      return sum / 60 / 60 / 1000;
+    default:
+      return count;
+  }
 }
