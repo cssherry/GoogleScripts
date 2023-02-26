@@ -597,7 +597,7 @@ function parseAcItems(item) {
     listingInfo[contextValues.sheetIndex.Title] = title;
     listingInfo[contextValues.sheetIndex.Rating] = rating;
     listingInfo[contextValues.sheetIndex.LocationRating] = getLocationRating(venue);
-    listingInfo[contextValues.sheetIndex.AdminFee] = contextValues.freeAC[url] ? 'FREE' : '~£3.60';
+    listingInfo[contextValues.sheetIndex.AdminFee] = contextValues.freeAC[url] ? 'FREE' : '~£4.50';
     listingInfo[contextValues.sheetIndex.Date] = date;
     listingInfo[contextValues.sheetIndex.Category] = description;
     listingInfo[contextValues.sheetIndex.Location] = venue;
@@ -629,8 +629,8 @@ function addOrUpdateAc(acUrl) {
     var isNowFree = contextValues.freeAC[acUrl] && itemInfo[contextValues.sheetIndex.AdminFee] !== 'FREE';
     var isNowPaid = !contextValues.freeAC[acUrl] && itemInfo[contextValues.sheetIndex.AdminFee] === 'FREE';
     if (isNowFree || isNowPaid) {
-      var newFee = isNowFree ? 'FREE' : '~£3.60';
-      var oldFee = isNowFree ? '~£3.60' : 'FREE';
+      var newFee = isNowFree ? 'FREE' : '~£4.50';
+      var oldFee = isNowFree ? '~£4.50' : 'FREE';
       markCellForUpdate(itemInfo.row, 'AdminFee', newFee);
       currentItem[contextValues.sheetIndex.AdminFee] = boldWord(newFee) + ' <br><em>(Previously ' + boldWord(oldFee) + ')</em>';
     }
@@ -725,7 +725,7 @@ function addOrUpdatePbPItem(pbpItem) {
 
     checkRatingAndDeletePreviousListing(itemInfo, url, currentItem, title);
   } else if (!contextValues.alreadyDeleted[url]) {
-    pbpItem[contextValues.sheetIndex.AdminFee] = '~£3';
+    pbpItem[contextValues.sheetIndex.AdminFee] = '~£2/4';
     pbpItem[contextValues.sheetIndex.Category] = '';
     pbpItem[contextValues.sheetIndex.EventManager] = '';
     pbpItem[contextValues.sheetIndex.UploadDate] = new Date();
