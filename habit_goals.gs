@@ -49,7 +49,7 @@ function getTodos(offset = 0) {
   }
 }
 
-const statusOrder = ['💬', 'In Progress', '', '✅'];
+const statusOrder = ['💬', 'In Progress', '❗️', '', '✅'];
 function sortTasks([iconA, _A], [iconB, _B]) {
   if (_A.getText() === '' && _B.getText() !== '') return 1;
   if (_A.getText() !== '' && _B.getText() === '') return -1;
@@ -94,6 +94,10 @@ function onEdit(e) {
 
   if (e.value === '💬') {
     appendToCellOnTheRight(sheet, e.range, `Waiting`);
+  }
+
+  if (e.value === '❗️') {
+    appendToCellOnTheRight(sheet, e.range, `On Notice`);
   }
 }
 
