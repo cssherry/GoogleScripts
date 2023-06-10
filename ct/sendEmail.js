@@ -315,9 +315,7 @@ function updateSheet() {
   try {
     var mainPage = getMainPageCT();
     if (mainPage) {
-      var ctJSON = mainPage.match(/var\s+res\s*=\s*([\s\S]*?}]);/);
-      var jsonWithoutMuchSpace = ctJSON[1].replace(/\s+/g," ");
-      var items = JSON.parse(jsonWithoutMuchSpace)
+      var items = mainPage.data;
       items.forEach(addOrUpdateCT);
     } else {
       removeAndEmail(urls.ctDomain);
@@ -392,6 +390,7 @@ function processPreviousListings() {
         location: locValue,
         locationRating: locRatingValue,
         rating: currItem[ratingIdx],
+        url: urlValue,
       };
       previousListingObject[titleIdx] = titleValue;
       previousListingObject[feeIdx] = feeValue;
@@ -840,13 +839,14 @@ function getMainPageCT() {
   */
   var mainPage = UrlFetchApp.fetch(urls.main,
                                   {
+                                    method: 'post',
                                     headers: {
-                                      Cookie: fetchPayload.ctCookie,
+                                      token: fetchPayload.ctCookie,
                                     },
                                   });
-  var mainPageText = mainPage.getContentText();
+  var mainPageText = JSON.parse(mainPage.getContentText());
 
-  if (mainPageText.indexOf('>sign up<') >= 0) {
+  if (!mainPageText || mainPageText.message.includes('login')) {
     return null;
   }
 
@@ -856,25 +856,16 @@ function getMainPageCT() {
 // Updates or calls add new listing
 function addOrUpdateCT(item) {
   // Get href
-  var url = urls.ctEvent + item.evid;
-  var itemInfo = contextValues.previousListings[url];
+  var url = urls.ctEvent + item.id;
+  var oldUrl = urls.ctEventOld + item.id;
+  var itemInfo = contextValues.previousListings[url] || contextValues.previousListings[oldUrl];
   var ticketsLeft = item.leftTickets;
 
   // Better show actual time/date
-  var scheduledDates = item.schedule_dates.split(/\s*,\s*/);
-  var schedulePurchased = item.schedule_purchased.split(/\s*,\s*/);
-  var scheduledTickets = item.schedule_tickets.split(/\s*,\s*/);
-  var maxIdx = Math.max(scheduledDates.length, schedulePurchased.length, scheduledTickets.length);
-  var scheduledResult = [];
-  var dateShown;
-  for (var schIdx = 0; schIdx < maxIdx; schIdx++) {
-    dateShown = maxIdx > 1 ? scheduledDates[schIdx] + ' - ' : ''; // Only show date if more than 1 available
-    scheduledResult.push(dateShown + (scheduledTickets[schIdx] - schedulePurchased[schIdx]) + '/' + scheduledTickets[schIdx] + ' free');
-  }
-  var date = scheduledResult.join(' ||| ') + ' : ' + item.display_date;
+  var date = item.event_date_time + ' (' + item.filter_arrays['3'].join('; ') + ')';
 
-  var fee = '£' + item.per_ticket;
-  var title = item.title;
+  var fee = '£' + item.admin_fees;
+  var title = item.event_name;
 
   if (!ticketsLeft) {
     title += ' (FULLY BOOKED)'
@@ -884,8 +875,7 @@ function addOrUpdateCT(item) {
 
   if (itemInfo) {
     // see if there's anything to update, if not, then just delete
-    var rating = getRating(title),
-        currentItem = [];
+    var currentItem = [];
     if (fee !== itemInfo.fee) {
       markCellForUpdate(itemInfo.row, 'AdminFee', fee);
       currentItem[contextValues.sheetIndex.AdminFee] = boldWord(fee) + '<br><em>(Previously ' + boldWord(itemInfo.fee) + ')</em>';
@@ -895,40 +885,42 @@ function addOrUpdateCT(item) {
       markCellForUpdate(itemInfo.row, 'Date', date);
       // Only flag date change in email if date changed or booked status changed
       var oldItemHasTickets = itemInfo.title.indexOf('(FULLY BOOKED)') === -1;
-      if (date.match(/\s+:\s+(.*?)$/)[1] !== itemInfo.date.match(/\s+:\s+(.*?)$/)[1] || oldItemHasTickets === ticketsLeft) {
+      if (!!ticketsLeft !== oldItemHasTickets) {
         currentItem[contextValues.sheetIndex.Date] = boldWord(date) + '<br><em>(Previously ' + boldWord(itemInfo.date) + ')</em>';
-      } else if (fee !== itemInfo.fee) {
-        // Update if fee has also changed
-        currentItem[contextValues.sheetIndex.Date] = date;
       }
     }
+
+    if (url !== itemInfo.url) {
+      markCellForUpdate(itemInfo.row, 'Url', url);
+    }
+
     checkRatingAndDeletePreviousListing(itemInfo, url, currentItem, title);
   } else if (!contextValues.alreadyDeleted[url]) {
-    addNewListingCT(item, url, fee, title, date);
+    addNewListingCT(item, url, title, date);
   }
 }
 
 // Process CT
-function addNewListingCT(item, url, fee, title, date) {
-  var ImageUrl = item.image;
+function addNewListingCT(item, url, title, date) {
+  var ImageUrl = item.event_image;
   var listingInfo = [];
-  var title = item.title;
+  var clean_title = item.event_name;
 
-  if (!title) {
+  if (!clean_title) {
     return;
   }
 
-  var location = item.address_nm + '; ' + item.address_nm1 + '; ' + item.address_nm3 + '; ' + item.venue_city1 + ' ' + item.venue_postcode1;
+  var location = item.address;
   listingInfo[contextValues.sheetIndex.Image] = '=Image("' + ImageUrl + '")';
   listingInfo[contextValues.sheetIndex.Title] = title;
-  listingInfo[contextValues.sheetIndex.Rating] = getRating(title);
+  listingInfo[contextValues.sheetIndex.Rating] = getRating(clean_title);
   listingInfo[contextValues.sheetIndex.LocationRating] = getLocationRating(location);
-  listingInfo[contextValues.sheetIndex.AdminFee] = '£' + item.per_ticket;
+  listingInfo[contextValues.sheetIndex.AdminFee] = '£' + item.admin_fees;
   listingInfo[contextValues.sheetIndex.Date] = date;
-  listingInfo[contextValues.sheetIndex.Category] = item.category;
+  listingInfo[contextValues.sheetIndex.Category] = item.categories + ' - ' + item.tag;
   listingInfo[contextValues.sheetIndex.Location] = location;
   listingInfo[contextValues.sheetIndex.Url] = url;
-  listingInfo[contextValues.sheetIndex.EventManager] = item.event_manager + ': ' + item.collection_instruction;
+  listingInfo[contextValues.sheetIndex.EventManager] = 'Type: ' + item.tickets_type + ': Private: ' + item.privateevent + ': Top Event: ' + item.is_top_member_event;
   listingInfo[contextValues.sheetIndex.UploadDate] = new Date();
   newItemsForUpdate.push(listingInfo);
 }
