@@ -11,7 +11,7 @@ const yearSheetName = 'Overview Year';
 function updateWithRTM() {
   const allSheet = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = allSheet.getSheetByName(yearSheetName);
-  const eventRange = sheet.getRange(`A2:B`);
+  const eventRange = sheet.getRange(`A2:C`);
   const eventData = eventRange.getValues();
   const eventNotes = eventRange.getNotes();
   rtmContext.eventData = eventData;
@@ -38,6 +38,32 @@ function updateWithRTM() {
   const ns = root.getNamespace();
   const entries = root.getChildren('entry', ns);
   entries.forEach(parseRTMTask);
+
+  const loggingSheet = SpreadsheetApp.openById(
+    rtm_settings.logging_sheet_id
+  ).getSheetByName(rtm_settings.logging_sheet_name);
+  const logData = loggingSheet.getRange(`A2:P`).getValues();
+  logData.forEach((data) => {
+    const currDate = data[3];
+    const currNote = data[15];
+    const currIdx =
+      currDate && rtmContext.dateIdx[convertToLocalTime(currDate, 'GMT')];
+
+    if (currDate && currNote && currIdx !== undefined) {
+      const previousNote = rtmContext.eventData[currIdx][2];
+      if (previousNote !== currNote) {
+        if (previousNote) {
+          rtmContext.eventNotes[
+            currIdx
+          ][2] = `Updated ${new Date()}\n${previousNote}\n-----------\n`;
+        }
+
+        rtmContext.eventData[currIdx][2] = currNote;
+      }
+
+      rtmContext.isChanged = true;
+    }
+  });
 
   if (rtmContext.isChanged) {
     eventRange.setNotes(eventNotes);
