@@ -239,6 +239,7 @@ function updateSheet() {
 
   // --------------------------------------------
   // PBP LISTINGS
+  /* Temporarily disable
   try {
     // Process PBP listings
     var pbpHTML = UrlFetchApp.fetch(urls.pbpShows,
@@ -271,10 +272,12 @@ function updateSheet() {
     printError(e)
     removeAndEmail(urls.pbpDomain, `errorParsingPage: ${e}`);
   }
+  */
 
   // --------------------------------------------
   // SF LISTINGS
   // Log in to SF
+  /*
   try {
     var loginSfPage = UrlFetchApp.fetch(urls.sfLogin, {
       method: 'post',
@@ -305,6 +308,7 @@ function updateSheet() {
     printError(e)
     removeAndEmail(urls.sf, `errorParsingPage: ${e}`);
   }
+  */
 
   // --------------------------------------------
   // CT LISTINGS
