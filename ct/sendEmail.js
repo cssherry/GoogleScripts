@@ -788,30 +788,29 @@ function getMainPageCT() {
   var headers1 = ctToken.getAllHeaders();
   fetchPayload.ctPasswordCookie = headers1['Set-Cookie'].join('');
   var keyInfo = ctToken.getContentText().match(/type="hidden" value="(.*?)"/)[1];
+  */
   var loginCtPage = UrlFetchApp.fetch(urls.ctLoginApi, {
       method: 'POST',
       followRedirects: false,
-      headers: {
-        Cookie: fetchPayload.ctPasswordCookie,
-      },
       payload: {
         email: fetchPayload.email,
-        ci_csrf_token: "",
-        key_info: keyInfo,
         password: sjcl.decrypt(fetchPayload.salt, fetchPayload.password),
       },
     });
 
-  var ctHeaders = loginCtPage.getAllHeaders();
-  fetchPayload.ctPasswordCookie = ctHeaders['Set-Cookie'];
-  */
+  // var ctHeaders = loginCtPage.getAllHeaders();
+  // fetchPayload.ctPasswordCookie = ctHeaders['Set-Cookie'];
+
+  var loginContent = JSON.parse(loginCtPage.getContentText());
+
   var mainPage = UrlFetchApp.fetch(urls.main,
                                   {
                                     method: 'post',
                                     headers: {
-                                      token: fetchPayload.ctCookie,
+                                      token: loginContent.data.token,
                                     },
                                   });
+
   var mainPageText = JSON.parse(mainPage.getContentText());
 
   if (!mainPageText || mainPageText.message.includes('login')) {
