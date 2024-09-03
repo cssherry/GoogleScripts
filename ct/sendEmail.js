@@ -531,8 +531,8 @@ function processRatingItem(itemText) {
 // Figure out of the page which listings are new
 function parseAcItems(item) {
   var header = getElementsByTagName(item, 'h5', true)[0];
-  var aElement = getElementsByTagName(header, 'a', true)[0];
-  var title = aElement.getText().trim();
+  var aElement = getElementsByTagName(item, 'a', true)[0];
+  var title = header.getText().trim();
 
   if (!title) {
     return;
