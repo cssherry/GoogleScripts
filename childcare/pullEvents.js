@@ -355,13 +355,31 @@ function getAndParsePosts() {
   hasChanged.forEach((newPostId) => {
     if (exceedingTimeLimit()) return;
     const postUrl = `${GLOBALS_VARIABLES.feedItemUrl}?feedItemId=${newPostId}`;
-    const postData = JSON.parse(
-      UrlFetchApp.fetch(postUrl, {
+    let postData;
+    try {
+      const result = UrlFetchApp.fetch(postUrl, {
         method: 'get',
         followRedirects: false,
         headers: GLOBALS_VARIABLES.headers,
-      }).getContentText()
-    );
+      }).getContentText();
+      postData = JSON.parse(result);
+    } catch (error) {
+      postData = {
+        feedItem: {
+          sender: {
+            name: 'ERROR',
+            id: '',
+          },
+          files: [],
+          images: [],
+          originatorId: newPostId,
+          feedItemId: newPostId,
+          createdDate: new Date(),
+          body: `Error: ${error.message}\nURL: ${error.url || postUrl}`,
+        },
+      }
+    }
+
     const newMessages = [];
 
     if (isObservation(postData.feedItem)) {
