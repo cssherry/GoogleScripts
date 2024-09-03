@@ -794,15 +794,22 @@ function processEvent(event) {
     newDataRow[totalTime] = undefined;
   }
 
-  if (event.embed && event.embed.mealItems && event.embed.mealItems.length) {
-    newDataRow[noteIdx] += ` (${event.embed.mealItems
-      .map(
-        (item) =>
-          `${item.foodItem.title} - ${
-            amountToDescription[item.amount] || item.amount
-          }`
-      )
-      .join(', ')})`;
+  if (event.embed) {
+    let additionalContent = '';
+    if (event.embed.mealItems && event.embed.mealItems.length) {
+      additionalContent = ` (${event.embed.mealItems
+        .map(
+          (item) =>
+            `${item.foodItem.title} - ${
+              amountToDescription[item.amount] || item.amount
+            }`
+        )
+        .join(', ')})`;
+    } else if (event.embed.actionType === 'TOILETVISIT' && event.embed.diaperingType) {
+      additionalContent = event.embed.diaperingType;
+    }
+
+    newDataRow[noteIdx] += additionalContent;
   }
 
   const eventIdentifier = getIdentifier(newDataRow);
