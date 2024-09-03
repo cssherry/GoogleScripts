@@ -1193,7 +1193,7 @@ function removeAndEmail(domain, specificErrorMessage) {
 
     var email = MailApp.sendEmail({
       to: myEmail,
-      subject: '[CT] ' + updateMessage,
+      subject: '[CT] ' + updateMessage.substring(0, 150),
       htmlBody: updateMessage
                  + ': ' + spreadsheetURL,
     });
