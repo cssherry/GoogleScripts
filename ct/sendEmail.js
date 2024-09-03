@@ -195,22 +195,6 @@ function updateSheet() {
     try {
       // --------------------------------------------
       // AC LISTINGS
-      // Process free items
-      var acFreeHTML = UrlFetchApp.fetch(urls.acFree,
-                                         {
-                                           headers: {
-                                             Cookie: fetchPayload.acCookie,
-                                           },
-                                         });
-      var acFreePage = cleanupHTMLElement(acFreeHTML);
-      contextValues.freeAC = {};
-
-      var acFreeDoc = XmlService.parse(acFreePage).getRootElement();
-      var acFreeItem = getElementByClassName(acFreeDoc, 'newShowPane', true);
-      if (acFreeItem && acFreeItem.length) {
-        acFreeItem.forEach(processFreeItems);
-      }
-
       // Process new items
       var acHTML = UrlFetchApp.fetch(urls.acMain,
                                      {
@@ -570,43 +554,36 @@ function parseAcItems(item) {
 
   var url = getACUrl(aElement.getAttribute('href').getValue());
   var listingInfo = contextValues.currAcItems[url];
+  var isFree = item.getAttribute('class').getValue().includes('rush-ticket');
   if (listingInfo) {
+    listingInfo.isFree = listingInfo.isFree || isFree;
     // Updated the date only with new date
     var previousDate = listingInfo[contextValues.sheetIndex.Date];
     listingInfo[contextValues.sheetIndex.Date] = previousDate + '; ' + date;
   } else if (!contextValues.alreadyDeleted[url]) {
-    var ImageElements = getElementsByTagName(item, 'img', true)[0];
-    var ImageUrl = ImageElements ? urls.acDomain + ImageElements.getAttribute('src').getValue() : '';
+    var ImageElements = getElementByClassName(item, 'ladder-rung-title', true)[0];
+    var ImageUrl = ImageElements ? ImageElements.getAttribute('style').getValue().match(/url\(\/?(.*)\)/) : null;
+    ImageUrl = (ImageUrl && `${urls.acDomain}${ImageUrl[1]}`) || ''
 
     var contentElement = getElementByClassName(item, 'ladder-rung-content', true)[0];
-    var allContent = getElementsByTagName(contentElement, 'p', true);
-    var locationIdx = allContent.length - 2; // second from last typically
 
-    // Add semi colon in front of zipcode for easier parsing later
-    // Zipcode cleanup if needed: .replace(/\s+[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/, '')
-    // https://stackoverflow.com/questions/164979/regex-for-matching-uk-postcodes
-    function getPostcodeRegexp(isAtEnd) {
-      const endChar = isAtEnd ? '$' : '\\b';
-      return new RegExp(`\\s+([A-Z]{1,2}\\d[A-Z\\d]? ?\\d[A-Z]{2})${endChar}`);
-    }
+    var description = contentElement.getValue().replace(/\bread\s+more\b/i, '').replace(/\s+/g, ' ').trim();
 
-    getElementByClassName(contentElement, 'newShowStar', true)[0]?.detach();
-    var description = contentElement.getValue().replace(/\bmore\s+info\b/i, '').replace(/\s+/g, ' ').replace(getPostcodeRegexp(false), ': ').trim();
-
-    var venue = allContent[locationIdx].getValue().trim().replace(getPostcodeRegexp(true), '; $1');
+    var venue = getElementByClassName(item, 'ladder-rung-venue', true)[0].getValue().trim();
     var rating = getRating(title, url);
     listingInfo = [];
     listingInfo[contextValues.sheetIndex.Image] = ImageUrl ? '=Image("' + ImageUrl + '")' : '';
     listingInfo[contextValues.sheetIndex.Title] = title;
     listingInfo[contextValues.sheetIndex.Rating] = rating;
     listingInfo[contextValues.sheetIndex.LocationRating] = getLocationRating(venue);
-    listingInfo[contextValues.sheetIndex.AdminFee] = contextValues.freeAC[url] ? 'FREE' : '~£4.50';
+    listingInfo[contextValues.sheetIndex.AdminFee] = isFree ? 'FREE' : '~£4.50';
     listingInfo[contextValues.sheetIndex.Date] = date;
     listingInfo[contextValues.sheetIndex.Category] = description;
     listingInfo[contextValues.sheetIndex.Location] = venue;
     listingInfo[contextValues.sheetIndex.Url] = url;
     listingInfo[contextValues.sheetIndex.EventManager] = '';
     listingInfo[contextValues.sheetIndex.UploadDate] = new Date();
+    listingInfo.isFree = isFree;
     contextValues.currAcItems[url] = listingInfo;
   }
 }
@@ -629,8 +606,8 @@ function addOrUpdateAc(acUrl) {
 
   if (itemInfo) {
     var currentItem = [];
-    var isNowFree = contextValues.freeAC[acUrl] && itemInfo[contextValues.sheetIndex.AdminFee] !== 'FREE';
-    var isNowPaid = !contextValues.freeAC[acUrl] && itemInfo[contextValues.sheetIndex.AdminFee] === 'FREE';
+    var isNowFree = currItem.isFree && itemInfo[contextValues.sheetIndex.AdminFee] !== 'FREE';
+    var isNowPaid = !currItem.isFree && itemInfo[contextValues.sheetIndex.AdminFee] === 'FREE';
     if (isNowFree || isNowPaid) {
       var newFee = isNowFree ? 'FREE' : '~£4.50';
       var oldFee = isNowFree ? '~£4.50' : 'FREE';
@@ -675,14 +652,6 @@ function addOrUpdateAc(acUrl) {
 
 function getACUrl(urlEnd) {
   return urls.acDomain + 'member/' + urlEnd.replace(/&return=.*$/, '').trim();
-}
-
-function processFreeItems(item) {
-  var containsFreeBooking = item.getValue().match(/no booking fee/i);
-  if (containsFreeBooking) {
-    var freeUrl = getElementsByTagName(item, 'a', true)[0].getAttribute('href').getValue();
-    contextValues.freeAC[getACUrl(freeUrl)] = true;
-  }
 }
 
 // --------------------------------------------
