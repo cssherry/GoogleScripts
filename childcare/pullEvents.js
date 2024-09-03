@@ -19,7 +19,7 @@
 //   postUrl: '',
 //   missedPostUrl: '',
 //   feedItemUrl: '',
-//   incidentUrl: '',
+//   incidentUrl: [''],
 //   graphqlUrl: '',
 //   graphqlQuery: { query, operationName, variables: {observationIds:[]}, },
 // };
@@ -445,7 +445,10 @@ function getAndParseBookmarks() {
 
 // Grab info on incident reports
 function getAndParseIncidents() {
-  const fullUrl = GLOBALS_VARIABLES.incidentUrl;
+  GLOBALS_VARIABLES.incidentUrl.forEach(getAndParseIncidentForChild);
+}
+
+function getAndParseIncidentForChild(fullUrl, _idx) {
   const reportList = JSON.parse(
     UrlFetchApp.fetch(fullUrl, {
       method: 'get',
