@@ -152,7 +152,7 @@ function updateSheet() {
                                         },
                                       });
       var acReviewPage = cleanupHTMLElement(acReviewHTML);
-      var ratingItems = acReviewPage.match(/<div.*?bg-review([\s\S]+?)(<\/div>\s+){5}/g);
+      var ratingItems = acReviewPage.match(/<div.*?card h-100([\s\S]+?)(<\/div>\s+){3}/g);
       contextValues.newRatings = [];
       contextValues.updatedRatings = [];
       ratingItems.forEach(processRatingItem);
@@ -457,9 +457,9 @@ function processRatingItem(itemText) {
       }
     }
 
-    var rating = itemText.match(/<img /g);
+    var rating = itemText.match(/<img .*?icon-star\s/g);
     rating = rating ? rating.length : 0;
-    var numberReviews = itemText.match(/see\s+(\d*)\s+review/i);
+    var numberReviews = itemText.match(/read\s+(\d*)\s+review/i);
     if (numberReviews) {
       numberReviews = +numberReviews[1];
     }
