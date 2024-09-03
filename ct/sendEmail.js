@@ -1365,7 +1365,10 @@ function cleanupHTML(htmlText) {
   return htmlText.match(/<body[\s\S]*?<\/body>/)[0]
                  .replace(/<(no)?script[\s\S]*?<\/(no)?script>|<link[\s\S]*?<\/link>|<footer[\s\S]*?<\/footer>|<button[\s\S]*?<\/button>|&copy;/g, '')
                  .replace(/&nbsp;|<\/?span[\s\S]*?>|<table[\s\S]+?<\/table>/g, ' ') // ugh sf
+                 .replace(/<select[\s\S]*?<\/select>/g, ' ') // Audience club -- some select messed up and gives "Attribute name "multiple" associated with an element type "select" must be followed by the ' = ' character." error
+                 .replace(/<a.*?genreModal.*?<\/a><\/p>/g, ' ')//  Audience club -- The Element Type "div" Must Be Terminated By The Matching End-tag -- <a class="btn btn-tac-gold genreModal" data-toggle="modal" data-id="recid=378655" href="#genreModal" />Select Genres</a></p>
                  .replace(/<img([\s\S]*?)\/?>/ig, '<img$1 />') // ugh sf
+                 .replace(/<\/?input.*>/ig, '') // AC <input needs </input>
                  .replace(/ & /g, ' and ') // ugh sf
                  .replace(/&/g, '&amp;') // ugh sf
                  .replace(/�/g, "'") // ugh sf
