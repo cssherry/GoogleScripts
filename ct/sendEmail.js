@@ -203,9 +203,8 @@ function updateSheet() {
                                        },
                                      });
       var acPage = cleanupHTMLElement(acHTML);
-
       var acDoc = XmlService.parse(acPage).getRootElement();
-      var acItems = getElementByClassName(acDoc, 'col-lg-3', true);
+      var acItems = getElementByClassName(acDoc, 'showlisting');
 
       if (!acItems.length) {
         throw new Error('Nothing found for AC -- something is probably wrong');
