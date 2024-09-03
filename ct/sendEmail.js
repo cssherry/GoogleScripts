@@ -462,7 +462,7 @@ function processRatingItem(itemText) {
 
     var headerOpening = '<h4 style="color:' + color + ';">';
 
-    var fullTitle = itemText.match(/text-ac.*?>(.*?)</)[1];
+    var fullTitle = itemText.match(/text-tac-gold.*?>(.*?)</)[1];
 
     if (data.length) {
       noteArray = contextValues.ratingNotes[rowIdx];
