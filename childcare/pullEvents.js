@@ -981,11 +981,16 @@ function myIsNaN(val) {
 }
 
 function convertFromPacific(date, latitude, longitude) {
-  return changeTimezone(
-    date,
-    'America/Los_Angeles',
-    tzlookup(latitude, longitude)
-  );
+  try {
+    return changeTimezone(
+      date,
+      'America/Los_Angeles',
+      tzlookup(latitude, longitude)
+    );
+  } catch (error) {
+    console.log(date, latitude, longitude, error);
+    return date
+  }
 }
 
 function changeTimezone(timeZone) {
