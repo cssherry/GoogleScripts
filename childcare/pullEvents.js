@@ -157,7 +157,7 @@ function pullAndUpdateEvents() {
   MailApp.sendEmail({
     to: GLOBALS_VARIABLES.myEmails.join(','),
     subject: `[Famly] New Events Logged ${GLOBALS_VARIABLES.endDate}`,
-    body: famlySummary + loggedData + separator + daycareGeneral,
+    body: famlySummary + loggedData + separator + daycareGeneral + separator + GLOBALS_VARIABLES.famlyUrls,
   });
 
   // UPDATE ROWS
