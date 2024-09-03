@@ -1,5 +1,5 @@
 var startHour = 6; // This is the hour ratings will be calculated
-var endHour = 23;
+var endHour = 24;
 var contextValues = {
   alreadyDeleted: {},
   currAcItems: {},
