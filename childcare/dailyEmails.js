@@ -3,6 +3,8 @@ function sendAbbreviatedSummaryEmail() {
 }
 
 function sendSummaryEmail(includeNotes = true, emails = GLOBALS_VARIABLES.summaryEmails) {
+  if (!emails.length) return;
+
   const summaryDate = getPastDate(1);
   const summaryDateFormatted = parseDate(summaryDate);
 
