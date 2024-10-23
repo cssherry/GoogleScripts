@@ -29,8 +29,12 @@ function appendToCellOnTheRight(spreadsheet, currentRange, appendText) {
   );
 
   const richText = nextCell.getRichTextValue();
-  const richTextNew = recreateText(richText, '', ` (${appendText}: ${new Date().toLocaleString()})`);
+  const richTextNew = getNewRichTextValue(richText, appendText);
   nextCell.setRichTextValue(richTextNew);
+}
+
+function getNewRichTextValue(richText, appendText) {
+  return recreateText(richText, '', ` (${appendText}: ${new Date().toLocaleString()})`);
 }
 
 function getTodos(offset = 0) {
@@ -49,7 +53,7 @@ function getTodos(offset = 0) {
   }
 }
 
-const statusOrder = ['💬', 'In Progress', '❗️', '', '✅'];
+const statusOrder = ['💬', 'In Progress', '❗️', '', '✅', '😵'];
 function sortTasks([iconA, _A], [iconB, _B]) {
   if (_A.getText() === '' && _B.getText() !== '') return 1;
   if (_A.getText() !== '' && _B.getText() === '') return -1;
@@ -69,6 +73,41 @@ function reorderEvents() {
   }
 }
 
+const iconToText = {
+  '✅': `Completed`,
+  'In Progress': `Started`,
+  '💬': `Waiting`,
+  '❗️': `On Notice`,
+  '😵': `Abandoned`,
+};
+
+const iconKeys = Object.keys(iconToText);
+
+function updateStatusTime() {
+  const todos = getTodos()
+  let isChanged = false;
+  for (let day in todos) {
+    const richTextTasks = todos[day].getRichTextValues();
+
+    for (let task of richTextTasks) {
+      const [icon, taskName] = task;
+      const iconText = icon.getText();
+      const taskNameText = taskName.getText();
+      if (!iconText) continue;
+      const regexpTest = new RegExp(`\\(${iconToText[iconText]}: [0-9\\/,:APM\\s]+\\)$`);
+      if (!regexpTest.test(taskNameText)) {
+        task[1] = getNewRichTextValue(taskName, iconToText[iconText]);
+        isChanged = true;
+      }
+    }
+
+    if (isChanged) {
+      todos[day].setRichTextValues(richTextTasks);
+    }
+  }
+}
+
+// Automatically add date where status changed
 function onEdit(e) {
   const allSheet = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = allSheet.getSheetByName(weeklyPlanningSheetName);
@@ -84,21 +123,17 @@ function onEdit(e) {
 
   if (e.source.getSheetName() !== weeklyPlanningSheetName) return;
 
-  if (e.value === '✅') {
-    appendToCellOnTheRight(sheet, e.range, `Completed`);
+  for (let icon of iconKeys) {
+    if (e.value.includes(icon)) {
+      appendToCellOnTheRight(sheet, e.range, iconToText[icon]);
+      return;
+    }
   }
+}
 
-  if (e.value === 'In Progress') {
-    appendToCellOnTheRight(sheet, e.range, `Started`);
-  }
-
-  if (e.value === '💬') {
-    appendToCellOnTheRight(sheet, e.range, `Waiting`);
-  }
-
-  if (e.value === '❗️') {
-    appendToCellOnTheRight(sheet, e.range, `On Notice`);
-  }
+function setNewWeekDay(weekRange, weekValues) {
+  weekValues.sort(sortTasks);
+  weekRange.setRichTextValues(weekValues);
 }
 
 function addIncompleteItems() {
