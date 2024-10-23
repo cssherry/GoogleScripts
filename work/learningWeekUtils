@@ -1,0 +1,58 @@
+function indexSheet(sheetData) {
+  var result = {},
+    length = sheetData[0].length;
+
+  for (var i = 0; i < length; i++) {
+    result[sheetData[0][i]] = i;
+  }
+
+  return result;
+}
+
+function parseQuarters(data, quarterInfoIndex) {
+  const year = new Date().getFullYear();
+  const result = {};
+  data.forEach((row, idx) => {
+    if (idx === 0) return;
+    const quarter = row[quarterInfoIndex];
+    if (quarter) {
+      const [fullText, numericKey, startText, endText] = quarter.match(/Q(\d)\s\((\d+\/\d+) - (\d+\/\d+)\)/);
+
+      const start = new Date(`${startText}/${year}`);
+      let end = new Date(`${endText}/${year}`); 
+
+      if (start > end) {
+        end = new Date(`${endText}/${year + 1}`); 
+      }
+
+      result[numericKey] = {
+        fullText,
+        numericKey,
+        start,
+        end,
+      }
+    }
+  });
+
+  return result;
+}
+
+function parseEmails(data, index) {
+  return data.reduce((fullData, row) => {
+    fullData[row[index.Email]] = row[index.Participants];
+    return fullData;
+  }, {});
+}
+
+function calculateQuarter(date, quarters) {
+  for (let i = 1; i <= 4; i++) {
+    const currQuarter = quarters[i];
+    if (date >= currQuarter.start && date <= currQuarter.end) {
+      return currQuarter.fullText;
+    }
+  }
+}
+
+function isSameDay(day1, day2) {
+  return day1.toDateString() === day2.toDateString();
+}
