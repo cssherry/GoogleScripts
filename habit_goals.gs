@@ -136,37 +136,71 @@ function setNewWeekDay(weekRange, weekValues) {
   weekRange.setRichTextValues(weekValues);
 }
 
+// Runs weekly to move incomplete items to next week
 function addIncompleteItems() {
-  const allSheet = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = allSheet.getSheetByName(weeklyPlanningSheetName);
-  const weekNum = getCurrWeek();
-  const currWeekRange = sheet.getRange(
-    `A${26 * weekNum + 3}:B${26 * weekNum + 22 + 3}`
-  );
-  const currWeekValues = currWeekRange.getRichTextValues();
-
   const todos = getTodos(-1)
+  const newTodos = getTodos();
 
-  let currIdx = 0;
+  const days = Object.keys(newTodos);
+  const weekends = days.splice(5);
+  const weekdayRange = newTodos[days[0]];
+  const weekendRange = newTodos[weekends[0]];
+  const tracker = {
+    weekday: {
+      days,
+      dayIdx: 0,
+      todoIdx: 0,
+      newDayRange: weekdayRange,
+      newDay: weekdayRange.getRichTextValues(),
+    },
+    weekend: {
+      days,
+      dayIdx: 0,
+      todoIdx: 0,
+      newDayRange: weekendRange,
+      newDay: weekendRange.getRichTextValues(),
+    }
+  };
+
   const incompleteReport = {};
   let incompleteNum = 0;
   let completedNum = 0;
   let completedItems = '';
 
   for (let day in todos) {
+    let newDayTracker = tracker.weekday;
+    if (weekends.includes(day)) {
+      newDayTracker = tracker.weekend;
+    }
+
     const richTexts = todos[day].getRichTextValues();
     richTexts.forEach(([sign, task]) => {
       const signText = sign.getText();
       const signTextForReport = signText || notStarted;
       const taskText = task.getText();
 
-      if (signText === '💬' || signText === 'In Progress' || (!signText && !!taskText)) {
+      if (signText === '💬' || signText === 'In Progress' || signText === '❗️' || (!signText && !!taskText)) {
         incompleteNum++;
+        let currweekText = newDayTracker.newDay[newDayTracker.todoIdx][1].getText();
+        let currweekIcon = newDayTracker.newDay[newDayTracker.todoIdx][0].getText();
+        let isTooLong = newDayTracker.todoIdx >= newDayTracker.newDay.length;
         while (
-          currIdx < currWeekValues.length &&
-          (currWeekValues[currIdx][1].getText() || currWeekValues[currIdx][0].getText())
+          (!isTooLong || newDayTracker.dayIdx < newDayTracker.days.length) &&
+          (!!currweekText || !!currweekIcon)
         ) {
-          currIdx++;
+          isTooLong = newDayTracker.todoIdx >= newDayTracker.newDay.length - 1;
+          if (isTooLong) {
+            setNewWeekDay(newDayTracker.newDayRange, newDayTracker.newDay);
+            newDayTracker.dayIdx += 1;
+            newDayTracker.todoIdx = 0;
+            newDayTracker.newDayRange = newTodos[newDayTracker.days[newDayTracker.dayIdx]];
+            newDayTracker.newDay = newDayTracker.newDayRange.getRichTextValues();
+          } else {
+            newDayTracker.todoIdx++;
+          }
+
+          currweekText = newDayTracker.newDay[newDayTracker.todoIdx][1].getText();
+          currweekIcon = newDayTracker.newDay[newDayTracker.todoIdx][0].getText();
         }
 
         if (!incompleteReport[signTextForReport]) {
@@ -175,9 +209,9 @@ function addIncompleteItems() {
 
         incompleteReport[signTextForReport] += `- ${taskText}\n`;
 
-        if (currIdx < currWeekValues.length) {
-          currWeekValues[currIdx][0] = sign;
-          currWeekValues[currIdx][1] = recreateText(task, '- ');
+        if (!isTooLong) {
+          newDayTracker.newDay[newDayTracker.todoIdx][0] = sign;
+          newDayTracker.newDay[newDayTracker.todoIdx][1] = recreateText(task, '- ');
         } else {
           console.log(`Unable to find spot for: ${signText || notStarted}: ${taskText}`);
         }
@@ -188,14 +222,12 @@ function addIncompleteItems() {
     });
   }
 
-  const firstDay = currWeekValues.slice(0, 15);
-  const weekend = currWeekValues.slice(16)
-  firstDay.sort(sortTasks);
-  weekend.sort(sortTasks);
+  setNewWeekDay(tracker.weekday.newDayRange, tracker.weekday.newDay);
+  setNewWeekDay(tracker.weekend.newDayRange, tracker.weekend.newDay);
 
-  const newWeek = [...firstDay, currWeekValues[15], ...weekend];
-  currWeekRange.setRichTextValues(newWeek);
-
+  const allSheet = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = allSheet.getSheetByName(weeklyPlanningSheetName);
+  const weekNum = getCurrWeek();
   const notes = sheet.getRange(`F${26 * (weekNum - 1) + 19}`).getValue();
 
   sendReport(
@@ -217,7 +249,7 @@ function sendReport(
   allSheet
 ) {
   function formatListSection(header, list) {
-    const listItems = list.split('\n').map((text) => text ? `<li>${text.replace('- ', '').replace(/\((.*)\)$/, '<small style="color:gray;""><em>($1)</em></small>')}</li>` : '');
+    const listItems = list.split('\n').filter((text) => !!text).map((text) => text ? `<li>${text.replace('- ', '').replace(/\((.*)\)$/, '<small style="color:gray;""><em>($1)</em></small>')}</li>` : '');
     return `<h2>${header} (${listItems.length}):</h2>\n<ol>${listItems.join('\n')}</ol>`;
   }
 
@@ -305,6 +337,7 @@ function onOpen() {
     .addItem('Order Habits', 'reorderEvents')
     .addSeparator()
     .addItem('Add current status time', 'onEdit')
+    .addItem('Update tasks with time if missing', 'updateStatusTime')
     .addToUi();
 }
 
@@ -352,4 +385,12 @@ function timeTakenHours(text, operation) {
     default:
       return count;
   }
+}
+
+// Adds notes from cell groups to cell
+function addNotes(cellRange, spreadsheetName, joinText = '\n') {
+  const allSheet = SpreadsheetApp.getActiveSpreadsheet();
+  const spreadsheet = spreadsheetName ? allSheet.getSheetByName(spreadsheetName) : allSheet.getActiveSheet();
+  const notes = spreadsheet.getRange(cellRange).getNotes();
+  return notes.flat().filter(el => !!el).join(joinText)
 }
