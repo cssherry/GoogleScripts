@@ -5,7 +5,7 @@ const rtmContext = {
   dateIdx: {},
   currYear: new Date().getFullYear(),
   isChanged: false,
-  offSet: `GMT+${(-1 * new Date().getTimezoneOffset()) / 60}`,
+  offSet: `GMT+${-1 * new Date().getTimezoneOffset() / 60}`,
 };
 const yearSheetName = 'Overview Year';
 function updateWithRTM() {
@@ -32,6 +32,8 @@ function updateWithRTM() {
     }
   });
 
+  
+
   const xml = UrlFetchApp.fetch(rtm_settings.rtm_feed).getContentText();
   const document = XmlService.parse(xml);
   const root = document.getRootElement();
@@ -39,23 +41,18 @@ function updateWithRTM() {
   const entries = root.getChildren('entry', ns);
   entries.forEach(parseRTMTask);
 
-  const loggingSheet = SpreadsheetApp.openById(
-    rtm_settings.logging_sheet_id
-  ).getSheetByName(rtm_settings.logging_sheet_name);
+  const loggingSheet = SpreadsheetApp.openById(rtm_settings.logging_sheet_id).getSheetByName(rtm_settings.logging_sheet_name);
   const logData = loggingSheet.getRange(`A2:P`).getValues();
   logData.forEach((data) => {
     const currDate = data[3];
     const currNote = data[15];
-    const currIdx =
-      currDate && rtmContext.dateIdx[convertToLocalTime(currDate, 'GMT')];
+    const currIdx = currDate && rtmContext.dateIdx[convertToLocalTime(currDate, 'GMT')];
 
     if (currDate && currNote && currIdx !== undefined) {
       const previousNote = rtmContext.eventData[currIdx][2];
       if (previousNote !== currNote) {
         if (previousNote) {
-          rtmContext.eventNotes[
-            currIdx
-          ][2] = `Updated ${new Date()}\n${previousNote}\n-----------\n`;
+          rtmContext.eventNotes[currIdx][2] = `Updated ${new Date()}\n${previousNote}\n-----------\n`
         }
 
         rtmContext.eventData[currIdx][2] = currNote;
@@ -66,8 +63,8 @@ function updateWithRTM() {
   });
 
   if (rtmContext.isChanged) {
-    eventRange.setNotes(eventNotes);
-    eventRange.setValues(eventData);
+    eventRange.setNotes(rtmContext.eventNotes);
+    eventRange.setValues(rtmContext.eventData);
   }
 }
 
@@ -82,11 +79,7 @@ function parseRTMTask(entry) {
   contentChildren.forEach((el) => {
     const elClass = el.getAttribute('class').getValue();
     if (elClass === 'rtm_due') {
-      const tagValue = el
-        .getChildren()
-        .filter(
-          (span) => span.getAttribute('class').getValue() === 'rtm_due_value'
-        );
+      const tagValue = el.getChildren().filter((span) => span.getAttribute('class').getValue() === 'rtm_due_value');
       dueDate = tagValue[0].getValue();
     } else if (elClass === 'rtm_notes') {
       note = el;
@@ -94,8 +87,7 @@ function parseRTMTask(entry) {
   });
 
   const dueDateObj = new Date(dueDate);
-  if (isNaN(dueDateObj) || dueDateObj.getFullYear() !== rtmContext.currYear)
-    return;
+  if (isNaN(dueDateObj) || dueDateObj.getFullYear() !== rtmContext.currYear) return;
 
   // 1. Check if task has been recently added or updated
   const id = entry.getChild('id', ns).getValue();
@@ -116,17 +108,12 @@ function parseRTMTask(entry) {
       const separator = rtmContext.eventData[dateIdx][1] ? '\n' : '';
       rtmContext.eventData[dateIdx][1] += `${separator}${taskText}`;
     } else {
-      const oldText = rtmContext.eventData[dateIdx][1];
+      const oldText = rtmContext.eventData[dateIdx][1]
       const escapedId = id.replaceAll(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
-      rtmContext.eventData[dateIdx][1] = oldText.replace(
-        new RegExp(`.*? || ${escapedId}`),
-        taskText
-      );
+      rtmContext.eventData[dateIdx][1] = oldText.replace(new RegExp(`.*? || ${escapedId}`), taskText);
 
       if (oldText === rtmContext.eventData[dateIdx]) {
-        throw new Error(
-          `No changes in text: ${oldText}, ID: ${id}, escapedID: ${escapedId}, lastUpdated ${lastUpdated.toString()}, updatedDate ${updatedDate.toString()}`
-        );
+        throw new Error(`No changes in text: ${oldText}, ID: ${id}, escapedID: ${escapedId}, lastUpdated ${lastUpdated.toString()}, updatedDate ${updatedDate.toString()}`);
       }
     }
 
@@ -147,9 +134,7 @@ function parseRTMTask(entry) {
       });
 
       if (!currNote.includes(noteUpdated)) {
-        rtmContext.eventNotes[
-          dateIdx
-        ][1] = `${noteUpdated}\n${noteContent}\n----------\n${rtmContext.eventNotes[dateIdx][1]}`;
+        rtmContext.eventNotes[dateIdx][1] = `${noteUpdated}\n${noteContent}\n----------\n${rtmContext.eventNotes[dateIdx][1]}`
       }
     });
 
