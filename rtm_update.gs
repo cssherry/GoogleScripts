@@ -19,6 +19,8 @@ function updateWithRTM() {
   const dateInfo = rtmContext.dateInfo;
   eventData.forEach((dayInfo, idx) => {
     const date = dayInfo[0];
+    if (!date) return;
+
     const dateTasks = {};
     const localeTime = convertToLocalTime(date);
     dateInfo[localeTime] = dateTasks;
@@ -56,9 +58,9 @@ function updateWithRTM() {
         }
 
         rtmContext.eventData[currIdx][2] = currNote;
+  
+        rtmContext.isChanged = true;
       }
-
-      rtmContext.isChanged = true;
     }
   });
 
@@ -69,7 +71,6 @@ function updateWithRTM() {
 }
 
 function parseRTMTask(entry) {
-  const value = entry.getValue();
   const ns = entry.getNamespace();
   let content = entry.getChild('content', ns);
   content = content.getChildren();
@@ -94,7 +95,10 @@ function parseRTMTask(entry) {
   let updatedDate = entry.getChild('updated', ns).getValue();
   updatedDate = new Date(updatedDate);
   const dueDateString = convertToLocalTime(dueDateObj, 'GMT');
-  const lastUpdated = rtmContext.dateInfo[dueDateString][id];
+  const dateInfo = rtmContext.dateInfo[dueDateString];
+  if (!dateInfo) return;
+
+  const lastUpdated = dateInfo[id];
 
   if (!lastUpdated || updatedDate > lastUpdated) {
     rtmContext.dateInfo[dueDateString][id] = updatedDate;
