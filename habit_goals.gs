@@ -64,10 +64,25 @@ function sortTasks([iconA, _A], [iconB, _B]) {
   return valueA - valueB;
 }
 
-function reorderEvents() {
-  const todos = getTodos()
+function reorderEventsOnSelection() {
+    const selection = SpreadsheetApp.getSelection().getCurrentCell();
+    const currentCell = selection.getRow();
+    const row = currentCell;
+    const weekSelected = Math.floor((row - 3) / 26);
+    const currWeek = getCurrWeek();
+    reorderEvents(weekSelected - currWeek);
+}
+
+function reorderEvents(weekOffset = 0) {
+  console.log(`Weekoffset is ${weekOffset}`);
+  if (isNaN(parseFloat(weekOffset))) {
+    weekOffset = 0;
+  }
+
+  console.log(`Using offset ${weekOffset}`);
+  const todos = getTodos(weekOffset)
   for (let day in todos) {
-    const richText = todos[day].getRichTextValues()
+    const richText = todos[day].getRichTextValues();
     richText.sort(sortTasks);
     todos[day].setRichTextValues(richText);
   }
@@ -154,7 +169,7 @@ function addIncompleteItems() {
       newDay: weekdayRange.getRichTextValues(),
     },
     weekend: {
-      days,
+      days: weekends,
       dayIdx: 0,
       todoIdx: 0,
       newDayRange: weekendRange,
@@ -334,7 +349,7 @@ function getCurrWeek() {
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
   ui.createMenu('Manage Habits')
-    .addItem('Order Habits', 'reorderEvents')
+    .addItem('Order Habits', 'reorderEventsOnSelection')
     .addSeparator()
     .addItem('Add current status time', 'onEdit')
     .addItem('Update tasks with time if missing', 'updateStatusTime')
@@ -358,7 +373,7 @@ function timeTakenHours(text, operation) {
     if (operation === 'count') {
       count += 1;
     } else {
-      // Return
+      // Return 
       // 0: "(Waiting: 1/6/2023, 2:11:27 PM) (Completed: 1/6/2023, 3:00:35 PM)"
       // 1: "1/6/2023, 2:11:27 PM"
       // 2: ", 2:11:27 PM"
@@ -371,7 +386,7 @@ function timeTakenHours(text, operation) {
       const timeEnd = convertToDate(timesMatch[4]);
       const timeStart = convertToDate(timesMatch[1]);
       const diff = timeEnd - timeStart;
-
+      
       sum += diff;
       count += 1;
     }
