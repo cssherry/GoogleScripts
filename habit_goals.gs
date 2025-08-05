@@ -210,6 +210,7 @@ function addIncompleteItems() {
             newDayTracker.todoIdx = 0;
             newDayTracker.newDayRange = newTodos[newDayTracker.days[newDayTracker.dayIdx]];
             newDayTracker.newDay = newDayTracker.newDayRange.getRichTextValues();
+            isTooLong = false;
           } else {
             newDayTracker.todoIdx++;
           }
@@ -222,14 +223,16 @@ function addIncompleteItems() {
           incompleteReport[signTextForReport] = '';
         }
 
-        incompleteReport[signTextForReport] += `- ${taskText}\n`;
-
         if (!isTooLong) {
           newDayTracker.newDay[newDayTracker.todoIdx][0] = sign;
           newDayTracker.newDay[newDayTracker.todoIdx][1] = recreateText(task, '- ');
         } else {
           console.log(`Unable to find spot for: ${signText || notStarted}: ${taskText}`);
+          taskText += ' (UNABLE TO FIND SPOT)';
         }
+
+
+        incompleteReport[signTextForReport] += `- ${taskText}\n`;
       } else if (!!taskText) {
         completedNum += 1;
         completedItems += `- ${taskText}\n`;
@@ -342,7 +345,7 @@ function sendReport(
 
 function getCurrWeek() {
   const weekString = Utilities.formatDate(new Date(), 'GMT', 'w');
-  return parseInt(weekString);
+  return parseInt(weekString) - 1;
 }
 
 // custom menu
@@ -406,6 +409,12 @@ function timeTakenHours(text, operation) {
 function addNotes(cellRange, spreadsheetName, joinText = '\n') {
   const allSheet = SpreadsheetApp.getActiveSpreadsheet();
   const spreadsheet = spreadsheetName ? allSheet.getSheetByName(spreadsheetName) : allSheet.getActiveSheet();
-  const notes = spreadsheet.getRange(cellRange).getNotes();
-  return notes.flat().filter(el => !!el).join(joinText)
+  try {
+    const notes = spreadsheet.getRange(cellRange).getNotes();
+    return notes.flat().filter(el => !!el).join(joinText)
+  } catch (e) {
+    const errorMessage = `"${spreadsheetName}"!${cellRange} : Error ${e}`;
+    console.error(erro);
+    return errorMessage;
+  }
 }
