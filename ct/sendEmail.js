@@ -530,13 +530,13 @@ function processRatingItem(itemText) {
 // Figure out of the page which listings are new
 function parseAcItems(item) {
   var header = getElementsByTagName(item, 'h5', true)[0];
-  var aElement = getElementsByTagName(item, 'a', true)[0];
-  var title = header.getText().trim();
+  var aElement = getElementsByTagName(header, 'a', true)[0];
+  var title = aElement.getText().trim();
 
   if (!title) {
     return;
   }
-
+  
   var bookElement = getElementByClassName(item, 'ladder-book-now', true)[0];
   var dateElement = getElementByClassName(bookElement, 'text-center', true)[0];
   var date = dateElement
@@ -788,6 +788,7 @@ function getMainPageCT() {
   fetchPayload.ctPasswordCookie = headers1['Set-Cookie'].join('');
   var keyInfo = ctToken.getContentText().match(/type="hidden" value="(.*?)"/)[1];
   */
+
   var loginCtPage = UrlFetchApp.fetch(urls.ctLoginApi, {
       method: 'POST',
       followRedirects: false,
@@ -806,10 +807,10 @@ function getMainPageCT() {
                                   {
                                     method: 'post',
                                     headers: {
-                                      token: loginContent.data.token,
+                                      authorization: `Bearer ${loginContent.data.token}`,
                                     },
                                   });
-
+  
   var mainPageText = JSON.parse(mainPage.getContentText());
 
   if (!mainPageText || mainPageText.message.includes('login')) {
@@ -883,7 +884,7 @@ function addNewListingCT(item, url, title, date) {
   listingInfo[contextValues.sheetIndex.LocationRating] = getLocationRating(location);
   listingInfo[contextValues.sheetIndex.AdminFee] = '£' + item.admin_fees;
   listingInfo[contextValues.sheetIndex.Date] = date;
-  listingInfo[contextValues.sheetIndex.Category] = item.categories + ' - ' + item.tag;
+  listingInfo[contextValues.sheetIndex.Category] = item.categories + ' - ' + item.tag + ' - ' + item.short_description;
   listingInfo[contextValues.sheetIndex.Location] = location;
   listingInfo[contextValues.sheetIndex.Url] = url;
   listingInfo[contextValues.sheetIndex.EventManager] = 'Type: ' + item.tickets_type + ': Private: ' + item.privateevent + ': Top Event: ' + item.is_top_member_event;
@@ -1332,9 +1333,9 @@ function cleanupHTML(htmlText) {
                  .replace(/<(no)?script[\s\S]*?<\/(no)?script>|<link[\s\S]*?<\/link>|<footer[\s\S]*?<\/footer>|<button[\s\S]*?<\/button>|&copy;/g, '')
                  .replace(/&nbsp;|<\/?span[\s\S]*?>|<table[\s\S]+?<\/table>/g, ' ') // ugh sf
                  .replace(/<select[\s\S]*?<\/select>/g, ' ') // Audience club -- some select messed up and gives "Attribute name "multiple" associated with an element type "select" must be followed by the ' = ' character." error
-                 .replace(/<a.*?genreModal.*?<\/a><\/p>/g, ' ')//  Audience club -- The Element Type "div" Must Be Terminated By The Matching End-tag -- <a class="btn btn-tac-gold genreModal" data-toggle="modal" data-id="recid=378655" href="#genreModal" />Select Genres</a></p>
+                 .replace(/<a.*?genreModal.*?<\/a><\/p>/g, ' ')//  Audience club -- The Element Type "div" Must Be Terminated By The Matching End-tag -- <a class="btn btn-tac-gold genreModal" data-toggle="modal" data-id="recid=378655" href="#genreModal" />Select Genres</a></p>		
                  .replace(/<img([\s\S]*?)\/?>/ig, '<img$1 />') // ugh sf
-                 .replace(/<\/?input.*>/ig, '') // AC <input needs </input>
+                 .replace(/<\/?input.*>/ig, '') // AC <input needs </input> 
                  .replace(/ & /g, ' and ') // ugh sf
                  .replace(/&/g, '&amp;') // ugh sf
                  .replace(/�/g, "'") // ugh sf
