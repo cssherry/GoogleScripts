@@ -1,0 +1,19 @@
+const getAttenderNames = (event) => {
+  const guests = event.getGuestList(true);
+  
+  const attenders = guests.filter(guest => {
+    const email = guest.getEmail();
+    const response = guest.getStatus(); // can be no, invited, or yes
+    Logger.log(`Guest "${email}" has status: ${response}`);
+    return response !== 'no' && !settings.ignoreEmails.includes(email) && !email.endsWith('resource.calendar.google.com');
+  });
+
+  const names = attenders.map(attender => { 
+    const email = attender.getEmail();
+    const name = settings.namesByEmail[email] || attender.getName();
+    
+    return name || email; 
+  });
+
+  return names;
+};

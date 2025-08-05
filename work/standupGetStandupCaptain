@@ -1,0 +1,42 @@
+const getStandUpCaptain = (attenders, isTestDay) => {
+  let standupCaptain = settings.standupCaptain;
+
+  const standupCaptainIsMissing = !attenders.includes(standupCaptain);
+  if (standupCaptainIsMissing && isTestDay && attenders.includes(settings.watcherOfTestsBackup)) {
+    standupCaptain = settings.watcherOfTestsBackup;
+  } else if (standupCaptainIsMissing) {
+    standupCaptain = undefined;
+  }
+
+
+  const captainCounts = JSON.parse(settings.scriptProperties.getProperty(settings.scriptPropertyName)) || {};
+  if(!standupCaptain) {
+    let minValue;
+    attenders.forEach((attendee) => {
+      const currCount = captainCounts[attendee] || 0;
+
+      const isNewMin = currCount < minValue;
+      const isFirstPersonOnList = !standupCaptain;
+      if (isNewMin || isFirstPersonOnList) {
+        standupCaptain = attendee;
+        minValue = currCount;
+      }
+    });
+
+    // Update captainCounts
+    if (!captainCounts[standupCaptain]) {
+      captainCounts[standupCaptain] = 0;
+    }
+  } 
+
+  // This triggers filtering out of the standup captain from random list later on
+  if (standupCaptain !== attenders[0]) {
+    settings.standupCaptain = standupCaptain;
+  }
+
+  captainCounts[standupCaptain] += 1;
+  console.log(JSON.stringify(captainCounts));
+  settings.scriptProperties.setProperty(settings.scriptPropertyName, JSON.stringify(captainCounts));
+  
+  return standupCaptain;
+}

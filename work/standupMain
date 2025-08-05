@@ -1,0 +1,104 @@
+// Deprecated
+function updateCaptain() {
+    const originalCaptain = 'Misi';
+    const newCaptain = 'Roli';
+    const propertyName = 'prod-occurances';
+    scriptProperties = PropertiesService.getScriptProperties();
+    const captainCounts = JSON.parse(scriptProperties.getProperty(propertyName));
+    captainCounts[originalCaptain] -= 1;
+    captainCounts[newCaptain] += 1;
+    scriptProperties.setProperty(propertyName, JSON.stringify(captainCounts));
+}
+
+function messageChannel() {
+  const text = "";
+  const block = BlockFactory.text(text);
+  const url = settings.slackIncomingWebhookURL['prod']; 
+
+  const payload = {
+    blocks: [block],
+  };
+
+  const params = {
+      method: 'POST', 
+      payload: JSON.stringify(payload),
+  };
+
+  UrlFetchApp.fetch(url, params);
+}
+
+// Posts the message into the eng_viz_dev channel
+function prod() {
+  main('prod');
+}
+
+// Posts the message into the eng_viz_standup_test channel
+function test() {
+  main('test');
+}
+
+function main(env) {
+  const environments = ['prod', 'test'];
+  
+  if(!environments.includes(env)) {
+    Logger.log('Invalid environment');
+    return;
+  }
+
+  // Save away for later storing captain frequency
+  scriptProperties = PropertiesService.getScriptProperties();
+  settings.scriptPropertyName = `${env}-occurances`; 
+  settings.scriptProperties = scriptProperties;
+
+  // Added couple of dates as of 2024/10/14
+  // scriptProperties.setProperty(settings.scriptPropertyName, JSON.stringify({
+  //   Nurbiike: 1,
+  //   'Gábor': 1,
+  //   Artemiy: 1,
+  //   Kata: 1,
+  // }));
+
+  const event = findEvent();
+
+  if(!event) {
+    Logger.log('There is no event for today');
+    return;
+  }
+
+  const startTime = event.getStartTime();
+  const now = new Date();
+  const diff = startTime.getTime() - now.getTime();
+  const expectedDiff = 90 * 60 * 1000;
+  if (env === 'prod' && (diff > expectedDiff || diff < 0)) {
+    Logger.log(`Not the right time to send: startTime: ${startTime.toUTCString()}, diff: ${diff} ms, expected diff: ${expectedDiff} ms`);
+    return;
+  }
+  
+  const url = settings.slackIncomingWebhookURL[env]; 
+
+  let retries = 0;
+
+  while(retries < 3) {
+    try {
+      const payload = getSlackPayload(event);
+      
+      const params = {
+          method: 'POST', 
+          payload: JSON.stringify(payload),
+      };
+
+      Logger.log('----- payload -----');
+      Logger.log(JSON.stringify(payload, null, 4));
+      Logger.log('----- payload -----');
+
+      UrlFetchApp.fetch(url, params);
+      
+      break;
+    } catch (error) {
+      Logger.log('----- error -----');
+      Logger.log(JSON.stringify(error, null, 4))
+      Logger.log('----- error -----');
+      retries++;
+    }
+  }
+}

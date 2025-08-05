@@ -1,0 +1,38 @@
+const getRandomFoodUrl = () => {
+  const url = `https://api.unsplash.com/photos/random?collections=12119715&client_id=ACpOVmZHQdIpGM4yus_6TlR3s3XaQcrhbZDD13Q70GA`;
+
+  const data = UrlFetchApp.fetch(url).getContentText();
+  const picture = JSON.parse(data);
+
+  return {
+    randomFoodUrl: picture.urls.small,
+    altText: picture.alt_description,
+    description: picture.description,
+  };
+}
+
+const getRandomCodeUrl = () => {
+  const url = `https://api.unsplash.com/photos/random?collections=8647859&client_id=ACpOVmZHQdIpGM4yus_6TlR3s3XaQcrhbZDD13Q70GA`;
+
+  const data = UrlFetchApp.fetch(url).getContentText();
+  const picture = JSON.parse(data);
+
+  return {
+    randomImageUrl: picture.urls.small,
+    altText: picture.alt_description,
+    description: picture.description,
+  };
+}
+
+const getRandomShipUrl = () => {
+  const url = `https://api.unsplash.com/photos/random?collections=O1lMasXfF6c&client_id=ACpOVmZHQdIpGM4yus_6TlR3s3XaQcrhbZDD13Q70GA`;
+
+  const data = UrlFetchApp.fetch(url).getContentText();
+  const picture = JSON.parse(data);
+
+  return {
+    randomImageUrl: picture.urls.small,
+    altText: picture.alt_description,
+    description: picture.description,
+  };
+}

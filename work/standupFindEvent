@@ -1,0 +1,45 @@
+const calendar = CalendarApp.getCalendarById(settings.calendarId);
+const today = new Date();
+
+const findEvent = () => {
+  const events = calendar.getEventsForDay(today);
+  let foundEvent;
+  Logger.log('------------');
+  Logger.log('Used when event ID changed');
+  events.forEach(event => {
+    const title = event.getTitle();
+    const id = event.getId();
+    Logger.log(`Event "${title}" has id: ${id}`);
+
+    const titleLower = title.toLocaleLowerCase();
+    if (titleLower.includes('ooo') || titleLower.includes('leave') || titleLower.includes('pto') || titleLower.includes('holiday') || titleLower.includes('learning week')) {
+      const guests = event.getGuestList().map(guest => guest.getEmail());
+      settings.ignoreEmails.push(...guests);
+      Logger.log(`Ignoring ${guests}`);
+    }
+
+    if (titleLower.includes('test day')) {
+      Logger.log(`Changing isTestDay from ${settings.isTestDay} to true`);
+      settings.isTestDay = true;
+      settings.standupCaptain = settings.watcherOfTests;
+    }
+
+    if (titleLower.includes('team daily standup')) {
+      foundEvent = event;
+    }
+  });
+  Logger.log('------------');
+  
+
+  // For reoccuring events each occurence has a unique id -> occurenceId = `${id}${YYYYMMDDTHHMMSS}`
+  // const event = events.find(event => event.getId().includes(settings.eventId));
+
+  return foundEvent;
+};
+
+const findEventInNext30Days = (event) => {
+  const monthFromNow = new Date(today.getTime() + (45 * 24 * 60 * 60 * 1000)); // usually => (30 * 24 * 60 * 60 * 1000), summer => (45 * 24 * 60 * 60 * 1000)
+  const [mergeFreezeEvent] = calendar.getEvents(today, monthFromNow, {search: event});
+  
+  return mergeFreezeEvent;
+};

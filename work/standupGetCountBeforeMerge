@@ -1,0 +1,23 @@
+const getDaysCountForEvent = (eventPattern) => {
+  const event = findEventInNext30Days(eventPattern);
+  if (!event) {
+    return null;
+  }
+
+  console.log(today.getTime(), event.getEndTime())
+
+  return calcBusinessDays(today.getTime(), event.getStartTime())
+}
+
+const calcBusinessDays = (startDate, endDate) => {
+  eval(UrlFetchApp.fetch('https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js').getContentText());
+  const day = moment(startDate);
+  let businessDays = 0;
+  while (day.isSameOrBefore(endDate, 'day')) {
+    if (day.day() !== 0 && day.day() !== 6) {
+      businessDays++;
+    }
+    day.add(1, 'd');
+  }
+  return businessDays;
+}

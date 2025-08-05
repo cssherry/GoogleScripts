@@ -1,0 +1,34 @@
+const getCaptainGif = () => {
+  const captainGifs = [
+    'https://media4.giphy.com/media/AGCiaSv3Ke8RW/giphy.gif',
+    'https://media2.giphy.com/media/HFyBNSSlNwNKE/giphy.gif?cid=ecf05e47x60ksn07x7bfw4hindi4ae802a7xyb9e61ibzns2&rid=giphy.gif&ct=g',
+    'https://media.giphy.com/media/3o7aboekyiBIoMWB7a/giphy.gif',
+    'https://media.giphy.com/media/3JZe8lp4oJF5423CJU/giphy.gif',
+    'https://media.giphy.com/media/jbKoZ0yFuL3zO07x0o/giphy.gif',
+    'https://media.giphy.com/media/W5O7qeDQiTx0vEXTKn/giphy.gif',
+    'https://media.giphy.com/media/3oEjHY80nBtb5x13u8/giphy.gif',
+    'https://media.giphy.com/media/duexIlfr9yYwYE23UA/giphy.gif',
+    'https://media.giphy.com/media/tuuyUZafwaLPq/giphy.gif',
+    'https://media.giphy.com/media/NENOgw8mgH0NW/giphy.gif',
+    'https://media.giphy.com/media/5O1sD4f60C7FC/giphy.gif',
+  ];
+
+  const captainGifIndexPropertyKey = 'captainGifIndex';
+
+  const getNextCaptainGifIndex = () => {
+    const captainGifIndex = Number(ScriptProperties.getProperty(captainGifIndexPropertyKey)) || 0;
+    return captainGifs.length - 1 === captainGifIndex ? 0 : captainGifIndex + 1;
+  }
+
+  const setCaptainGifIndex = (index) => {
+    ScriptProperties.setProperty(captainGifIndexPropertyKey, index);
+  }
+
+  const nextIndex = getNextCaptainGifIndex();
+  setCaptainGifIndex(nextIndex)
+
+  Logger.log({nextIndex});
+  const gif = captainGifs[nextIndex];
+
+  return gif;
+}

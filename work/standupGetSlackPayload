@@ -1,0 +1,118 @@
+const getSlackPayload = (event) => {  
+  const payload = {
+    blocks: [],
+  };
+
+  const dayOfWeek = new Date().getDay();
+  const isTestDay = settings.isTestDay;
+
+  const dateFormatter = new Intl.DateTimeFormat('en', { dateStyle: 'full' });
+  const startTime = event.getStartTime();
+  const testDayHeader = isTestDay ? ': Test Day!' : '';
+  payload.blocks.push(BlockFactory.header(`${dateFormatter.format(startTime)}${testDayHeader}`));
+
+  // Logger.log(JSON.stringify(getRandomFoodUrl(), null, 4));
+  // const {randomFoodUrl, altText, description} = getRandomFoodUrl();
+  // const descriptionText = description ? ` - ${description}` : '';
+
+  const {randomImageUrl, altText} = isTestDay ? getRandomCodeUrl() : getRandomShipUrl();
+  const daysBeforeMerge = getDaysCountForEvent(settings.mergeFreezeEventPattern);
+  const mergeFreezeText =  !isNaN(daysBeforeMerge) ? `*${daysBeforeMerge} work days until Merge Freeze*` : 'No Merge Freeze date yet!';
+  let daysBeforePR = getDaysCountForEvent(settings.prFreezeEventPattern);
+  daysBeforePR = daysBeforePR > daysBeforeMerge ? 0 : daysBeforePR;
+  const isNotMonday = dayOfWeek !== 1;
+  const isNotWednesday = dayOfWeek !== 3;
+  const projectBoardOptional = daysBeforePR > 3 && isNotMonday && isNotWednesday; 
+  const PRFreezeText = !isNaN(daysBeforePR) ? `*${daysBeforePR} work days until PR Freeze*` : 'No PR Freeze date yet!'
+  const testDayText = isTestDay ? '*<https://docs.google.com/spreadsheets/d/1wCudXgSeKxWtgroGMrLhZ-CRvmEOQGCDWY3tGChP3us/edit|Work on new test or fixing intermittent issues> or <https://docs.google.com/spreadsheets/d/1ndQoFaLcemVJV60zadAQamL52a6WdJlseGyo-tag1tM/edit|Fix broken tests _(chunk, rewrite, or scrap)_>*\n' : '*<https://docs.google.com/document/d/1u_ZImw_zFvlmGEtHVF_C9hK2MOal4EvuGl4saMGr9lo/edit|Phases>:*';
+
+  const names = getAttenderNames(event);
+
+  const shuffledNames = shuffle(names);  
+  // const shuffledNames = shuffle([...names, 'Cat']);  
+  const standupCaptain = getStandUpCaptain(shuffledNames, isTestDay);
+
+  const captainEmoji = ':captainhookahi:'; 
+  const hookEmoji = ':hook:';
+  const pointRightEmoji = ':point_right:';
+  const captainMarkdown = `Standup Captain ${hookEmoji}${captainEmoji}${pointRightEmoji} ${standupCaptain}`;
+  // payload.blocks.push(BlockFactory.section('markdown', captainMarkdown));
+
+  const projectBoardItem = `4. :github: Project Board: <https://github.infra.cloudera.com/Sense/viz/projects/1|viz> + <https://github.infra.cloudera.com/Sense/viztest/projects/1|viztest> _(Release Captain - ${settings.releaseCaptain})_`;
+  let phasesDescription = `
+0. :waiting: Lobby _(${standupCaptain})_
+1. :standup: Quick Turns
+2. :safety_vest: Nightly Run _(WoT - ${settings.watcherOfTests})_
+3. :announce: Announcements + Availability
+${projectBoardOptional ? '' : projectBoardItem}\n
+:speech_balloon: *[Optional - TIME LIMITED UNTIL NOON]* <https://docs.google.com/document/d/154TmHDFGschfNsY60LfW1Ox59pP3MEz4TqqbZXlZaPI/edit#|Extended Discussion by voted popularity> + <https://jira.cloudera.com/secure/RapidBoard.jspa?rapidView=1880|Escalations> (${standupCaptain} to add notes in <https://docs.google.com/document/d/154TmHDFGschfNsY60LfW1Ox59pP3MEz4TqqbZXlZaPI/edit#|linked doc> and any tips to <https://docs.google.com/spreadsheets/d/1E1XofPrQMsWf5AbEgMaVdk0OCJUTURF-3jQrmUN1nIY/edit?gid=1905604291#gid=1905604291|TIL sheet>)`;
+
+if (isTestDay) {
+  const showReleaseBoard = daysBeforeMerge && daysBeforeMerge <= 5;
+  phasesDescription = `
+${testDayText}
+0. :waiting: Lobby _(${standupCaptain})_
+1. :standup: Quick Turns: *only test or escalation/urgent issues* related
+${showReleaseBoard ? `2. :github: Project Board: <https://github.infra.cloudera.com/Sense/viz/projects/1|viz> + <https://github.infra.cloudera.com/Sense/viztest/projects/1|viztest>. Discuss functional tests, reviews and adding tests to PRs \n\t _(Release Captain - ${settings.releaseCaptain})_` : ''}
+${showReleaseBoard ? '3.' : '2.'} :safety_vest: Nightly Run _(WoT - ${settings.watcherOfTests})_
+${showReleaseBoard ? '4.' : '3.'} :announce: Announcements + Availability
+${showReleaseBoard ? '5.' : '4.'} :repeat: *[Optional - TIME LIMITED UNTIL NOON]* Test Sync and <https://drive.google.com/drive/folders/1qo9FdsD8MCxIf0uVqnP_hpqamyUCwIBR|QE Plan> Review (WoT - ${settings.watcherOfTests} to add notes in <https://docs.google.com/document/d/111N-lmI-rlKztsKUJdvRtSOjNCYyrvlqGthlWdAx3As/edit?skip_itp2_check=true&pli=1#heading=h.dj6ubtyojkbt|Test sync notes> + #eng_viz_test)
+${showReleaseBoard ? '6.' : '5.'} :speech_balloon: *[Optional - TIME LIMITED UNTIL NOON]* <https://docs.google.com/document/d/154TmHDFGschfNsY60LfW1Ox59pP3MEz4TqqbZXlZaPI/edit#|Extended Discussion> (${standupCaptain} to add notes in <https://docs.google.com/document/d/154TmHDFGschfNsY60LfW1Ox59pP3MEz4TqqbZXlZaPI/edit#|linked doc>)
+`
+}
+
+// // Hackathon week ordering
+//   phasesDescription = `
+// *Phases:*
+// 1. :standup: Quick Turns (Hackathon project presentation)
+// 1a. API Smart Visual (Gabor + Roli)
+// 1b. Trino + COD Data Connectors (Csaba + Hossam + Judit)
+// 1c. Commenting (Misi + Panni + Simon)
+// 1d. AI Annotations (Artemiy + Kata + Nurbiike)
+// 2. :safety_vest: Nightly Run _(WoT - ${settings.watcherOfTests})_
+// 3. :speech_balloon: Hackathon discussion / questions (https://docs.google.com/document/d/1dxQZKfynKERLdARkTNX2brpA0ru26axdbneHJQQzYsw/edit)`;
+
+// // Test week ordering
+//   const phasesDescription = `
+// *<https://docs.google.com/document/d/1u_ZImw_zFvlmGEtHVF_C9hK2MOal4EvuGl4saMGr9lo/edit|Phases>:*
+// 0. :waiting: Lobby _(${standupCaptain})_
+// 1. :standup: Quick Turns (tests + escalations)
+// 2. :question: <https://docs.google.com/document/d/13h-IfP2Y7d-55B76iL9tLAVdTgqAzsxaiJ7_BbJzkf8/edit#heading=h.ab2lzu4mfco3|Test Questions>
+// 3. :books: TIL/Demo`
+
+  payload.blocks.push(
+    BlockFactory.divider(),
+    // BlockFactory.header(`Would this be greater than or equal with sour cream?`),
+    // BlockFactory.section('text', `(Hint: ${altText}${descriptionText})`),
+    // BlockFactory.image(randomFoodUrl, altText),
+    // BlockFactory.header('"That would be awesome with sour cream!" - Tamás Kökény, Slack, June 16, 2021'),
+    BlockFactory.section('markdown', phasesDescription),
+    BlockFactory.header(captainMarkdown),
+    BlockFactory.image(randomImageUrl, altText || ''),
+    // BlockFactory.header('"That would be awesome with sour cream!" - Tamás Kökény, Slack, June 16, 2021'),
+    BlockFactory.divider(),
+    BlockFactory.section('markdown', PRFreezeText),
+    BlockFactory.section('markdown', mergeFreezeText),
+    BlockFactory.divider(),
+  )
+
+  // payload.blocks.push(
+  //   BlockFactory.linkButton('standup documentation', 'https://docs.google.com/document/d/1u_ZImw_zFvlmGEtHVF_C9hK2MOal4EvuGl4saMGr9lo/edit')
+  // )
+
+  const pointDownEmoji = ':point_down:';
+  const orderMarkdown = `*Order*${pointDownEmoji}`
+
+  payload.blocks.push(BlockFactory.section('markdown', orderMarkdown));
+
+  const orderedNames = settings.standupCaptain ? 
+    [settings.standupCaptain, ...shuffledNames.filter((name) => name !== settings.standupCaptain )] : 
+    shuffledNames; 
+    
+  const indexedNames = orderedNames
+    .map((name, index) => `${index + 1}. ${name}`);
+
+  payload.blocks.push(BlockFactory.section('text', indexedNames.join('\n')));
+  
+  return payload;
+}

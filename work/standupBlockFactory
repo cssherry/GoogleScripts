@@ -1,0 +1,50 @@
+const SubBlockFactory = {
+  text: (text) => ({
+    type: 'plain_text',
+    text,
+    emoji: true,
+  }),
+
+  markdown: (text) => ({
+      type: 'mrkdwn',
+      text
+  }),  
+}  
+
+const BlockFactory = {  
+  text: (text) => ({
+    type: 'section',
+    text: SubBlockFactory.text(text),
+  }),
+  
+  // type is either 'text' or 'markdown'
+  section: (type, text) => ({
+    type: 'section',
+    text: SubBlockFactory[type](text) 
+  }),
+
+
+  header: (title) => ({
+    type: 'header',
+    text: SubBlockFactory.text(title),
+  }),
+
+  image: (url,  altText) => ({
+    type: 'image',
+    image_url: url,
+    alt_text: altText,
+  }),
+
+  divider: () => ({
+    type: "divider",
+  }),
+
+  linkButton: (text,url) => ({
+    type: 'button',
+    text: {
+      type: 'plain_text',
+      text,
+    },
+    url,
+  })
+};
