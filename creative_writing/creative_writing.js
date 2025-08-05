@@ -15,7 +15,7 @@ var summaryHeader = 'Final: ';
 var summaryPartRegex = new RegExp('^' + summaryHeader + '\\d+(\\.(\\d+)):');
 
 // ==========================================
-// Runs at 8 AM UK Time
+// Runs at 5 AM Time
 // 1. If there isn't an all day event for correct prompt today, move today's event to next day
 // 2. If it has been "moveDay" number days since prompt was updated, switch to different person
 // 2.1. Send email to previous person
@@ -148,10 +148,11 @@ function checkDaysProgress() {
     var lastIndex = summaryTitle.lastIndexOf(' ');
     shortenedString = shortenedString.substring(0, lastIndex - 2);
     var allSections = finaleSections.join(noteDivider);
+    const additionalEmails = scriptInfo.data[scriptLength][scriptInfo.index.AdditionalEmails];
     MailApp.sendEmail({
-      to: allParts.join(',') + ',' + scriptInfo.data[scriptLength][scriptInfo.index.AdditionalEmails],
+      to: allParts.join(',') + additionalEmails ? ',' + scriptInfo.data[scriptLength][scriptInfo.index.AdditionalEmails] : '',
       subject: '[CreativeWriting] ' + shortenedString,
-      body: 'Prompt:\n\n' + summaryTitle + noteDivider + '\n' +
+      body: 'Prompt:\n\n' + summaryTitle + '\n' +
         allSections +
         noteDivider +
         'Google Doc Link: ' + totalDoc +
@@ -169,7 +170,7 @@ function checkDaysProgress() {
 }
 
 // ==========================================
-// Run on change --
+// Run on change (or on initialization of creative writing) --
 // 1. Check text -- update "Submission" tab
 //      Figure out which parts are changed and update text in spreadsheet (as identified by CalendarEventId) on Submission tab
 //      Update "EditedDate"
@@ -179,6 +180,12 @@ function checkDaysProgress() {
 // 3.2. Identify new participant, create new calendar event with updated text in note, create new row with "---------" between each day's note
 // ==========================================
 function runOnChange() {
+  // Gets a script lock before modifying a shared resource.
+  const lock = LockService.getScriptLock();
+
+  // Waits for up to 3 seconds for other processes to finish.
+  lock.waitLock(3000);
+
   if (!writingCalendar) {
     writingCalendar = CalendarApp.getCalendarById(calendarId);
   }
@@ -190,8 +197,8 @@ function runOnChange() {
   var defaultRoundIdx = scriptInfo.index.defaultRounds;
   var currParticipantIdx = scriptInfo.index.CurrentParticipantEmail;
   var scriptLength = scriptInfo.data.length - 1;
-  var promptId = scriptInfo.data[scriptLength][promptIdIdx]
-  var currentNumber = scriptInfo.data[scriptLength][currNumberIdx]
+  var promptId = scriptInfo.data[scriptLength][promptIdIdx];
+  var currentNumber = (scriptInfo.data[scriptLength][currNumberIdx] || 0);
   var latestEventPrefix = getTitlePrefix(promptId, currentNumber);
   var lastEvent = false;
   var newToken = false;
@@ -207,6 +214,7 @@ function runOnChange() {
   var textIdx = submissionInfo.index.Text;
   var wordsIdx = submissionInfo.index.Words;
   var charIdx = submissionInfo.index.Characters;
+  var createdDateIdx = submissionInfo.index.CreatedDate;
   var editedDateIdx = submissionInfo.index.EditedDate;
   var submissionInfoNeedsUpdating = false;
   var lastSubmissionIdx = submissionInfo.data.length;
@@ -233,17 +241,20 @@ function runOnChange() {
   }
 
   // Handle cases when new section has been added
-  if (lastEvent) {
-    console.log('Last Event Updating');
+  // Or if new creative writing is being created
+  const isNewCreativeWriting = submissionInfo.data.length <= 1;
+  if (lastEvent || isNewCreativeWriting) {
+    const message = isNewCreativeWriting ? 'Starting new creative writing thread' : 'Last Event Updating';
+    console.log(message);
     var currNumberTotalIdx = scriptInfo.index.CurrentNumberTotal;
-    var newCurrNumberTotal = scriptInfo.data[scriptLength][currNumberTotalIdx] + 1;
+    var newCurrNumberTotal = (scriptInfo.data[scriptLength][currNumberTotalIdx] || 0) + 1;
     scriptInfo.data[scriptLength][currNumberTotalIdx] = newCurrNumberTotal;
     scriptInfo.data[scriptLength][scriptInfo.index.LastDate] = new Date();
 
     // get next day
     var nextStartTime = new Date();
 
-    if (nextStartTime.getDate() === lastEvent.getStartTime().getDate()) {
+    if (lastEvent && nextStartTime.getDate() === lastEvent.getStartTime().getDate()) {
       changeDate(nextStartTime, 1);
     }
 
@@ -263,8 +274,7 @@ function runOnChange() {
     var title, text;
     var currRoundIdx = scriptInfo.index.currentRounds;
     var currentRound = scriptInfo.data[scriptLength][currRoundIdx];
-    var offset = 1; // So that the same person isn't always the one starting prompts
-    if (newNumber > (numberParticipants * currentRound + 1)) {
+    if (isNewCreativeWriting || (newNumber > (numberParticipants * currentRound + 1))) {
       // Set new currenRound and promptId
       var oldPromptId = scriptInfo.data[scriptLength][promptIdIdx];
       var promptInfo = getSheetInformation('Prompts');
@@ -291,64 +301,8 @@ function runOnChange() {
       console.log('New Prompt %s: %s', promptId, title);
 
       // Create overview events for the last writing prompt, keeping within calendar description limit
-      var currIndex = 1;
-      var totalCharCount = 0;
-      var originalTitle = lastEvent.getTitle();
-
-      function getNewTitle() {
-        return originalTitle.replace(new RegExp('^' + latestEventPrefix), summaryHeader + oldPromptId + '.' + currIndex + ': ');
-      }
-
-      // Get all participants
-      // If it's the finale -- give it 1 day to be updated, then send it out to everyone!
-      if (!participantInfo) {
-        participantInfo = getSheetInformation('Participants');
-        partEmailIdx = participantInfo.index.Email;
-      }
-
-      var allParticipants = [];
-      for (var i = 1; i < participantInfo.data.length; i++) {
-        allParticipants.push(participantInfo.data[i][partEmailIdx]);
-      }
-
-      // Get all parts
-      var overviewTitle = getNewTitle();
-      var allParts = [];
-      var currText;
-      for (var j = 1; j < submissionInfo.data.length; j++) {
-        if (oldPromptId !== submissionInfo.data[j][subPromptId]) {
-          continue;
-        }
-
-        currText = submissionInfo.data[j][textIdx];
-        totalCharCount += currText.length;
-        if (totalCharCount > (charLimit - graceLimit)) {
-          console.log('Adding Overview Part: %s (%s)', overviewTitle, currIndex);
-          createEventAndNewRow({
-            title: overviewTitle,
-            text: allParts.join(noteDivider),
-            startDate: nextStartTime,
-            guests: allParticipants.join(','),
-            isAllDay: true,
-          });
-          allParts = [];
-          currIndex += 1;
-          totalCharCount = currText.length;
-          overviewTitle = getNewTitle();
-        }
-
-        allParts.push(currText);
-      }
-
-      if (allParts.length) {
-        console.log('Adding Overview Final: %s (%s)', overviewTitle, currIndex);
-        createEventAndNewRow({
-          title: overviewTitle,
-          text: allParts.join(noteDivider),
-          startDate: nextStartTime,
-          guests: allParticipants.join(','),
-          isAllDay: true,
-        });
+      if (lastEvent) {
+        createOverviewEvent(lastEvent, participantInfo);
       }
     } else {
       var newPrefix = getTitlePrefix(promptId, newNumber);
@@ -391,7 +345,7 @@ function runOnChange() {
       inNumbers: inNumbers,
       addNewRow: true,
     });
-  } // end of "if (lastEvent) {"
+  } // end of "if (lastEvent || isNewCreativeWriting) {"
 
   if (lastEvent || newToken) {
     // Update scriptInfo
@@ -399,7 +353,79 @@ function runOnChange() {
     scriptInfo.range.setValues(scriptInfo.data);
   }
 
+
   // Helper functions
+  /**
+   * Add overview event
+   */
+  function createOverviewEvent(lastEvent, participantInfo) {
+    var currIndex = 1;
+    var totalCharCount = 0;
+    var originalTitle = lastEvent.getTitle();
+
+    function getNewTitle() {
+      return originalTitle.replace(new RegExp('^' + latestEventPrefix), summaryHeader + oldPromptId + '.' + currIndex + ': ');
+    }
+
+    // Get all participants
+    // If it's the finale -- give it 1 day to be updated, then send it out to everyone!
+    if (!participantInfo) {
+      participantInfo = getSheetInformation('Participants');
+      partEmailIdx = participantInfo.index.Email;
+    }
+
+    var allParticipants = [];
+    for (var i = 1; i < participantInfo.data.length; i++) {
+      allParticipants.push(participantInfo.data[i][partEmailIdx]);
+    }
+
+    // Get all parts
+    var overviewTitle = getNewTitle();
+    var allParts = [];
+    var currText;
+    var sectionDates = [];
+    for (var j = 1; j < submissionInfo.data.length; j++) {
+      if (oldPromptId !== submissionInfo.data[j][subPromptId]) {
+        continue;
+      }
+
+      currText = submissionInfo.data[j][textIdx];
+      totalCharCount += currText.length;
+      sectionDates.push(submissionInfo.data[j][createdDateIdx], submissionInfo.data[j][editedDateIdx]);
+      if (totalCharCount > (charLimit - graceLimit)) {
+        console.log('Adding Overview Part: %s (%s)', overviewTitle, currIndex);
+        var startDateText = currIndex === 1 ? 'Started on: ' + sectionDates[0].toDateString() + noteDivider : '';
+        var endDateText = j >= submissionInfo.data.length - 2 ? 'Finished on: ' + sectionDates[sectionDates.length - 1].toDateString() + noteDivider : '';
+        createEventAndNewRow({
+          title: overviewTitle,
+          text: startDateText + allParts.join(noteDivider) + endDateText,
+          startDate: nextStartTime,
+          guests: allParticipants.join(','),
+          isAllDay: true,
+        });
+        allParts = [];
+        currIndex += 1;
+        totalCharCount = currText.length;
+        overviewTitle = getNewTitle();
+      }
+
+      allParts.push(currText);
+    }
+
+    if (allParts.length) {
+      console.log('Adding Overview Final: %s (%s)', overviewTitle, currIndex);
+      var startDateText = currIndex === 1 ? 'Started on: ' + sectionDates[0].toDateString() + noteDivider : '';
+      var endDateText = 'Finished on: ' + sectionDates[sectionDates.length - 1].toDateString() + noteDivider;
+      createEventAndNewRow({
+        title: overviewTitle,
+        text: allParts.join(noteDivider) + endDateText,
+        startDate: nextStartTime,
+        guests: allParticipants.join(','),
+        isAllDay: true,
+      });
+    }
+  }
+
   /**
    * Process previous submissions
    */
@@ -563,7 +589,7 @@ function runOnChange() {
     var totalWordsWrote = 0;
     for (var i = 0; i < calendarSectionsNew.length; i++) {
       console.log('calendarSectionsNew i: %s', i);
-      currSectionNew = calendarSectionsNew[i];
+      currSectionNew = cleanHtmlFromDescription(calendarSectionsNew[i]);
       currSectionOld = calendarSectionsOld.descArray[i];
       totalWordsWrote += (Math.max(0, getWordCount(currSectionNew) - getWordCount(currSectionOld)));
 
@@ -637,7 +663,7 @@ function runOnChange() {
     var eventOptions = {
       description: text,
       location: writingSpreadsheetUrl,
-      guests: guests,
+      guests: guests.replaceAll(/\+.+?@/g, '@'),
     };
 
     if (isAllDay) {
@@ -753,15 +779,18 @@ function getDayDifference(day1, day2) {
   return Math.abs((day2 - day1) / millisecondsPerDay);
 }
 
+function cleanHtmlFromDescription(text) {
+  return text.replaceAll('<br>', '\n').replaceAll(/<.+?>/g, '')
+}
+
 // Calculate next participant and update dateObj to that person's ideal time
 function calculateNextParticipant(participantInfo, currNumberTotal, dateObj) {
-  var partEmailIdx = participantInfo.index.Email;
   var numberParticipants = participantInfo.data.length - 1;
   var nextParticipantIdx = currNumberTotal % numberParticipants || numberParticipants;
   var nextParticipantRow = participantInfo.data[nextParticipantIdx];
 
   // Set correct time for nextStartTime
-  dateObj.setHours(nextParticipantRow[participantInfo.index.BestTimeUK]);
+  dateObj.setHours(nextParticipantRow[participantInfo.index.BestTimeET]);
   dateObj.setMinutes(0);
   dateObj.setMilliseconds(0);
 
