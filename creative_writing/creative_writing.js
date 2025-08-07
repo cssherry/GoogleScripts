@@ -58,7 +58,46 @@ function checkDaysProgress() {
 
       if (!promptEvent.isAllDayEvent()) {
         var daysSince = getDayDifference(lastDate, new Date());
-        if (daysSince >= moveDay) {
+        const isReadyForLLM = true;
+        // const isReadyForLLM = isLLM(currEmail) && daysSince >= warningDay;
+        if (isReadyForLLM) {
+          const currDescription = promptEvent.getDescription();
+          var currRoundIdx = scriptInfo.index.currentRounds;
+          var currentRound = scriptInfo.data[scriptLength][currRoundIdx];
+          const llmResult = runLLM(currEventTitle, currDescription, currentNumber, currentRound * 2); // this assumes there's 2 participants. Proper way is to use participantInfo
+          const results = getResultFromLLM(llmResult);
+          const newDescription = currDescription ?
+            `${currDescription}\n${results.newWriting}` :
+            `${currDescription}${results.newWriting}`;
+
+          const emailForNewContent = '\nNEW CONTENT\n' +
+                newDescription +
+                '\n' + noteDivider +
+                llmResult +
+                '\n' + noteDivider +
+                'Link: ' + writingSpreadsheetUrl;
+          if (currDescription) {
+            MailApp.sendEmail({
+              to: myEmail,
+              subject: emailPrefix + 'LLM has given feedback',
+              body: 'FEEDBACK:' +
+                `\n\nGRAMMAR FEEDBACK\n` +
+                results.grammarFeedback +
+                '\n\nPLOT FEEDBACK\n' +
+                results.plotFeedback +
+                '\n' + noteDivider +
+                emailForNewContent,
+            });
+          } else {
+            MailApp.sendEmail({
+              to: myEmail,
+              subject: emailPrefix + 'LLM has written',
+              body: emailForNewContent,
+            });
+          }
+
+          promptEvent.setDescription(newDescription);
+        } else if (daysSince >= moveDay) {
           if (!participantInfo) {
             participantInfo = getSheetInformation('Participants');
             partEmailIdx = participantInfo.index.Email;
@@ -661,6 +700,11 @@ function runOnChange() {
     var inNumbers = config.inNumbers; // not needed if isAllDay
     var addNewRow = config.addNewRow; // not needed if isAllDay
 
+    // Remove API guests
+    if (isLLM(guest)) {
+      guests = calendarId;
+    }
+
     var event;
     var eventOptions = {
       description: text,
@@ -797,4 +841,136 @@ function calculateNextParticipant(participantInfo, currNumberTotal, dateObj) {
   dateObj.setMilliseconds(0);
 
   return nextParticipantRow;
+}
+
+function isLLM(text) {
+  return text.startsWith('https://');
+}
+
+function runLLM(prompt, text, currentNumber, totalNumber) {
+  let progress = 'Write as if this was the beginning of the story';
+  if (currentNumber >= totalNumber - 2) {
+    progress = 'Start writing a conclusion for the story.';
+  } else if (currentNumber >= totalNumber / 2) {
+    progress = 'Write as if this was the beginning of the story.';
+  }
+
+  const beginningPrompt = text ?
+    `Based on the user input, give grammar and plot feedback, as well as write another ${lengthOfResponse} words that extends the story. Maintain the same writing style as the previous user's input.` :
+    `Write ${lengthOfResponse} words that starts a story based on the prompt. ${progress}`;
+  const example = text ?
+    `### USER TEXT
+The sun has finally decided to peek through, abashed after a month-long absence.
+
+*Maybe nobody noticed I was gone...* It thinks hopefully. That hope dies a quick death as it sees the crowds of peple peppering Hyde Park, arrayed in bathing suits and lounge chairs, morphing the park into what looks like a stretch of strangely green beach.
+
+The sun puffs itself out in guilty pride, *People missed me; they surely, truly did. And here I've been too lethargic to show my face, and then too ashamed at my lethargy to change. I resolve to be better about appearing from now on. I ~will~ change. I really will.*
+
+And for a week the sun shone steadily all day, every day. When it feels tired, it simply remembers the colorfully bedecked people, waiting to bask in its glow. *Can't let them down* it thinks with renewed resolve.
+
+However, one day, after a particularly difficult rise, it notices something has changed. Rather than being greeted with people hastening to enjoy it's warmth, the sun was greeted with grim forebearance. People close themselves inside the moment the sun appears, and only begin cautiously creeping out when it starts to sink.
+
+### RESPONSE
+{
+      "grammarFeedback": "- \"peple\" is misspelled. It should be \"people\"- Maintain consistency in the tense of the story; For example, \"the sun shone steadily\" and \"the sun was greeted\" is past tense, while \"The sun puffs itself\" is present tense.\n- Consider adding commas after introductory phrases for clarity (e.g., 'And for a week, the sun shone steadily...').\n- Instead of \"stretch of strangely green beach\", consider modifying to \"strange stretch of green beach\" for better flow.\n- Use of contractions like \"it's\" vs. \"its\" should be checked to ensure correct usage (eg: \"enjoy it's warmth\").\n- Preserve plural agreement by changing '*the grass lengthen*,' to ‘the grass lengthens.’",
+      "plotFeedback": "- It is usually rainy for months in London. Consider changing \"month-long absence\" to \"multi-month absence\"\n- It would take more than a week of sun to make people dislike it. Consider changing \"And for a week\" to \"And for a month\".\n- Introducing some human-like conflict or dilemma related to this change could add tension—perhaps the sun feels unappreciated or confused by people's behavior.\n- You might also explore how other elements (clouds, flowers, trees) react to the sun being gone or present; it can enrich world-building and humor.\n\n- For example: maybe when the sun comes back flowers suddenly bloom, only to wilt later, or maybe there's a humorous scene where children hide from sunlight because they think it's too hot now.",
+      "newWriting": "When they do come out, it is now with hats and sunglasses, not bathing suits and lounge chairs. The sun puzzles over this change, staying out longer and longer to observe the people more carefully. Yet after all that observation, it can only conclude with horror that it is no longer wanted. Nobody cheers when it arrives anymore, instead they hide away in fear. Nobody misses it when it sets anymore, instead they breath a sigh of relief.\nThe sun sadly withdraws, staying out for slightly shorter lengths of time each day. With an unhappy grimace, the sun thinks *I've worked so hard, for just a little appreciation, and now I don't even get that...*\nThe next time the sun has difficulty rising, it doesn't bother getting dressed. Instead, it lazily drifts across the sky in bed, nestled comfortably under its fluffy blanket of clouds.\nThe sun continues to half-heartedly rise each day, staying up for briefer periods and not troubling to come out of its blankets half the time.\nOne day, it decides to not even bother rising. *Will people really notice?* the sun grumbles to itself. Sleep and his inviting nest of blankets urge him to believe the people won't notice a thing.\nOne day of not rising seems to trigger a desire to hibernate even longer. The sun can't seem to get out of bed anymore; and when it does, it does so lethargically, with eyes half-shut and body securely wrapped up in a burrito of blankets.\nThis goes on for one month, then two, and just as the sun thinks everyone is enjoying his absence, a tired bird flops onto his bed."` :
+    `### RESPONSE
+{
+      "grammarFeedback": "N/A",
+      "plotFeedback": "N/A",
+      "newWriting": "The sun has finally decided to peek through, abashed after a multi-month absence.\n*Maybe nobody noticed I was gone...* It thinks hopefully. That hope dies a quick death as it sees the crowds of people peppering Hyde Park, arrayed in bathing suits and lounge chairs, morphing the park into what looks like a strange stretch of green beach.\nThe sun puffs itself out in guilty pride, *People missed me; they surely, truly did. And here I've been too lethargic to show my face, and then too ashamed at my lethargy to change. I resolve to be better about appearing from now on. I ~will~ change. I really will.*\nAnd for a month, the sun shines steadily all day, every day. When it feels tired, it simply remembers the colorfully bedecked people, waiting to bask in its glow. *Can't let them down* it thinks with renewed resolve. Flowers bloom and trees turn verdant; the grass lengthen and birds abound.\nHowever, one day, after a particularly difficult rise, the sun notices something has changed. Rather than being greeted with people hastening to enjoy its warmth, the sun is greeted with grim forebearance. People close themselves inside the moment the sun appears, and only begin cautiously creeping out when it starts to sink."`
+  const required = [
+    'grammarFeedback',
+    'plotFeedback',
+    'newWriting',
+  ];
+
+  const data = {
+    model: 'gpt-4.1-mini',
+    messages: [
+      {
+        role: 'system',
+        content: [
+          {
+            type: 'text',
+            text: `You are an experienced fiction editor who will catch grammar mistakes. You are participating in a writing round robin exercise. The writing prompt is: ${prompt}`
+          }
+        ]
+      },
+      {
+        role: 'assistant',
+        content: [
+          {
+            type: 'text',
+            text: `${beginningPrompt}.
+
+## EXAMPLE
+### PROMPT
+1.1: Outside the Window: What’s the weather outside your window doing right now? If that’s not inspiring, what’s the weather like somewhere you wish you could be?
+
+${example}
+}`
+          },
+        ],
+      },
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text,
+          },
+        ],
+      },
+    ],
+    response_format: {
+      type: 'json_schema',
+      json_schema: {
+        name: 'writing_feedback',
+        description: 'Writing partner that gives feedback on previous writing as well as generates new writing to continue the story in the same style',
+        strict: true,
+        schema: {
+          type: 'object',
+          additionalProperties: false,
+          required,
+          properties: {
+            grammarFeedback: {
+              type: 'string',
+              description: 'Feedback on grammar changes for user provided content. Uses bullets with explanations and example. Do NOT suggest purely stylistic changes. Focus on true grammar or spelling mistakes.',
+            },
+            plotFeedback: {
+              type: 'string',
+              description: 'Suggestions to improve flow of the plot, ideas for future plot direction, or areas that could be expanded. Uses bullets with explanations and short examples',
+            },
+            newWriting: {
+              type: 'string',
+              description: `Continue the story for another approximate ${lengthOfResponse} words. Write with humor and creativity. Try not to repeat previously used words or phrases.`,
+            },
+          },
+        },
+      },
+    },
+    temperature: 0.8,
+    frequency_penalty: 1.5, // prefer less repitition
+    presence_penalty: 0
+  };
+
+  console.log('LLM Payload: ', data);
+  data.messages.forEach((m) => console.log('LLM Messages: ', m.role, '\n', m.content[0].text));
+
+  const result = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'get',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    payload: JSON.stringify(data),
+  }).getContentText();
+  console.log('LLM Result: ', result);
+  return JSON.parse(result);
+}
+
+function getResultFromLLM(jsonResult) {
+  return JSON.parse(jsonResult.choices[0].message.content)
 }
