@@ -1,4 +1,6 @@
-var writingCalendar;
+let writingCalendar;
+const lengthOfResponse = 300;
+const emailPrefix = '[CreativeWriting] '
 
 // https://support.google.com/calendar/forum/AAAAd3GaXpEoHbbc3DuDt0/?hl=en
 var charLimit = 8148;
@@ -96,7 +98,7 @@ function checkDaysProgress() {
 
           MailApp.sendEmail({
             to: sendEmail,
-            subject: '[CreativeWriting] ' + currEmail.split('@')[0] + ' Update event!',
+            subject: emailPrefix + currEmail.split('@')[0] + ' Update event!',
             body: 'It has been ' + daysSince + ' days. Update within the next ' +
               (moveDay - daysSince) + ' day(s) or #' + promptPrefix +
               ' (' + currEventTitle + ') will be reassigned.' +
@@ -111,7 +113,7 @@ function checkDaysProgress() {
 
         MailApp.sendEmail({
           to: myEmail,
-          subject: '[CreativeWriting] Event moved to next day',
+          subject: `${emailPrefix}Event moved to next day`,
           body: 'Event moved to next day for #' + promptPrefix +
             ' (' + currEventTitle + ') originally on ' +
             searchDate.toLocaleString() +
@@ -151,9 +153,9 @@ function checkDaysProgress() {
     const additionalEmails = scriptInfo.data[scriptLength][scriptInfo.index.AdditionalEmails];
     MailApp.sendEmail({
       to: allParts.join(',') + additionalEmails ? ',' + scriptInfo.data[scriptLength][scriptInfo.index.AdditionalEmails] : '',
-      subject: '[CreativeWriting] ' + shortenedString,
+      subject: emailPrefix + shortenedString,
       body: 'Prompt:\n\n' + summaryTitle + '\n' +
-        allSections +
+        cleanHtmlFromDescription(allSections) +
         noteDivider +
         'Google Doc Link: ' + totalDoc +
         '\nSpreadsheet Link: ' + writingSpreadsheetUrl,
@@ -165,7 +167,7 @@ function checkDaysProgress() {
     var header = body.appendParagraph(summaryTitle);
     header.setHeading(DocumentApp.ParagraphHeading.HEADING1);
     body.appendParagraph(new Date());
-    body.appendParagraph('\n' + allSections);
+    body.appendParagraph('\n' + cleanHtmlFromDescription(allSections));
   }
 }
 
@@ -353,6 +355,7 @@ function runOnChange() {
     scriptInfo.range.setValues(scriptInfo.data);
   }
 
+  lock.releaseLock();
 
   // Helper functions
   /**
@@ -543,7 +546,6 @@ function runOnChange() {
     // Check to see if description changed
     var currIdx = submissionInfo.eventNameToRow[eventTitle];
     var currRow = submissionInfo.data[currIdx];
-    var currText = currRow[textIdx];
     var dividerRegex = new RegExp('\\s*' + divider + '+?\\s*');
 
     if (!eventDescription) {
@@ -636,9 +638,9 @@ function runOnChange() {
       console.log('Last event changed, sending email');
       MailApp.sendEmail({
         to: currRow[emailIdx],
-        subject: '[CreativeWriting] Thanks for writing ' + currWordsWrote + ' words today! (' + new Date().toDateString() + ')',
+        subject: emailPrefix + 'Thanks for writing ' + currWordsWrote + ' words today! (' + new Date().toDateString() + ')',
         body: 'Prompt:\n\n' + lastEvent.getTitle() + noteDivider +
-          eventDescription +
+          cleanHtmlFromDescription(eventDescription) +
           '\n\nNew Count: ' + currWordsWrote + '/' + (currWordsWrote + totalWordsWrote) +
           '\n\nTotal Count: ' + getWordCount(eventDescription) +
           '\n' + noteDivider +
