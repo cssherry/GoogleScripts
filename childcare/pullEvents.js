@@ -28,9 +28,12 @@ const lineSeparators = '\n\n-----------------------\n\n';
 const maxLimit = 100;
 const idDelimiter = ',';
 const attachDelimiter = ' ; ';
+const cannotUploadText = 'FILE_IS_TOO_LARGE';
+const cannotUploadSeparator = ': ';
 const messageType = 'Message';
 const postType = 'Post';
 const incidentType = 'Incident';
+const emailType = 'Email';
 function pullAndUpdateEvents() {
   // Only run after 7 AM or before 7 PM on weekdays
   const currDate = new Date();
@@ -75,6 +78,7 @@ function pullAndUpdateEvents() {
   GLOBALS_VARIABLES.familyLoggedEvents[messageType] = {};
   GLOBALS_VARIABLES.familyLoggedEvents[postType] = {};
   GLOBALS_VARIABLES.familyLoggedEvents[incidentType] = {};
+  GLOBALS_VARIABLES.familyLoggedEvents[emailType] = {};
 
   // Process existing posts/messages
   const typeIdx = GLOBALS_VARIABLES.familyIndex.Type;
@@ -89,6 +93,9 @@ function pullAndUpdateEvents() {
       GLOBALS_VARIABLES.familyLoggedEvents[type][id] = idx;
     });
   });
+
+  // Get Goddard emails
+  getAndParseEmails();
 
   // Check for new messages
   getAndParseMessages();
@@ -175,6 +182,149 @@ function pullAndUpdateEvents() {
 
   const newDate = sheet.getRange(1, dateIdx + 1, 1, 1);
   newDate.setValues([[currDate]]);
+}
+
+function getAndParseEmails() {
+  tryCatchTimeout(() => {
+    GmailApp.search('from:kaymbu.com after:2025/5/15').forEach(parseEmail);
+    GmailApp.search('from:goddard after:2025/5/15').forEach(parseEmail);
+  });
+}
+
+function parseEmail(gmailThread) {
+  const messages = gmailThread.getMessages();
+  const messageId = gmailThread.getId();
+  const lastDate = gmailThread.getLastMessageDate();
+  let message;
+
+  const dateIdx = GLOBALS_VARIABLES.familyIndex.Date;
+  const fromIdx = GLOBALS_VARIABLES.familyIndex.From;
+  const chainIdx = GLOBALS_VARIABLES.familyIndex.ChainId;
+  const selfId = GLOBALS_VARIABLES.familyIndex.SelfId;
+  const lastUpdateIdx = GLOBALS_VARIABLES.familyIndex.LastDate;
+  const typeIdx = GLOBALS_VARIABLES.familyIndex.Type;
+  const contentIdx = GLOBALS_VARIABLES.familyIndex.Content;
+  const attachmentIdx = GLOBALS_VARIABLES.familyIndex.Attachments;
+  const subject = gmailThread.getFirstMessageSubject();
+
+  if (isLogged(messageId, emailType)) {
+    const dataIdx = GLOBALS_VARIABLES.familyLoggedEvents[emailType][messageId];
+    message = GLOBALS_VARIABLES.familyData[dataIdx];
+    if (message[lastUpdateIdx].toISOString() === lastDate.toISOString()) return;
+
+    // Remove existing date
+    message.pop();
+  } else {
+    message = [];
+    message[dateIdx] = new Date();
+    message[selfId] = messageId;
+    message[contentIdx] = subject;
+    message[typeIdx] = emailType;
+  };
+
+  const attachments = message[attachmentIdx] ? message[attachmentIdx].split(attachDelimiter) : [];
+  const messageIds = message[chainIdx] ? message[chainIdx].split(attachDelimiter): [];
+  const fromIds = message[fromIdx] ? message[fromIdx].split(attachDelimiter): [];
+  let fullMessage = '';
+  let fullContent = '';
+  const subjectForImages = subject.matchAll(/\b[a-zA-Z0-9]+\b/g).reduce((all, curr) => all ? `${all}_${curr}` : curr, '');
+  messages.forEach((message, idx) => {
+    const messageId = message.getId();
+    if (!messageIds.includes(messageId)) {
+      const body = message.getPlainBody();
+      fullMessage += `\n\nRAW CONTENTS ${idx}\n`;
+      fullMessage += message.getRawContent();
+      fullMessage += `\n\nPLAIN CONTENTS ${idx}\n`;
+      fullMessage += body;
+
+      const cleanedBody = body.replace(/\s{2,}/g, ' ').replace(/\n{2,}/g, '\n');
+      fullContent += cleanedBody;
+      const createdDate = message.getDate();
+      const dateForFiles = createdDate.toISOString().replaceAll(/[:\.]/g, '_');
+      const author = message.getFrom();
+
+      const downloadAll = body.matchAll(/Download All[\s\n]*<(http.+?)>/g);
+      downloadAll.forEach((captureGroup, idx) => {
+        attachments.push(uploadFile(
+          captureGroup[1],
+          `${dateForFiles}_${subjectForImages}_AllAssets_${idx + 1}`,
+          `${body}]nFrom: ${author}\nOn: ${createdDate}`,
+          true,
+        ));
+      });
+
+      let currText = '';
+      let skipNextUrl = false;
+      let nextIsLink = false;
+      let passedLinks = false;
+      let imageIdx = 1;
+      // Go through each newline
+      body.trim().split(/\s+Do more with the Goddard Family Hub app\s+/i)[0].split(/\s*\n+\s*/).forEach((text) => {
+        // If it is the download all option -- we don't need to do this anymore
+        // Then handle when a link is present -- use the link after "Download this moment" line
+        // Otherwise, append text to currText for description
+        if (text.match(/Download\s+All/)) {
+          skipNextUrl = true;
+        } else if (text.includes('Download this moment')) {
+          nextIsLink = true;
+        } else if (text.startsWith('<http')) {
+          // If previous was download all, let's ignore
+          // Otherwise, let's add this to the files for download if there's a "Download" option
+          passedLinks = true;
+          if (skipNextUrl) {
+            currText = '';
+            skipNextUrl = false;
+          } else if (nextIsLink) {
+            attachments.push(
+              uploadFile(
+                text.match(/<(http.+)>/)[1],
+                `${dateForFiles}_${subjectForImages}_${imageIdx}`,
+                `From: ${author}\nOn: ${createdDate}\n${currText}`,
+                true,
+              )
+            );
+            imageIdx += 1;
+            currText = '';
+            nextIsLink = false;
+          }
+        } else if (passedLinks) {
+          passedLinks = false;
+          if (currText) {
+            currText += `\n${text}`;
+          } else {
+            currText = text;
+          }
+        } else {
+          currText += `${text} `;
+        }
+      });
+
+      message.getAttachments().forEach((currAttach) => {
+        const currName = currAttach.getName();
+        attachments.push(uploadFile(
+          null,
+          currName,
+          `${body}]nFrom: ${author}\nOn: ${createdDate}`,
+          true,
+          currAttach.copyBlob(),
+        ));
+      });
+
+      messageIds.push(messageId);
+      fromIds.push(author);
+    }
+  });
+
+  tryCatchTimeout(() => {
+    message[lastUpdateIdx] = lastDate;
+    message[chainIdx] = messageIds.join(attachDelimiter);
+    message[attachmentIdx] = attachments.join(attachDelimiter);
+    message[fromIdx] = fromIds.join(attachDelimiter);
+    message[contentIdx] += fullContent;
+    appendInfoString(message, fullMessage);
+    GLOBALS_VARIABLES.familyLoggedEvents[messageType][messageId] = GLOBALS_VARIABLES.newFamilyData.length;
+    GLOBALS_VARIABLES.newFamilyData.push(message);
+  });
 }
 
 function getAndParseEvents(baseUrl) {
@@ -680,12 +830,24 @@ function downloadFiles(containerObj) {
 }
 
 function addInfo(dataArray, info) {
-  const infoIdx = GLOBALS_VARIABLES.familyIndex.FamilyInfo;
   const infoJson = JSON.stringify(info);
+  addInfoString(dataArray, infoJson);
+}
+
+function appendInfoString(dataArray, infoString) {
+  const infoIdx = GLOBALS_VARIABLES.familyIndex.FamilyInfo;
+  const previousInfo = (dataArray[infoIdx] || '') + (dataArray[infoIdx + 1] || '') + (dataArray[infoIdx + 2] || '') + (dataArray[infoIdx + 3] || '') + (dataArray[infoIdx + 4] || '') + (dataArray[infoIdx + 5] || '');
+  addInfoString(dataArray, previousInfo + infoString)
+}
+
+function addInfoString(dataArray, infoJson) {
+  const infoIdx = GLOBALS_VARIABLES.familyIndex.FamilyInfo;
   dataArray[infoIdx] = infoJson.substr(0, 45000);
   dataArray[infoIdx + 1] = infoJson.substr(45000, 45000);
   dataArray[infoIdx + 2] = infoJson.substr(45000 * 2, 45000);
-  dataArray[infoIdx + 3] = infoJson.substr(45000 * 3);
+  dataArray[infoIdx + 3] = infoJson.substr(45000 * 3, 45000);
+  dataArray[infoIdx + 4] = infoJson.substr(45000 * 4, 45000);
+  dataArray[infoIdx + 5] = infoJson.substr(45000 * 5);
 }
 
 function getExistingFile(fileName) {
@@ -696,7 +858,8 @@ function uploadFile(
   fileUrl,
   fileName,
   additionalDescription,
-  keepExtension = false
+  keepExtension = false,
+  blob = null, // if include blob, no longer need fileUrl
 ) {
   if (exceedingTimeLimit()) {
     throw new TimeoutError('Exceeded 5 minutes');
@@ -718,13 +881,29 @@ function uploadFile(
     }
   }
 
-  let existingFileUrl = getExistingFile(fileName);
-  if (existingFileUrl) {
-    return existingFileUrl;
+  if (!blob) {
+    let existingFileUrl = getExistingFile(fileName);
+    if (existingFileUrl) {
+      return existingFileUrl;
+    }
+
+    try {
+      const response = UrlFetchApp.fetch(fileUrl);
+      blob = response.getBlob();
+    } catch (e) {
+      if (e.message.includes("URLFetch URL Length") || e.message.includes("Request-URI Too Large")) {
+        return `URLFetchLong_${cannotUploadText}${cannotUploadSeparator}${fileName}${cannotUploadSeparator}${fileUrl || fileName}`;
+      } else {
+        // Handle other types of errors
+        console.error(`An unexpected error occurred: ${e.message}`);
+      }
+    }
+
   }
 
-  const response = UrlFetchApp.fetch(fileUrl);
-  const blob = response.getBlob();
+  const blobSize = blob.getBytes().length / 1000000;
+  if (blobSize >= 50) return `${cannotUploadText}${cannotUploadSeparator}${fileName}${cannotUploadSeparator}${fileUrl || fileName}`;
+
   const file = GLOBALS_VARIABLES.googleDrive.createFile(blob);
 
   if (keepExtension) {
@@ -906,11 +1085,18 @@ function appendRows(sheet, newData, attachmentIdx) {
         allAttachments.forEach((url) => {
           const version = parseInt(numImg / 40);
           const start = newText[version].length;
+          let fileType;
+          if (url.includes(cannotUploadText)) {
+            const index = url.lastIndexOf(cannotUploadSeparator);
+            fileType = url.slice(0, index);
+            url = url.slice(index + cannotUploadSeparator.length);
+          } else {
+            fileType = (
+              GLOBALS_VARIABLES.googleDriveExistingFilesByUrl[url] || ''
+            ).match(/\.(.*?)$/);
+            fileType = fileType ? fileType[1] : 'image';
+          }
 
-          let fileType = (
-            GLOBALS_VARIABLES.googleDriveExistingFilesByUrl[url] || ''
-          ).match(/\.(.*?)$/);
-          fileType = fileType ? fileType[1] : 'image';
           newText[version] += `${fileType}${numImg}, `;
           numImg += 1;
 
