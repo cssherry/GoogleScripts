@@ -338,7 +338,7 @@ function runOnChange() {
       scriptInfo.data[scriptLength][promptIdIdx] = promptId;
       scriptInfo.data[scriptLength][currRoundIdx] = scriptInfo.data[scriptLength][defaultRoundIdx];
       title = getTitlePrefix(promptId, 1) + ' ' + newPrompt[promptInfo.index.Prompt];
-      text = '';
+      text = `${getEmailUser(guest)}:\n`;
       console.log('New Prompt %s: %s', promptId, title);
 
       // Create overview events for the last writing prompt, keeping within calendar description limit
@@ -349,7 +349,7 @@ function runOnChange() {
       var newPrefix = getTitlePrefix(promptId, newNumber);
       scriptInfo.data[scriptLength][currNumberIdx] = newNumber;
       title = lastEvent.getTitle().replace(new RegExp('^' + latestEventPrefix), newPrefix);
-      text = lastEvent.getDescription() + noteDivider + '\n\n';
+      text = lastEvent.getDescription() + noteDivider + '\n\n' + getEmailUser(guest) + ':\n';
       console.log('New Section: %s', title);
     }
 
@@ -750,12 +750,17 @@ function runOnChange() {
 // ==========================================
 // GENERIC HELPER FUNCTIONS
 // ==========================================
-// Get sheet information - sheet, data, and index
-var activeSpreadsheet;
+
+function getEmailUser(email) {
+  return email.split('@')[0];
+}
 
 function getEmailOnly(emails) {
   return emails.replaceAll(/\+.+?@/g, '@');
 }
+
+// Get sheet information - sheet, data, and index
+var activeSpreadsheet;
 
 function getSheetInformation(sheetName, includeNote) {
   if (!activeSpreadsheet) {
