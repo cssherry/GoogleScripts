@@ -7,7 +7,7 @@ var charLimit = 8148;
 var graceLimit = 500; // we allow for average length + gracelimit before dropping 1 day's writing
 
 var warningDay = 3;
-var moveDay = 6;
+var moveDay = 7;
 
 var lengthEvent = 3; // Hours writing event should last
 
@@ -110,8 +110,8 @@ function checkDaysProgress() {
           var nextParticipantRow = calculateNextParticipant(participantInfo, currentNumberTotal, startTime);
           endTime = getEndTime(startTime);
           var nextGuest = nextParticipantRow[partEmailIdx];
-          promptEvent.removeGuest(currEmail);
-          promptEvent.addGuest(nextGuest);
+          promptEvent.removeGuest(getEmailOnly(currEmail));
+          promptEvent.addGuest(getEmailOnly(nextGuest));
 
           // Update ScriptInfo sheet
           scriptInfo.data[scriptLength][lastDateIdx] = new Date();
@@ -709,7 +709,7 @@ function runOnChange() {
     var eventOptions = {
       description: text,
       location: writingSpreadsheetUrl,
-      guests: guests.replaceAll(/\+.+?@/g, '@'),
+      guests: getEmailOnly(guests),
     };
 
     if (isAllDay) {
@@ -752,6 +752,11 @@ function runOnChange() {
 // ==========================================
 // Get sheet information - sheet, data, and index
 var activeSpreadsheet;
+
+function getEmailOnly(emails) {
+  return emails.replaceAll(/\+.+?@/g, '@');
+}
+
 function getSheetInformation(sheetName, includeNote) {
   if (!activeSpreadsheet) {
     activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
