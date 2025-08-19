@@ -61,10 +61,21 @@ function checkDaysProgress() {
         // const isReadyForLLM = true;
         const isReadyForLLM = isLLM(currEmail) && daysSince >= warningDay;
         if (isReadyForLLM) {
+          if (!participantInfo) {
+            participantInfo = getSheetInformation('Participants');
+            partEmailIdx = participantInfo.index.Email;
+          }
+
+          var allParts = [];
+          for (var i = 1; i < participantInfo.data.length; i++) {
+            allParts.push(participantInfo.data[i][partEmailIdx]);
+          }
+
           const currDescription = promptEvent.getDescription();
           var currRoundIdx = scriptInfo.index.currentRounds;
           var currentRound = scriptInfo.data[scriptLength][currRoundIdx];
-          const llmResult = runLLM(currEventTitle, currDescription, currentNumber, currentRound * 2); // this assumes there's 2 participants. Proper way is to use participantInfo
+          const numParticipants = allParts.length;
+          const llmResult = runLLM(currEventTitle, currDescription, currentNumber, currentRound * numParticipants);
           const results = getResultFromLLM(llmResult);
           const newDescription = currDescription ?
             `${currDescription}\n${results.newWriting}` :
@@ -76,9 +87,10 @@ function checkDaysProgress() {
                 JSON.stringify(llmResult, null, 2) +
                 '\n' + noteDivider +
                 'Link: ' + writingSpreadsheetUrl;
+
           if (currDescription) {
             MailApp.sendEmail({
-              to: myEmail,
+              to: allParts.join(','),
               subject: emailPrefix + 'LLM has given feedback',
               body: 'FEEDBACK:' +
                 `\n\nGRAMMAR FEEDBACK\n` +
