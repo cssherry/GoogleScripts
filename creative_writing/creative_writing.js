@@ -58,8 +58,8 @@ function checkDaysProgress() {
 
       if (!promptEvent.isAllDayEvent()) {
         var daysSince = getDayDifference(lastDate, new Date());
-        const isReadyForLLM = true;
-        // const isReadyForLLM = isLLM(currEmail) && daysSince >= warningDay;
+        // const isReadyForLLM = true;
+        const isReadyForLLM = isLLM(currEmail) && daysSince >= warningDay;
         if (isReadyForLLM) {
           const currDescription = promptEvent.getDescription();
           var currRoundIdx = scriptInfo.index.currentRounds;
@@ -73,7 +73,7 @@ function checkDaysProgress() {
           const emailForNewContent = '\nNEW CONTENT\n' +
                 newDescription +
                 '\n' + noteDivider +
-                llmResult +
+                JSON.stringify(llmResult, null, 2) +
                 '\n' + noteDivider +
                 'Link: ' + writingSpreadsheetUrl;
           if (currDescription) {
@@ -862,12 +862,12 @@ function runLLM(prompt, text, currentNumber, totalNumber) {
   if (currentNumber >= totalNumber - 2) {
     progress = 'Start writing a conclusion for the story.';
   } else if (currentNumber >= totalNumber / 2) {
-    progress = 'Write as if this was the beginning of the story.';
+    progress = 'Write as if this was the middle of the story.';
   }
 
   const beginningPrompt = text ?
-    `Based on the user input, give grammar and plot feedback, as well as write another ${lengthOfResponse} words that extends the story. Maintain the same writing style as the previous user's input.` :
-    `Write ${lengthOfResponse} words that starts a story based on the prompt. ${progress}`;
+    `Based on the user input, give grammar and plot feedback, as well as write another ${lengthOfResponse} words that extends the story. ${progress}` :
+    `Write ${lengthOfResponse} words that starts a story based on the prompt.`;
   const example = text ?
     `### USER TEXT
 The sun has finally decided to peek through, abashed after a month-long absence.
@@ -897,7 +897,7 @@ However, one day, after a particularly difficult rise, it notices something has 
   ];
 
   const data = {
-    model: 'gpt-4.1-mini',
+    model: 'gpt-5',
     messages: [
       {
         role: 'system',
@@ -955,14 +955,14 @@ ${example}
             },
             newWriting: {
               type: 'string',
-              description: `Continue the story for another approximate ${lengthOfResponse} words. Write with humor and creativity. Try not to repeat previously used words or phrases.`,
+              description: `Continue the story for another approximate ${lengthOfResponse} words. Try not to repeat previously used words or phrases. ${progress}`,
             },
           },
         },
       },
     },
-    temperature: 0.8,
-    frequency_penalty: 1.5, // prefer less repitition
+    temperature: 1, // Not supported for GTP5, otherwise would be using 0.8
+    // frequency_penalty: 1.5, // Not supported for GTP5, prefer less repitition
     presence_penalty: 0
   };
 
