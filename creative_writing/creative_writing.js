@@ -203,7 +203,7 @@ function checkDaysProgress() {
     var allSections = finaleSections.join(noteDivider);
     const additionalEmails = scriptInfo.data[scriptLength][scriptInfo.index.AdditionalEmails];
     MailApp.sendEmail({
-      to: allParts.join(',') + additionalEmails ? ',' + scriptInfo.data[scriptLength][scriptInfo.index.AdditionalEmails] : '',
+      to: allParts.join(',') + additionalEmails ? ',' + additionalEmails : '',
       subject: emailPrefix + shortenedString,
       body: 'Prompt:\n\n' + summaryTitle + '\n' +
         cleanHtmlFromDescription(allSections) +
