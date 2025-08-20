@@ -369,7 +369,7 @@ function runOnChange() {
     // Only need to calculate for events that have text (ie: not new prompts)
     var inNumbers = '';
     var textLength = text.length;
-    if (textLength) {
+    if (textLength > 50) {
       var avgCharIdx = scriptInfo.index.AverageCharacters;
       var avgChars = scriptInfo.data[scriptLength][avgCharIdx];
       var charLimitWithGrace = charLimit - avgChars - graceLimit;
@@ -764,7 +764,7 @@ function runOnChange() {
 // ==========================================
 
 function getEmailUser(email) {
-  return email.split('@')[0];
+  return getEmailOnly(email).split('@')[0];
 }
 
 function getEmailOnly(emails) {
