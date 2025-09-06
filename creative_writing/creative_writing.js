@@ -57,6 +57,7 @@ function checkDaysProgress() {
       var endTime = promptEvent.getEndTime();
 
       if (!promptEvent.isAllDayEvent()) {
+        console.log('Moving out event');
         var daysSince = getDayDifference(lastDate, new Date());
         // const isReadyForLLM = true;
         const isReadyForLLM = isLLM(currEmail) && daysSince >= warningDay;
@@ -131,6 +132,8 @@ function checkDaysProgress() {
           scriptInfo.data[scriptLength][currParticipantIdx] = nextGuest;
           scriptInfo.range.setValues(scriptInfo.data);
 
+          console.log(`Giving event to ${nextGuest} and updated total to ${currentNumberTotal}`);
+
           // Now update the last ParticipantEmail on Submission page
           var lastSubmissionIdx = submissionInfo.data.length;
           var participantEmailIdx = submissionInfo.index.ParticipantEmail + 1;
@@ -147,9 +150,11 @@ function checkDaysProgress() {
             sendEmail += (',' + currEmail)
           }
 
+          console.log(`Sending warning to ${currEmail}`);
+
           MailApp.sendEmail({
             to: sendEmail,
-            subject: emailPrefix + currEmail.split('@')[0] + ' Update event!',
+            subject: emailPrefix + getEmailUser(currEmail) + ' Update event!',
             body: 'It has been ' + daysSince + ' days. Update within the next ' +
               (moveDay - daysSince) + ' day(s) or #' + promptPrefix +
               ' (' + currEventTitle + ') will be reassigned.' +
@@ -161,6 +166,8 @@ function checkDaysProgress() {
         changeDate(startTime, 1);
         changeDate(endTime, 1);
         promptEvent.setTime(startTime, endTime);
+
+        console.log(`Moved event to ${startTime}`);
 
         MailApp.sendEmail({
           to: myEmail,
@@ -177,6 +184,7 @@ function checkDaysProgress() {
       var matches = currEventTitle.match(summaryPartRegex);
       if (matches) {
         summaryTitle = summaryTitle || currEventTitle.replace(matches[1], '');
+        console.log(`Found matches for summary ${summaryTitle}`);
         finaleSections[parseInt(matches[2], 10)] = currEvent.getDescription();
       } else {
         console.log('No matches for summary: %s', currEventTitle);
@@ -202,8 +210,10 @@ function checkDaysProgress() {
     shortenedString = shortenedString.substring(0, lastIndex - 2);
     var allSections = finaleSections.join(noteDivider);
     const additionalEmails = scriptInfo.data[scriptLength][scriptInfo.index.AdditionalEmails];
+    const to = allParts.join(',') + additionalEmails ? ',' + additionalEmails : '';
+    console.log(`Sending email of overview to ${to}`);
     MailApp.sendEmail({
-      to: allParts.join(',') + additionalEmails ? ',' + additionalEmails : '',
+      to,
       subject: emailPrefix + shortenedString,
       body: 'Prompt:\n\n' + summaryTitle + '\n' +
         cleanHtmlFromDescription(allSections) +
@@ -213,6 +223,7 @@ function checkDaysProgress() {
     });
 
     // Now add it to google docs
+    console.log(`Adding to google docs`);
     var doc = DocumentApp.openById(docID);
     var body = doc.getBody();
     var header = body.appendParagraph(summaryTitle);
@@ -236,8 +247,8 @@ function runOnChange() {
   // Gets a script lock before modifying a shared resource.
   const lock = LockService.getScriptLock();
 
-  // Waits for up to 3 seconds for other processes to finish.
-  lock.waitLock(3000);
+  // Waits for up to 0.5 seconds for other processes to finish.
+  lock.waitLock(500);
 
   if (!writingCalendar) {
     writingCalendar = CalendarApp.getCalendarById(calendarId);
@@ -369,7 +380,7 @@ function runOnChange() {
     // Only need to calculate for events that have text (ie: not new prompts)
     var inNumbers = '';
     var textLength = text.length;
-    if (textLength > 50) {
+    if (textLength) {
       var avgCharIdx = scriptInfo.index.AverageCharacters;
       var avgChars = scriptInfo.data[scriptLength][avgCharIdx];
       var charLimitWithGrace = charLimit - avgChars - graceLimit;
@@ -391,8 +402,8 @@ function runOnChange() {
     }
 
     createEventAndNewRow({
-      title: title,
-      text: text,
+      title,
+      text,
       startDate: nextStartTime,
       guests: guest,
       inNumbers: inNumbers,
@@ -406,6 +417,8 @@ function runOnChange() {
     scriptInfo.range.setValues(scriptInfo.data);
   }
 
+  // Sleep for 1000 seconds so other triggered events can't run
+  Utilities.sleep(1000);
   lock.releaseLock();
 
   // Helper functions
@@ -609,6 +622,8 @@ function runOnChange() {
     var isChanged = false;
     var calendarSectionsNew = eventDescription.split(dividerRegex);
     var calendarSectionsOld = eventToFullTextArray[eventId];
+    console.log(calendarSectionsOld);
+
     var currSectionNew, currSectionOld, currSectionIdx, currSectionRow;
 
     // Recursively update description for all affected calendar events
@@ -643,7 +658,7 @@ function runOnChange() {
     for (var i = 0; i < calendarSectionsNew.length; i++) {
       console.log('calendarSectionsNew i: %s', i);
       currSectionNew = cleanHtmlFromDescription(calendarSectionsNew[i]);
-      currSectionOld = calendarSectionsOld.descArray[i];
+      currSectionOld = calendarSectionsOld.descArray[i].trim();
       totalWordsWrote += (Math.max(0, getWordCount(currSectionNew) - getWordCount(currSectionOld)));
 
       if (currSectionNew !== currSectionOld) {
@@ -848,7 +863,7 @@ function getDayDifference(day1, day2) {
 }
 
 function cleanHtmlFromDescription(text) {
-  return text.replaceAll('<br>', '\n').replaceAll(/<.+?>/g, '')
+  return text.replaceAll('<br>', '\n').replaceAll(/<.+?>/g, '').trim();
 }
 
 // Calculate next participant and update dateObj to that person's ideal time
