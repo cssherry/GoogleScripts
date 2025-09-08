@@ -76,15 +76,16 @@ function checkDaysProgress() {
             }
           }
 
-          const currDescription = promptEvent.getDescription();
+          const currDescription = promptEvent.getDescription().trim();
           var currRoundIdx = scriptInfo.index.currentRounds;
           var currentRound = scriptInfo.data[scriptLength][currRoundIdx];
           const numParticipants = allParts.length;
           const llmResult = runLLM(currEventTitle, currDescription, currentNumber, currentRound * numParticipants);
           const results = getResultFromLLM(llmResult);
+          const newContent = results.newWriting.trim()
           const newDescription = currDescription ?
-            `${currDescription}\n${results.newWriting}` :
-            `${currDescription}${results.newWriting}`;
+            `${currDescription}\n${newContent}` :
+            `${currDescription}${newContent}`;
 
           const emailForNewContent = '\nNEW CONTENT\n' +
                 newDescription +
@@ -386,7 +387,7 @@ function runOnChange() {
     const avgCharIdx = scriptInfo.index.AverageCharacters;
     const averageChar = Math.round(totalCharacters / totalSubmissions);
     console.log(`Update ScriptInfo:\nNew Token ${newToken}\nNew Average Characters: ${averageChar}`);
-    scriptInfo.data[avgCharIdx] = averageChar;
+    scriptInfo.data[scriptLength][avgCharIdx] = averageChar;
 
     // If text is longer than (charLimit - maximum length - graceLimit), then remove one section
     // Only need to calculate for events that have text (ie: not new prompts)
