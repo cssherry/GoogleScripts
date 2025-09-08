@@ -70,7 +70,10 @@ function checkDaysProgress() {
 
           var allParts = [];
           for (var i = 1; i < participantInfo.data.length; i++) {
-            allParts.push(participantInfo.data[i][partEmailIdx]);
+            const email = participantInfo.data[i][partEmailIdx];
+            if (!isLLM(email)) {
+              allParts.push(email);
+            }
           }
 
           const currDescription = promptEvent.getDescription();
@@ -248,8 +251,8 @@ function runOnChange() {
   // Gets a script lock before modifying a shared resource.
   const lock = LockService.getScriptLock();
 
-  // Waits for up to 0.1 seconds for other processes to finish.
-  lock.waitLock(100);
+  // Waits for up to 0.01 seconds for other processes to finish.
+  lock.waitLock(10);
 
   if (!writingCalendar) {
     writingCalendar = CalendarApp.getCalendarById(calendarId);
@@ -422,6 +425,7 @@ function runOnChange() {
 
   if (lastEvent || newToken) {
     // Update scriptInfo
+    console.log('Update ScriptInfo');
     scriptInfo.range.setValues(scriptInfo.data);
   }
 
