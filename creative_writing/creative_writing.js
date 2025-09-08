@@ -11,6 +11,7 @@ var moveDay = 7;
 
 var lengthEvent = 3; // Hours writing event should last
 
+const prefixCharLength = 20;
 var divider = '===================';
 var noteDivider = '\n' + divider + '\n';
 var summaryHeader = 'Final: ';
@@ -210,7 +211,7 @@ function checkDaysProgress() {
     shortenedString = shortenedString.substring(0, lastIndex - 2);
     var allSections = finaleSections.join(noteDivider);
     const additionalEmails = scriptInfo.data[scriptLength][scriptInfo.index.AdditionalEmails];
-    const to = allParts.join(',') + additionalEmails ? ',' + additionalEmails : '';
+    const to = allParts.join(',') + (additionalEmails ? ',' + additionalEmails : '');
     console.log(`Sending email of overview to ${to}`);
     MailApp.sendEmail({
       to,
@@ -228,7 +229,7 @@ function checkDaysProgress() {
     var body = doc.getBody();
     var header = body.appendParagraph(summaryTitle);
     header.setHeading(DocumentApp.ParagraphHeading.HEADING1);
-    body.appendParagraph(new Date());
+    body.appendParagraph(new Date().toString());
     body.appendParagraph('\n' + cleanHtmlFromDescription(allSections));
   }
 }
@@ -247,8 +248,8 @@ function runOnChange() {
   // Gets a script lock before modifying a shared resource.
   const lock = LockService.getScriptLock();
 
-  // Waits for up to 0.5 seconds for other processes to finish.
-  lock.waitLock(500);
+  // Waits for up to 0.1 seconds for other processes to finish.
+  lock.waitLock(100);
 
   if (!writingCalendar) {
     writingCalendar = CalendarApp.getCalendarById(calendarId);
@@ -282,6 +283,8 @@ function runOnChange() {
   var editedDateIdx = submissionInfo.index.EditedDate;
   var submissionInfoNeedsUpdating = false;
   var lastSubmissionIdx = submissionInfo.data.length;
+  var totalCharacters = 0;
+  var totalSubmissions = 0;
 
   var eventToFullTextArray = {}; // links ID with array of text
   processSubmissions();
@@ -335,7 +338,7 @@ function runOnChange() {
 
     scriptInfo.data[scriptLength][currParticipantIdx] = guest;
 
-    var title, text;
+    var title, text, currentText;
     var currRoundIdx = scriptInfo.index.currentRounds;
     var currentRound = scriptInfo.data[scriptLength][currRoundIdx];
     if (isNewCreativeWriting || (newNumber > (numberParticipants * currentRound + 1))) {
@@ -372,16 +375,21 @@ function runOnChange() {
       var newPrefix = getTitlePrefix(promptId, newNumber);
       scriptInfo.data[scriptLength][currNumberIdx] = newNumber;
       title = lastEvent.getTitle().replace(new RegExp('^' + latestEventPrefix), newPrefix);
-      text = lastEvent.getDescription() + noteDivider + '\n\n' + getEmailUser(guest) + ':\n';
+      currentText = getEmailUser(guest)
+      text = lastEvent.getDescription() + noteDivider + currentText + ':\n';
       console.log('New Section: %s', title);
     }
+
+    const avgCharIdx = scriptInfo.index.AverageCharacters;
+    const averageChar = Math.round(totalCharacters / totalSubmissions);
+    console.log(`Update ScriptInfo:\nNew Token ${newToken}\nNew Average Characters: ${averageChar}`);
+    scriptInfo.data[avgCharIdx] = averageChar;
 
     // If text is longer than (charLimit - maximum length - graceLimit), then remove one section
     // Only need to calculate for events that have text (ie: not new prompts)
     var inNumbers = '';
     var textLength = text.length;
     if (textLength) {
-      var avgCharIdx = scriptInfo.index.AverageCharacters;
       var avgChars = scriptInfo.data[scriptLength][avgCharIdx];
       var charLimitWithGrace = charLimit - avgChars - graceLimit;
       console.log('Current text length: %s', textLength);
@@ -408,12 +416,12 @@ function runOnChange() {
       guests: guest,
       inNumbers: inNumbers,
       addNewRow: true,
+      currentText,
     });
   } // end of "if (lastEvent || isNewCreativeWriting) {"
 
   if (lastEvent || newToken) {
     // Update scriptInfo
-    console.log('Update ScriptInfo');
     scriptInfo.range.setValues(scriptInfo.data);
   }
 
@@ -507,6 +515,13 @@ function runOnChange() {
 
       var titlePrefix = getTitlePrefix(currSub[subPromptId], currSub[subCurrNumIdx]);
       submissionInfo.titlePrefixToRow[titlePrefix] = currSub;
+
+      // Add to characters and count of non-empty boxes so we can calculate average character count
+      const currContent = currSub[textIdx];
+      if (currContent >= prefixCharLength) {
+        totalSubmissions += 1;
+        totalCharacters += currContent.length;
+      }
 
       // Now compile all sections that are part of this row's calendar event
       calendarId = currSub[calendarEventIdx];
@@ -612,7 +627,7 @@ function runOnChange() {
     var currRow = submissionInfo.data[currIdx];
     var dividerRegex = new RegExp('\\s*' + divider + '+?\\s*');
 
-    if (!eventDescription) {
+    if (!eventDescription || eventDescription.length < prefixCharLength) {
       return;
     }
 
@@ -693,7 +708,7 @@ function runOnChange() {
       lastEvent = writingCalendar.getEventById(eventId);
 
       var currWordsWrote = getWordCount(calendarSectionsNew[calendarSectionsNew.length - 1]);
-      if (!currWordsWrote) {
+      if (!currWordsWrote || currWordsWrote < prefixCharLength) {
         console.log('Nothing added to section');
         lastEvent = undefined;
         return;
@@ -721,6 +736,7 @@ function runOnChange() {
   function createEventAndNewRow(config) {
     var title = config.title; // calendar title
     var text = config.text; // calendar description
+    var currentText = config.currentText // if there's prefix that should always be added
     var startDate = config.startDate; // calendar start date
     var guests = config.guests; // calendar attendees
     var isAllDay = config.isAllDay; // will not create new row
@@ -761,7 +777,7 @@ function runOnChange() {
       newRow[calendarEventIdx] = event.getId().replace('@google.com', '');
       newRow[submissionInfo.index.InNumbers] = inNumbers || '';
       newRow[submissionInfo.index.CreatedDate] = new Date();
-      newRow[textIdx] = '';
+      newRow[textIdx] = currentText || '';
       newRow[wordsIdx] = 0;
       newRow[charIdx] = 0;
       lastSubmissionIdx++;
