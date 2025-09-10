@@ -323,11 +323,13 @@ function runOnChange() {
     scriptInfo.data[scriptLength][scriptInfo.index.LastDate] = new Date();
 
     // get next day
-    var nextStartTime = new Date();
+    let nextStartTime = new Date();
 
-    if (lastEvent && nextStartTime.getDate() === lastEvent.getStartTime().getDate()) {
-      changeDate(nextStartTime, 1);
+    if (nextStartTime.getDate() < lateEventTime.getDate()) {
+      nextStartTime = lastEventDate;
     }
+
+    changeDate(nextStartTime, 1);
 
     // Add new row to submissionsheet
     var newNumber = currentNumber + 1;
