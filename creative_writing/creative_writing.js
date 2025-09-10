@@ -388,7 +388,7 @@ function runOnChange() {
 
     const avgCharIdx = scriptInfo.index.AverageCharacters;
     const averageChar = Math.round(totalCharacters / totalSubmissions);
-    console.log(`Update ScriptInfo:\nNew Token ${newToken}\nNew Average Characters: ${averageChar}`);
+    console.log(`Update ScriptInfo:\nNew Token ${newToken}\nNew Average Characters: ${averageChar} (${totalCharacters} / ${totalSubmissions})`);
     scriptInfo.data[scriptLength][avgCharIdx] = averageChar;
 
     // If text is longer than (charLimit - maximum length - graceLimit), then remove one section
@@ -524,10 +524,10 @@ function runOnChange() {
       submissionInfo.titlePrefixToRow[titlePrefix] = currSub;
 
       // Add to characters and count of non-empty boxes so we can calculate average character count
-      const currContent = currSub[textIdx];
-      if (currContent >= prefixCharLength) {
+      const currContentLength = currSub[textIdx].length;
+      if (currContentLength >= prefixCharLength) {
         totalSubmissions += 1;
-        totalCharacters += currContent.length;
+        totalCharacters += currContentLength;
       }
 
       // Now compile all sections that are part of this row's calendar event
