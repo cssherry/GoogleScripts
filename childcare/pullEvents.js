@@ -1,5 +1,9 @@
 // Needs GLOBALS_VARIABLES and indexSheet function
 // GLOBALS_VARIABLES = {
+//   headersNest: { cookies: '_brightwheel_v2=XXX' },
+//   nestStudents: [''],
+//   nestGuardian: '',
+//   nestBaseUrl: '',
 //   headers: {
 //     'x-famly-accesstoken': '',
 //   },
@@ -94,9 +98,24 @@ function pullAndUpdateEvents() {
     });
   });
 
-  // Get Goddard emails
+  GLOBALS_VARIABLES.napStart = [];
+  GLOBALS_VARIABLES.napEnd = [];
+
+  // ===========================
+  // Get any Nest messages
+  getAndParseNestMessages();
+
+  // Get nest events
+  getAndParseActivities();
+
+  // Add nest naps separately
+  parseNestNaps();
+
+  // ===========================
+  // Get Goddard and Nest emails
   getAndParseEmails();
 
+  // ===========================
   // Check for new messages
   getAndParseMessages();
 
@@ -184,10 +203,210 @@ function pullAndUpdateEvents() {
   newDate.setValues([[currDate]]);
 }
 
-function getAndParseEmails() {
+function getAndParseNestMessages() {
+  // Step 1: Get threads
+  const fullUrl = `${GLOBALS_VARIABLES.nestBaseUrl}/v1/students/${studentId}/activities?page=0&page_size=100&start_date=${GLOBALS_VARIABLES.startDate}&end_date=${GLOBALS_VARIABLES.endDate}&include_parent_actions=true`;
+    const returnedValue = JSON.parse(UrlFetchApp.fetch(fullUrl, {
+        method: 'get',
+        followRedirects: false,
+        headers: GLOBALS_VARIABLES.headersNest,
+      }).getContentText());
+    returnedValue.results.forEach(getMessagesInThread);
+}
+
+
+function getMessagesInThread(messageThread) {
+  // Step 2: Go through each message on thread and create new event
+  const fullUrl = `${GLOBALS_VARIABLES.nestBaseUrl}/v2/guardians/${GLOBALS_VARIABLES.nestGuardian}/message_threads/${messageThread.object_id}/messages?page_limit=50`;
+  const returnedValue = JSON.parse(UrlFetchApp.fetch(fullUrl, {
+      method: 'get',
+      followRedirects: false,
+      headers: GLOBALS_VARIABLES.headersNest,
+    }).getContentText());
+  returnedValue.results.forEach((message) => parseMessage(message, messageThread.student.first_name));
+}
+
+function parseMessages({message}, student) {
+  // We assume there's only new messages -- no continued threads
+  const objectId = message.message_content_id
+  if (isLogged(objectId, messageType)) return;
+
+  const dateIdx = GLOBALS_VARIABLES.familyIndex.Date;
+  const fromIdx = GLOBALS_VARIABLES.familyIndex.From;
+  const chainIdx = GLOBALS_VARIABLES.familyIndex.ChainId;
+  const selfId = GLOBALS_VARIABLES.familyIndex.SelfId;
+  const lastUpdateIdx = GLOBALS_VARIABLES.familyIndex.LastDate;
+  const typeIdx = GLOBALS_VARIABLES.familyIndex.Type;
+  const contentIdx = GLOBALS_VARIABLES.familyIndex.Content;
+  const attachmentIdx = GLOBALS_VARIABLES.familyIndex.Attachments;
+  const currMessage = [];
   tryCatchTimeout(() => {
-    GmailApp.search('from:kaymbu.com after:2025/5/15').forEach(parseEmail);
-    GmailApp.search('from:goddard after:2025/5/15').forEach(parseEmail);
+    currMessage[dateIdx] = message.created_at;
+    currMessage[lastUpdateIdx] = message.created_at;
+    currMessage[chainIdx] = message.object_id; // should be the same
+    currMessage[selfId] = objectId;
+    currMessage[typeIdx] = messageType;
+    currMessage[contentIdx] = `${student}:\n${message.body}\nSent by: ${message.sender.first_name} ${message.sender.last_name} - ${message.sender.user_type})`;
+
+
+    const attachments = message.attachments.map((currAttach) => {
+      return uploadFile(
+        currAttach.url,
+        currAttach.name,
+        `${message[contentIdx]}\nOn: ${currAttach.created_at.toString()}`,
+        true,
+      );
+    });
+
+    message[attachmentIdx] = attachments.join(attachDelimiter);
+    message[fromIdx] = `${getNestChild(event)}: ${event.room.name}`;
+    addInfo(message, event);
+    GLOBALS_VARIABLES.familyLoggedEvents[messageType][messageId] = GLOBALS_VARIABLES.newFamilyData.length;
+    GLOBALS_VARIABLES.newFamilyData.push(message);
+  });
+}
+
+function getAndParseActivities() {
+  GLOBALS_VARIABLES.nestStudents.forEach((studentId) => {
+    const fullUrl = `${GLOBALS_VARIABLES.nestBaseUrl}/v1/students/${studentId}/activities?page=0&page_size=100&start_date=${GLOBALS_VARIABLES.startDate}&end_date=${GLOBALS_VARIABLES.endDate}&include_parent_actions=true`;
+    const returnedValue = JSON.parse(UrlFetchApp.fetch(fullUrl, {
+        method: 'get',
+        followRedirects: false,
+        headers: GLOBALS_VARIABLES.headersNest,
+      }).getContentText());
+    returnedValue.activities.forEach(processNestActivity);
+  });
+}
+
+// Process all logged events -- this is a mix of logged events (pee / poo / food / nap) + uploaded attachments with messages
+function processNestActivity(activity) {
+  if (!activity.from) return;
+  const objectId = activity.object_id;
+  const needsDetailedLog = !!activity.media || !!activity.video_info;
+
+  if (needsDetailedLog && !isLogged(objectId, postType)) {
+    const newDataRow = parseAsNestMedia(activity, objectId);
+    GLOBALS_VARIABLES.familyLoggedEvents[postType][objectId] = GLOBALS_VARIABLES.newFamilyData.length;
+    GLOBALS_VARIABLES.newFamilyData.push(newDataRow);
+  } else if (!needsDetailedLog && !GLOBALS_VARIABLES.loggedEvents.has(objectId)) {
+    const newDataRow = parseAsNestEvent(activity);
+    GLOBALS_VARIABLES.newData.push(newDataRow);
+    GLOBALS_VARIABLES.loggedEvents.add(objectId);
+  }
+}
+
+function parseAsNestMedia(event, objectId) {
+  const dateIdx = GLOBALS_VARIABLES.familyIndex.Date;
+  const fromIdx = GLOBALS_VARIABLES.familyIndex.From;
+  const chainIdx = GLOBALS_VARIABLES.familyIndex.ChainId;
+  const selfId = GLOBALS_VARIABLES.familyIndex.SelfId;
+  const lastUpdateIdx = GLOBALS_VARIABLES.familyIndex.LastDate;
+  const typeIdx = GLOBALS_VARIABLES.familyIndex.Type;
+  const contentIdx = GLOBALS_VARIABLES.familyIndex.Content;
+  const attachmentIdx = GLOBALS_VARIABLES.familyIndex.Attachments;
+  const message = [];
+  tryCatchTimeout(() => {
+    message[dateIdx] = event.event_date;
+    message[lastUpdateIdx] = event.event_date;
+    message[chainIdx] = objectId;
+    message[selfId] = objectId;
+    message[typeIdx] = postType;
+    message[contentIdx] = `${getNestChild(event)} ${event.note} (${getNestActor(event)})`;
+
+    const fileName = `${message[dateIdx].getYear()}_${message[dateIdx].getMonth()}_${message[dateIdx].getDate()}_${getNestChild(event)}_${event.media.object_id}`;
+    const attachment = uploadFile(
+      event.media.image_url,
+      fileName,
+      `${message[contentIdx]}\nOn: ${message[dateIdx].toString()}`,
+      true,
+    );
+
+    message[attachmentIdx] = attachment;
+    message[fromIdx] = `${getNestChild(event)}: ${event.room.name}`;
+    addInfo(message, event);
+    GLOBALS_VARIABLES.familyLoggedEvents[messageType][messageId] = GLOBALS_VARIABLES.newFamilyData.length;
+    GLOBALS_VARIABLES.newFamilyData.push(message);
+  });
+
+  return message;
+}
+
+function parseAsNestEvent(event) {
+  const dateIdx = GLOBALS_VARIABLES.index.Date;
+  const actionIdx = GLOBALS_VARIABLES.index.Action;
+  const noteIdx = GLOBALS_VARIABLES.index.Note;
+  const infoIdx = GLOBALS_VARIABLES.index.FamilyInfo;
+
+  const newDataRow = [];
+  newDataRow[dateIdx] = new Date(event.event_date);
+  newDataRow[actionIdx] = event.action_type;
+  let eventTitle;
+  const eventDetails = event.details_blob
+  if (event.action_type === 'ac_potty') {
+    eventTitle = `Potty ${eventDetails.potty} (${eventDetails.potty_type})`;
+  } else if (event.action_type === 'ac_food') {
+    const amount = event.details_blob.amount;
+    eventTitle = `Meal type: ${event.details_blob.food_meal_type} (Amount - ${amount ? 'Most' : 'All'} - ${amount})`
+  } else if (event.action_type === 'ac_nap') {
+    eventTitle = event.state;
+    if (eventTitle) {
+      GLOBALS_VARIABLES.napStart.push(newDataRow);
+    } else {
+      GLOBALS_VARIABLES.napEnd.push(newDataRow);
+    }
+  } else {
+    eventTitle = Object.entries(eventDetails).filter((_, value) => typeof value !== 'string').map((key, value) => `${key} - ${value}`).join('; ');
+  }
+
+  if (event.note) {
+    eventTitle += `\n${event.note}`;
+  }
+
+  newDataRow[noteIdx] = `${getNestChild(event)}: ${eventTitle} (${getNestActor(event)})`;
+  newDataRow[infoIdx] = JSON.stringify(event);
+
+  return newDataRow;
+}
+
+function getNestActor(event) {
+  return `${event.actor.first_name} ${event.actor.first_name} - ${event.actor.email}`
+}
+
+function getNestChild(event) {
+  return event.target.first_name;
+}
+
+// Really annoying, but Nest naps are all randomly dumped into activity log. I need to parse start / end dates and add those as actual full nap times :(
+function parseNestNaps() {
+  const dateIdx = GLOBALS_VARIABLES.index.Date;
+  const noteIdx = GLOBALS_VARIABLES.index.Note;
+  const totalTime = GLOBALS_VARIABLES.index.TotalTime;
+  function sortNaps(a, b) {
+    return a[dateIdx] - b[dateIdx];
+  }
+
+  // Sort so start nap and end nap are theoretically together / same idx
+  GLOBALS_VARIABLES.napStart.sort(sortNaps);
+  GLOBALS_VARIABLES.napEnd.sort(sortNaps);
+
+  GLOBALS_VARIABLES.napStart.forEach((startNap, idx) => {
+    const newDataRow = [...startNap];
+    newDataRow[noteIdx] = `Total Nap: ${newDataRow[noteIdx]}`;
+    newDataRow[totalTime] = ((GLOBALS_VARIABLES.napEnd[idx][dateIdx] - startNap[dateIdx]) / 1000 / 60).toFixed(2);
+    GLOBALS_VARIABLES.newData.push(newDataRow);
+    GLOBALS_VARIABLES.loggedEvents.add(objectId);
+  });
+}
+
+function getAndParseEmails() {
+  const startDate = getStartDate();
+  tryCatchTimeout(() => {
+    // Nest
+    GmailApp.search(`from:nestgreenfieldhill@gmail.com`).forEach(parseEmail);
+    // Goddard
+    GmailApp.search(`from:kaymbu.com after:${startDate}`).forEach(parseEmail);
+    GmailApp.search(`from:goddard after:${startDate}`).forEach(parseEmail);
+    GmailApp.search(`from:goddardschools after:${startDate}`).forEach(parseEmail);
   });
 }
 
@@ -218,7 +437,7 @@ function parseEmail(gmailThread) {
     message = [];
     message[dateIdx] = new Date();
     message[selfId] = messageId;
-    message[contentIdx] = subject;
+    message[contentIdx] = `${subject}\n`;
     message[typeIdx] = emailType;
   };
 
@@ -237,21 +456,25 @@ function parseEmail(gmailThread) {
       fullMessage += `\n\nPLAIN CONTENTS ${idx}\n`;
       fullMessage += body;
 
-      const cleanedBody = body.replace(/\s{2,}/g, ' ').replace(/\n{2,}/g, '\n');
-      fullContent += cleanedBody;
+      // Trims out newlines in Nest emails
+      // console.log(0.1, body);
+      // const cleanedBody = body.replace(/\n{2,}/g, '\n').replace(/\s{2,}/g, ' ');
+      // console.log(0.2, cleanedBody);
+      // fullContent += cleanedBody;
+      fullContent += body
       const createdDate = message.getDate();
       const dateForFiles = createdDate.toISOString().replaceAll(/[:\.]/g, '_');
       const author = message.getFrom();
 
-      const downloadAll = body.matchAll(/Download All[\s\n]*<(http.+?)>/g);
-      downloadAll.forEach((captureGroup, idx) => {
-        attachments.push(uploadFile(
-          captureGroup[1],
-          `${dateForFiles}_${subjectForImages}_AllAssets_${idx + 1}`,
-          `${body}]nFrom: ${author}\nOn: ${createdDate}`,
-          true,
-        ));
-      });
+      // const downloadAll = body.matchAll(/Download All[\s\n]*<(http.+?)>/g);
+      // downloadAll.forEach((captureGroup, idx) => {
+      //   attachments.push(uploadFile(
+      //     captureGroup[1],
+      //     `${dateForFiles}_${subjectForImages}_AllAssets_${idx + 1}`,
+      //     `${body}]nFrom: ${author}\nOn: ${createdDate}`,
+      //     true,
+      //   ));
+      // });
 
       let currText = '';
       let skipNextUrl = false;
@@ -321,6 +544,11 @@ function parseEmail(gmailThread) {
     message[attachmentIdx] = attachments.join(attachDelimiter);
     message[fromIdx] = fromIds.join(attachDelimiter);
     message[contentIdx] += fullContent;
+
+    const currContent = message[contentIdx];
+    if (currContent.length > 50000) {
+      message[contentIdx] = currContent.substr(0, 49000);
+    }
     appendInfoString(message, fullMessage);
     GLOBALS_VARIABLES.familyLoggedEvents[messageType][messageId] = GLOBALS_VARIABLES.newFamilyData.length;
     GLOBALS_VARIABLES.newFamilyData.push(message);
@@ -842,12 +1070,12 @@ function appendInfoString(dataArray, infoString) {
 
 function addInfoString(dataArray, infoJson) {
   const infoIdx = GLOBALS_VARIABLES.familyIndex.FamilyInfo;
-  dataArray[infoIdx] = infoJson.substr(0, 45000);
-  dataArray[infoIdx + 1] = infoJson.substr(45000, 45000);
-  dataArray[infoIdx + 2] = infoJson.substr(45000 * 2, 45000);
-  dataArray[infoIdx + 3] = infoJson.substr(45000 * 3, 45000);
-  dataArray[infoIdx + 4] = infoJson.substr(45000 * 4, 45000);
-  dataArray[infoIdx + 5] = infoJson.substr(45000 * 5);
+  dataArray[infoIdx] = infoJson.substr(0, 49000);
+  dataArray[infoIdx + 1] = infoJson.substr(49000, 49000);
+  dataArray[infoIdx + 2] = infoJson.substr(49000 * 2, 49000);
+  dataArray[infoIdx + 3] = infoJson.substr(49000 * 3, 49000);
+  dataArray[infoIdx + 4] = infoJson.substr(49000 * 4, 49000);
+  dataArray[infoIdx + 5] = infoJson.substr(49000 * 5, 50000);
 }
 
 function getExistingFile(fileName) {
