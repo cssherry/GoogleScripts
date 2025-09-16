@@ -402,7 +402,7 @@ function getAndParseEmails() {
   const startDate = getStartDate();
   tryCatchTimeout(() => {
     // Nest
-    GmailApp.search(`from:nestgreenfieldhill@gmail.com`).forEach(parseEmail);
+    GmailApp.search(`from:nestgreenfieldhill@gmail.com after:${startDate}`).forEach(parseEmail);
     // Goddard
     GmailApp.search(`from:kaymbu.com after:${startDate}`).forEach(parseEmail);
     GmailApp.search(`from:goddard after:${startDate}`).forEach(parseEmail);
