@@ -103,32 +103,41 @@ function pullAndUpdateEvents() {
 
   // ===========================
   // Get any Nest messages
+  console.log('Getting Nest Messages')
   getAndParseNestMessages();
 
   // Get nest events
+  console.log('Getting Nest Activities')
   getAndParseActivities();
 
   // Add nest naps separately
+  console.log('Adding nap total times')
   parseNestNaps();
 
   // ===========================
   // Get Goddard and Nest emails
+  console.log('Adding emails')
   getAndParseEmails();
 
   // ===========================
   // Check for new messages
+  console.log('Adding Famly Messages')
   getAndParseMessages();
 
   // Check for new posts
+  console.log('Adding Famly Posts')
   getAndParsePosts();
 
   // Add bookmarks
+  console.log('Adding Famly Bookmarks (hack for getting all photos)')
   getAndParseBookmarks();
 
   // Add any incident reports
+  console.log('Adding Famly Incidents')
   getAndParseIncidents();
 
   // Add any incident reports
+  console.log('Adding Famly Observations')
   getAndParseObservations();
 
   // Save changes if there are any
@@ -205,12 +214,13 @@ function pullAndUpdateEvents() {
 
 function getAndParseNestMessages() {
   // Step 1: Get threads
-  const fullUrl = `${GLOBALS_VARIABLES.nestBaseUrl}/v1/students/${studentId}/activities?page=0&page_size=100&start_date=${GLOBALS_VARIABLES.startDate}&end_date=${GLOBALS_VARIABLES.endDate}&include_parent_actions=true`;
+  const fullUrl = `${GLOBALS_VARIABLES.nestBaseUrl}/v2/guardians/${GLOBALS_VARIABLES.nestGuardian}/message_threads`;
     const returnedValue = JSON.parse(UrlFetchApp.fetch(fullUrl, {
         method: 'get',
         followRedirects: false,
         headers: GLOBALS_VARIABLES.headersNest,
       }).getContentText());
+    console.log(`Processing ${returnedValue.results.length} threads`);
     returnedValue.results.forEach(getMessagesInThread);
 }
 
@@ -223,10 +233,11 @@ function getMessagesInThread(messageThread) {
       followRedirects: false,
       headers: GLOBALS_VARIABLES.headersNest,
     }).getContentText());
+  console.log(`Looking in ${returnedValue.results.length} messages`);
   returnedValue.results.forEach((message) => parseMessage(message, messageThread.student.first_name));
 }
 
-function parseMessages({message}, student) {
+function parseMessage({message}, student) {
   // We assume there's only new messages -- no continued threads
   const objectId = message.message_content_id
   if (isLogged(objectId, messageType)) return;
@@ -241,46 +252,49 @@ function parseMessages({message}, student) {
   const attachmentIdx = GLOBALS_VARIABLES.familyIndex.Attachments;
   const currMessage = [];
   tryCatchTimeout(() => {
-    currMessage[dateIdx] = message.created_at;
+    currMessage[dateIdx] = new Date(message.created_at);
     currMessage[lastUpdateIdx] = message.created_at;
     currMessage[chainIdx] = message.object_id; // should be the same
     currMessage[selfId] = objectId;
     currMessage[typeIdx] = messageType;
-    currMessage[contentIdx] = `${student}:\n${message.body}\nSent by: ${message.sender.first_name} ${message.sender.last_name} - ${message.sender.user_type})`;
+    const sender = `${message.sender.first_name} ${message.sender.last_name} - ${message.sender.user_type}`;
+    currMessage[contentIdx] = `${student}:\n${message.body}\nSent by: ${sender}`;
 
 
     const attachments = message.attachments.map((currAttach) => {
       return uploadFile(
         currAttach.url,
         currAttach.name,
-        `${message[contentIdx]}\nOn: ${currAttach.created_at.toString()}`,
+        `${currMessage[contentIdx]}\nOn: ${currAttach.created_at.toString()}`,
         true,
       );
     });
 
-    message[attachmentIdx] = attachments.join(attachDelimiter);
-    message[fromIdx] = `${getNestChild(event)}: ${event.room.name}`;
-    addInfo(message, event);
-    GLOBALS_VARIABLES.familyLoggedEvents[messageType][messageId] = GLOBALS_VARIABLES.newFamilyData.length;
-    GLOBALS_VARIABLES.newFamilyData.push(message);
+    currMessage[attachmentIdx] = attachments.join(attachDelimiter);
+    currMessage[fromIdx] = sender;
+    addInfo(currMessage, message);
+    GLOBALS_VARIABLES.familyLoggedEvents[messageType][objectId] = true;
+    GLOBALS_VARIABLES.newFamilyData.push(currMessage);
   });
 }
 
 function getAndParseActivities() {
   GLOBALS_VARIABLES.nestStudents.forEach((studentId) => {
-    const fullUrl = `${GLOBALS_VARIABLES.nestBaseUrl}/v1/students/${studentId}/activities?page=0&page_size=100&start_date=${GLOBALS_VARIABLES.startDate}&end_date=${GLOBALS_VARIABLES.endDate}&include_parent_actions=true`;
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + 1);
+    const fullUrl = `${GLOBALS_VARIABLES.nestBaseUrl}/v1/students/${studentId}/activities?page=0&page_size=100&start_date=${GLOBALS_VARIABLES.startDate}&end_date=${endDate.toISOString().split('T')[0]}&include_parent_actions=true`;
     const returnedValue = JSON.parse(UrlFetchApp.fetch(fullUrl, {
         method: 'get',
         followRedirects: false,
         headers: GLOBALS_VARIABLES.headersNest,
       }).getContentText());
+    console.log(`Parsing ${returnedValue.activities.length} activities`);
     returnedValue.activities.forEach(processNestActivity);
   });
 }
 
 // Process all logged events -- this is a mix of logged events (pee / poo / food / nap) + uploaded attachments with messages
 function processNestActivity(activity) {
-  if (!activity.from) return;
   const objectId = activity.object_id;
   const needsDetailedLog = !!activity.media || !!activity.video_info;
 
@@ -288,10 +302,8 @@ function processNestActivity(activity) {
     const newDataRow = parseAsNestMedia(activity, objectId);
     GLOBALS_VARIABLES.familyLoggedEvents[postType][objectId] = GLOBALS_VARIABLES.newFamilyData.length;
     GLOBALS_VARIABLES.newFamilyData.push(newDataRow);
-  } else if (!needsDetailedLog && !GLOBALS_VARIABLES.loggedEvents.has(objectId)) {
-    const newDataRow = parseAsNestEvent(activity);
-    GLOBALS_VARIABLES.newData.push(newDataRow);
-    GLOBALS_VARIABLES.loggedEvents.add(objectId);
+  } else if (!needsDetailedLog) {
+    parseAsNestEvent(activity);
   }
 }
 
@@ -306,26 +318,37 @@ function parseAsNestMedia(event, objectId) {
   const attachmentIdx = GLOBALS_VARIABLES.familyIndex.Attachments;
   const message = [];
   tryCatchTimeout(() => {
-    message[dateIdx] = event.event_date;
+    message[dateIdx] = new Date(event.event_date);
     message[lastUpdateIdx] = event.event_date;
     message[chainIdx] = objectId;
     message[selfId] = objectId;
     message[typeIdx] = postType;
-    message[contentIdx] = `${getNestChild(event)} ${event.note} (${getNestActor(event)})`;
+    message[contentIdx] = `${getNestChild(event)} ${event.note || ''} (${getNestActor(event)})`;
 
-    const fileName = `${message[dateIdx].getYear()}_${message[dateIdx].getMonth()}_${message[dateIdx].getDate()}_${getNestChild(event)}_${event.media.object_id}`;
-    const attachment = uploadFile(
-      event.media.image_url,
-      fileName,
-      `${message[contentIdx]}\nOn: ${message[dateIdx].toString()}`,
-      true,
-    );
+    let attachment
+    let fileName = `${message[dateIdx].getYear()}_${message[dateIdx].getMonth()}_${message[dateIdx].getDate()}_${getNestChild(event)}_`;
+    if (event.media) {
+      fileName += `${event.media.object_id}_${objectId}`;
+      attachment = uploadFile(
+        event.media.image_url,
+        fileName,
+        `${message[contentIdx]}\nOn: ${message[dateIdx].toString()}`,
+        true,
+      );
+    } else {
+      fileName += `${event.video_info.object_id}_${objectId}`;
+      attachment = uploadFile(
+        event.video_info.downloadable_url,
+        fileName,
+        `${message[contentIdx]}\nOn: ${message[dateIdx].toString()}`,
+        true,
+      );
+    }
+
 
     message[attachmentIdx] = attachment;
     message[fromIdx] = `${getNestChild(event)}: ${event.room.name}`;
     addInfo(message, event);
-    GLOBALS_VARIABLES.familyLoggedEvents[messageType][messageId] = GLOBALS_VARIABLES.newFamilyData.length;
-    GLOBALS_VARIABLES.newFamilyData.push(message);
   });
 
   return message;
@@ -347,13 +370,12 @@ function parseAsNestEvent(event) {
   } else if (event.action_type === 'ac_food') {
     const amount = event.details_blob.amount;
     eventTitle = `Meal type: ${event.details_blob.food_meal_type} (Amount - ${amount ? 'Most' : 'All'} - ${amount})`
+    const foodTag = event.menu_item_tags.map((item) => item.name).join(', ');
+    if (foodTag) {
+      eventTitle += `\n${foodTag}`
+    }
   } else if (event.action_type === 'ac_nap') {
     eventTitle = event.state;
-    if (eventTitle) {
-      GLOBALS_VARIABLES.napStart.push(newDataRow);
-    } else {
-      GLOBALS_VARIABLES.napEnd.push(newDataRow);
-    }
   } else {
     eventTitle = Object.entries(eventDetails).filter((_, value) => typeof value !== 'string').map((key, value) => `${key} - ${value}`).join('; ');
   }
@@ -365,7 +387,19 @@ function parseAsNestEvent(event) {
   newDataRow[noteIdx] = `${getNestChild(event)}: ${eventTitle} (${getNestActor(event)})`;
   newDataRow[infoIdx] = JSON.stringify(event);
 
-  return newDataRow;
+  const identifier = getIdentifier(newDataRow);
+  if (GLOBALS_VARIABLES.loggedEvents.has(identifier)) return;
+
+  if (event.action_type === 'ac_nap') {
+    if (parseInt(event.state)) {
+      GLOBALS_VARIABLES.napStart.push(newDataRow);
+    } else {
+      GLOBALS_VARIABLES.napEnd.push(newDataRow);
+    }
+  }
+
+  GLOBALS_VARIABLES.newData.push(newDataRow);
+  GLOBALS_VARIABLES.loggedEvents.add(identifier);
 }
 
 function getNestActor(event) {
@@ -394,7 +428,6 @@ function parseNestNaps() {
     newDataRow[noteIdx] = `Total Nap: ${newDataRow[noteIdx]}`;
     newDataRow[totalTime] = ((GLOBALS_VARIABLES.napEnd[idx][dateIdx] - startNap[dateIdx]) / 1000 / 60).toFixed(2);
     GLOBALS_VARIABLES.newData.push(newDataRow);
-    GLOBALS_VARIABLES.loggedEvents.add(objectId);
   });
 }
 
@@ -1089,33 +1122,40 @@ function uploadFile(
   keepExtension = false,
   blob = null, // if include blob, no longer need fileUrl
 ) {
+  console.log('Starting to upload file');
   if (exceedingTimeLimit()) {
     throw new TimeoutError('Exceeded 5 minutes');
   }
 
   if (!GLOBALS_VARIABLES.googleDrive) {
+    console.log('Fetching Google Drive');
     GLOBALS_VARIABLES.googleDriveExistingFiles = {};
     GLOBALS_VARIABLES.googleDriveExistingFilesByUrl = {};
     GLOBALS_VARIABLES.googleDrive = DriveApp.getFolderById(
       GLOBALS_VARIABLES.folderId
     );
-    const existingFiles = GLOBALS_VARIABLES.googleDrive.getFiles();
+    const existingFiles = GLOBALS_VARIABLES.googleDrive.searchFiles('modifiedDate > "2025-08-01"');
     while (existingFiles.hasNext()) {
       const file = existingFiles.next();
       const curFileName = file.getName();
       const fileUrl = file.getUrl();
+      const curFileNameWithoutExt = curFileName.replace(/\.[a-zA-Z]*?$/, '')
+      GLOBALS_VARIABLES.googleDriveExistingFiles[curFileNameWithoutExt] = fileUrl;
+      GLOBALS_VARIABLES.googleDriveExistingFilesByUrl[fileUrl] = curFileNameWithoutExt;
       GLOBALS_VARIABLES.googleDriveExistingFiles[curFileName] = fileUrl;
       GLOBALS_VARIABLES.googleDriveExistingFilesByUrl[fileUrl] = curFileName;
     }
   }
 
   if (!blob) {
+    console.log('Checking Filename');
     let existingFileUrl = getExistingFile(fileName);
     if (existingFileUrl) {
       return existingFileUrl;
     }
 
     try {
+      console.log("File doesn't exist, fetching");
       const response = UrlFetchApp.fetch(fileUrl);
       blob = response.getBlob();
     } catch (e) {
@@ -1130,17 +1170,20 @@ function uploadFile(
   }
 
   const blobSize = blob.getBytes().length / 1000000;
+  console.log(`Blob size ${blobSize} (needs to be under 50 to get uploaded)`);
   if (blobSize >= 50) return `${cannotUploadText}${cannotUploadSeparator}${fileName}${cannotUploadSeparator}${fileUrl || fileName}`;
-
+  console.log('Creating blob');
   const file = GLOBALS_VARIABLES.googleDrive.createFile(blob);
 
   if (keepExtension) {
     const extension = file.getName().match(/\..*?$/)[0];
+    console.log(`Adding ext ${extension}`);
     if (extension) {
       fileName += extension;
     }
   }
 
+  console.log(`Setting filename ${fileName}`);
   file.setName(fileName);
   file.setDescription(
     `Download from ${fileUrl} on ${new Date()}\n\n${additionalDescription}`
@@ -1149,12 +1192,13 @@ function uploadFile(
   // If the file is duplicate of one with extension, delete it
   existingFileUrl = getExistingFile(fileName);
   if (existingFileUrl) {
+    console.log(`File already exists with extension, delete ${fileName}`);
     file.setTrashed(true);
     return existingFileUrl;
   }
 
   const driveLink = file.getUrl();
-
+  console.log(`New file created ${driveLink}`);
   GLOBALS_VARIABLES.googleDriveExistingFiles[fileName] = driveLink;
   GLOBALS_VARIABLES.googleDriveExistingFilesByUrl[driveLink] = fileName;
   return driveLink;
