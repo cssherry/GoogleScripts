@@ -376,6 +376,13 @@ function parseAsNestEvent(event) {
     }
   } else if (event.action_type === 'ac_nap') {
     eventTitle = event.state;
+
+    if (parseInt(event.state)) {
+      GLOBALS_VARIABLES.napStart.push(newDataRow);
+    } else {
+      GLOBALS_VARIABLES.napEnd.push(newDataRow);
+    }
+
   } else {
     eventTitle = Object.entries(eventDetails).filter((_, value) => typeof value !== 'string').map((key, value) => `${key} - ${value}`).join('; ');
   }
@@ -389,15 +396,6 @@ function parseAsNestEvent(event) {
 
   const identifier = getIdentifier(newDataRow);
   if (GLOBALS_VARIABLES.loggedEvents.has(identifier)) return;
-
-  if (event.action_type === 'ac_nap') {
-    if (parseInt(event.state)) {
-      GLOBALS_VARIABLES.napStart.push(newDataRow);
-    } else {
-      GLOBALS_VARIABLES.napEnd.push(newDataRow);
-    }
-  }
-
   GLOBALS_VARIABLES.newData.push(newDataRow);
   GLOBALS_VARIABLES.loggedEvents.add(identifier);
 }
@@ -425,9 +423,14 @@ function parseNestNaps() {
 
   GLOBALS_VARIABLES.napStart.forEach((startNap, idx) => {
     const newDataRow = [...startNap];
-    newDataRow[noteIdx] = `Total Nap: ${newDataRow[noteIdx]}`;
+
+    newDataRow[noteIdx] = `Total Nap: ${newDataRow[noteIdx]} (${startNap[dateIdx].toISOString()} - ${GLOBALS_VARIABLES.napEnd[idx][dateIdx].toISOString()})`;
     newDataRow[totalTime] = ((GLOBALS_VARIABLES.napEnd[idx][dateIdx] - startNap[dateIdx]) / 1000 / 60).toFixed(2);
-    GLOBALS_VARIABLES.newData.push(newDataRow);
+    const identifier = getIdentifier(newDataRow);
+    if (!GLOBALS_VARIABLES.loggedEvents.has(identifier)) {
+      GLOBALS_VARIABLES.newData.push(newDataRow);
+      GLOBALS_VARIABLES.loggedEvents.add(identifier);
+    };
   });
 }
 
