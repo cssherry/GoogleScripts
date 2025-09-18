@@ -57,7 +57,7 @@ function pullAndUpdateEvents() {
   GLOBALS_VARIABLES.loggedEvents = new Set();
 
   // Add previous data so we can not repeat
-  GLOBALS_VARIABLES.data.forEach((row) => {
+  GLOBALS_VARIABLES.data.forEach(row => {
     const eventIdentifier = getIdentifier(row);
     GLOBALS_VARIABLES.loggedEvents.add(eventIdentifier);
   });
@@ -92,7 +92,7 @@ function pullAndUpdateEvents() {
     if (!row[0]) return;
     const type = row[typeIdx];
     const ids = row[idIdx].split(idDelimiter);
-    ids.forEach((id) => {
+    ids.forEach(id => {
       GLOBALS_VARIABLES.familyLoggedEvents[type][id] = idx;
       GLOBALS_VARIABLES.familyLoggedEvents[type][id] = idx;
     });
@@ -150,13 +150,13 @@ function pullAndUpdateEvents() {
   // SEND EMAIL
   let famlySummary = '';
   const loggedData = GLOBALS_VARIABLES.newData
-    .map((row) => {
+    .map(row => {
       famlySummary += `${row[GLOBALS_VARIABLES.index.Note]} (${
         row[GLOBALS_VARIABLES.index.Date]
       })${lineSeparators}`;
       return row
-        .filter((item) => !!item)
-        .map((item) => {
+        .filter(item => !!item)
+        .map(item => {
           if (item.toString().startsWith('{') & item.toString().endsWith('}')) {
             return JSON.stringify(JSON.parse(item), null, '    ');
           }
@@ -172,7 +172,7 @@ function pullAndUpdateEvents() {
     ? lineSeparators
     : '';
   const daycareGeneral = GLOBALS_VARIABLES.newFamilyData
-    .map((row) => {
+    .map(row => {
       const type = row[GLOBALS_VARIABLES.familyIndex.Type];
       const date = row[GLOBALS_VARIABLES.familyIndex.LastDate];
       const content = row[GLOBALS_VARIABLES.familyIndex.Content];
@@ -234,7 +234,7 @@ function getMessagesInThread(messageThread) {
       headers: GLOBALS_VARIABLES.headersNest,
     }).getContentText());
   console.log(`Looking in ${returnedValue.results.length} messages`);
-  returnedValue.results.forEach((message) => parseMessage(message, messageThread.student.first_name));
+  returnedValue.results.forEach(message => parseMessage(message, messageThread.student.first_name));
 }
 
 function parseMessage({message}, student) {
@@ -261,7 +261,7 @@ function parseMessage({message}, student) {
     currMessage[contentIdx] = `${student}:\n${message.body}\nSent by: ${sender}`;
 
 
-    const attachments = message.attachments.map((currAttach) => {
+    const attachments = message.attachments.map(currAttach => {
       return uploadFile(
         currAttach.url,
         currAttach.name,
@@ -279,7 +279,7 @@ function parseMessage({message}, student) {
 }
 
 function getAndParseActivities() {
-  GLOBALS_VARIABLES.nestStudents.forEach((studentId) => {
+  GLOBALS_VARIABLES.nestStudents.forEach(studentId => {
     const endDate = new Date();
     endDate.setDate(endDate.getDate() + 1);
     const fullUrl = `${GLOBALS_VARIABLES.nestBaseUrl}/v1/students/${studentId}/activities?page=0&page_size=100&start_date=${GLOBALS_VARIABLES.startDate}&end_date=${endDate.toISOString().split('T')[0]}&include_parent_actions=true`;
@@ -370,7 +370,7 @@ function parseAsNestEvent(event) {
   } else if (event.action_type === 'ac_food') {
     const amount = event.details_blob.amount;
     eventTitle = `Meal type: ${event.details_blob.food_meal_type} (Amount - ${amount ? 'Most' : 'All'} - ${amount})`
-    const foodTag = event.menu_item_tags.map((item) => item.name).join(', ');
+    const foodTag = event.menu_item_tags.map(item => item.name).join(', ');
     if (foodTag) {
       eventTitle += `\n${foodTag}`
     }
@@ -403,7 +403,7 @@ function parseAsNestEvent(event) {
 }
 
 function getNestActor(event) {
-  return `${event.actor.first_name} ${event.actor.first_name} - ${event.actor.email}`
+  return `${event.actor.first_name} ${event.actor.last_name} - ${event.actor.email}`
 }
 
 function getNestChild(event) {
@@ -515,7 +515,7 @@ function parseEmail(gmailThread) {
       let passedLinks = false;
       let imageIdx = 1;
       // Go through each newline
-      body.trim().split(/\s+Do more with the Goddard Family Hub app\s+/i)[0].split(/\s*\n+\s*/).forEach((text) => {
+      body.trim().split(/\s+Do more with the Goddard Family Hub app\s+/i)[0].split(/\s*\n+\s*/).forEach(text => {
         // If it is the download all option -- we don't need to do this anymore
         // Then handle when a link is present -- use the link after "Download this moment" line
         // Otherwise, append text to currText for description
@@ -555,7 +555,7 @@ function parseEmail(gmailThread) {
         }
       });
 
-      message.getAttachments().forEach((currAttach) => {
+      message.getAttachments().forEach(currAttach => {
         const currName = currAttach.getName();
         attachments.push(uploadFile(
           null,
@@ -615,7 +615,7 @@ function getAndParseMessages() {
     }).getContentText()
   );
 
-  conversationList.forEach((convo) => {
+  conversationList.forEach(convo => {
     const messageId = convo.lastMessage.messageId;
     if (!isLogged(messageId, messageType)) {
       hasChanged.push(convo.conversationId);
@@ -643,13 +643,13 @@ function getAndParseMessages() {
     const newMessages = [];
     newMessages[dateIdx] = new Date();
     newMessages[fromId] = conversationData.participants
-      .filter((participant) => {
+      .filter(participant => {
         return (
           !participant.title.includes('Aneesh') &&
           !participant.title.includes('Sherry')
         );
       })
-      .map((participant) => {
+      .map(participant => {
         const additionalInfo = participant.subtitle
           ? `(${participant.subtitle})`
           : '';
@@ -679,7 +679,7 @@ function processMessage(messages) {
   let newContent = '';
   const attachmentUrls = [];
 
-  messages.forEach((message) => {
+  messages.forEach(message => {
     if (!isLogged(message.messageId, messageType)) {
       newMessageIds.push(message.messageId);
       newContent += `- ${message.body}\n`;
@@ -740,7 +740,7 @@ function getAndParsePosts() {
   const typeIdx = GLOBALS_VARIABLES.familyIndex.Type;
   const contentIdx = GLOBALS_VARIABLES.familyIndex.Content;
   const attachmentIdx = GLOBALS_VARIABLES.familyIndex.Attachments;
-  postList.forEach((post) => {
+  postList.forEach(post => {
     if (exceedingTimeLimit()) return;
     const messageId = post.target.feedItemId || post.notificationId;
     if (!isLogged(messageId, postType)) {
@@ -763,7 +763,7 @@ function getAndParsePosts() {
     }
   });
 
-  hasChanged.forEach((newPostId) => {
+  hasChanged.forEach(newPostId => {
     if (exceedingTimeLimit()) return;
     const postUrl = `${GLOBALS_VARIABLES.feedItemUrl}?feedItemId=${newPostId}`;
     let postData;
@@ -845,7 +845,7 @@ function getAndParseBookmarks() {
   const typeIdx = GLOBALS_VARIABLES.familyIndex.Type;
   const contentIdx = GLOBALS_VARIABLES.familyIndex.Content;
   const attachmentIdx = GLOBALS_VARIABLES.familyIndex.Attachments;
-  postList.forEach((post) => {
+  postList.forEach(post => {
     if (exceedingTimeLimit()) return;
     const messageId = post.feedItemId || post.originatorId;
     if (!isLogged(messageId, postType)) {
@@ -894,7 +894,7 @@ function getAndParseIncidentForChild(fullUrl, _idx) {
   const typeIdx = GLOBALS_VARIABLES.familyIndex.Type;
   const contentIdx = GLOBALS_VARIABLES.familyIndex.Content;
   const attachmentIdx = GLOBALS_VARIABLES.familyIndex.Attachments;
-  reportList.forEach((report) => {
+  reportList.forEach(report => {
     if (exceedingTimeLimit()) return;
     // Add unacknowledged and acknowledged version
     const messageId = `${report.reportId}-${report.acknowledged ? report.acknowledged.name.replace(
@@ -911,7 +911,7 @@ function getAndParseIncidentForChild(fullUrl, _idx) {
       newMessage[lastUpdateIdx] = report.createdAt;
       newMessage[typeIdx] = incidentType;
       const witnessText = report.witnesses.map(
-        (witness) => `${witness.name.fullName} (${witness.employeeId})`
+        witness => `${witness.name.fullName} (${witness.employeeId})`
       );
       newMessage[contentIdx] = `${
         report.description
@@ -953,7 +953,7 @@ function getAndParseObservations() {
   const contentIdx = GLOBALS_VARIABLES.familyIndex.Content;
   const attachmentIdx = GLOBALS_VARIABLES.familyIndex.Attachments;
 
-  observations.forEach((observation) => {
+  observations.forEach(observation => {
     const messageId = `Observation:${observation.id}`;
     const newMessage = [];
     newMessage[dateIdx] = new Date();
@@ -965,7 +965,7 @@ function getAndParseObservations() {
 
     const areas = observation.remark.areas
       ? `\nAreas: ${observation.remark.areas
-          .map((area) => area.area.title)
+          .map(area => area.area.title)
           .join(', ')}`
       : '';
     const nextSteps = observation.nextStep
@@ -1019,14 +1019,14 @@ function downloadFiles(containerObj) {
     containerObj
   )}`;
   if (containerObj.files.length) {
-    containerObj.files.forEach((fileObj) => {
+    containerObj.files.forEach(fileObj => {
       const fileUrl = uploadFile(fileObj.url, fileObj.filename, description);
       attachments.push(fileUrl);
     });
   }
 
   if (containerObj.images.length) {
-    containerObj.images.forEach((imgObj) => {
+    containerObj.images.forEach(imgObj => {
       let url;
       let fileNameSource;
       if (imgObj.prefix) {
@@ -1050,7 +1050,7 @@ function downloadFiles(containerObj) {
   }
 
   if (containerObj.videos && containerObj.videos.length) {
-    containerObj.videos.forEach((videoObj) => {
+    containerObj.videos.forEach(videoObj => {
       const currDate = createDate === 'Unknown Date' ? new Date() : new Date(createDate);
       const videoName = `${parseDate(currDate)}_video_${
         videoObj.videoId || videoObj.id
@@ -1071,7 +1071,7 @@ function downloadFiles(containerObj) {
       invoiceObj.coveringMonths.join('_') || invoiceObj.invoiceNo
     }_amount-${invoiceObj.amount.toString().replace(/\./g, '-')}`;
     const linesText = invoiceObj.lines.map(
-      (obj) => `${obj.title}: £${obj.amount}`
+      obj => `${obj.title}: £${obj.amount}`
     );
     const additionalDescription = `Total: £${
       invoiceObj.amount
@@ -1325,7 +1325,7 @@ function appendRows(sheet, newData, attachmentIdx) {
 
   let attachments = [];
   if (attachmentIdx !== undefined) {
-    newData.forEach((data) => {
+    newData.forEach(data => {
       const attachmentLink = data[attachmentIdx];
       attachments.push(attachmentLink);
       data[attachmentIdx] = '';
@@ -1337,7 +1337,7 @@ function appendRows(sheet, newData, attachmentIdx) {
 
   if (attachments.length) {
     const newRange = sheet.getRange(startRow, attachmentIdx + 1, numRows, 3);
-    const richTextAttachments = attachments.map((attachment) => {
+    const richTextAttachments = attachments.map(attachment => {
       const newRichText = {
         0: SpreadsheetApp.newRichTextValue(),
         1: SpreadsheetApp.newRichTextValue(),
@@ -1354,7 +1354,7 @@ function appendRows(sheet, newData, attachmentIdx) {
       if (attachment) {
         const allAttachments = attachment.split(attachDelimiter);
         let numImg = 0;
-        allAttachments.forEach((url) => {
+        allAttachments.forEach(url => {
           const version = parseInt(numImg / 40);
           const start = newText[version].length;
           let fileType;
