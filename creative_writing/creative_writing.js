@@ -46,7 +46,7 @@ function checkDaysProgress() {
   let promptEvent, currEvent, currEventTitle;
   let participantInfo, partEmailIdx, submissionInfo, finaleSections = [], summaryTitle;
 
-  for (var i = 0; i < events.length; i++) {
+  for (let i = 0; i < events.length; i++) {
     currEvent = events[i];
     currEventTitle = currEvent.getTitle();
     if (currEventTitle.indexOf(promptPrefix) === 0) {
@@ -265,7 +265,8 @@ function runOnChange() {
   const defaultRoundIdx = scriptInfo.index.defaultRounds;
   const currParticipantIdx = scriptInfo.index.CurrentParticipantEmail;
   const scriptLength = scriptInfo.data.length - 1;
-  const promptId = scriptInfo.data[scriptLength][promptIdIdx];
+  let promptId = scriptInfo.data[scriptLength][promptIdIdx];
+  const oldPromptId = promptId;
   const currentNumber = (scriptInfo.data[scriptLength][currNumberIdx] || 0);
   const latestEventPrefix = getTitlePrefix(promptId, currentNumber);
   let lastEvent = false;
@@ -350,7 +351,6 @@ function runOnChange() {
     const currentRound = scriptInfo.data[scriptLength][currRoundIdx];
     if (isNewCreativeWriting || (newNumber > (numberParticipants * currentRound + 1))) {
       // Set new currenRound and promptId
-      const oldPromptId = scriptInfo.data[scriptLength][promptIdIdx];
       const promptInfo = getSheetInformation('Prompts');
       const numberPrompts = promptInfo.data.length - 1;
       const dateIdx = promptInfo.index.Date;
