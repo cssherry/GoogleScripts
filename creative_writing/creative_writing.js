@@ -3,19 +3,19 @@ const lengthOfResponse = 300;
 const emailPrefix = '[CreativeWriting] '
 
 // https://support.google.com/calendar/forum/AAAAd3GaXpEoHbbc3DuDt0/?hl=en
-var charLimit = 8148;
-var graceLimit = 500; // we allow for average length + gracelimit before dropping 1 day's writing
+const charLimit = 8148;
+const graceLimit = 500; // we allow for average length + gracelimit before dropping 1 day's writing
 
-var warningDay = 3;
-var moveDay = 7;
+const warningDay = 3;
+const moveDay = 7;
 
-var lengthEvent = 3; // Hours writing event should last
+const lengthEvent = 3; // Hours writing event should last
 
 const prefixCharLength = 20;
-var divider = '===================';
-var noteDivider = '\n' + divider + '\n';
-var summaryHeader = 'Final: ';
-var summaryPartRegex = new RegExp('^' + summaryHeader + '\\d+(\\.(\\d+)):');
+const divider = '===================';
+const noteDivider = '\n' + divider + '\n';
+const summaryHeader = 'Final: ';
+const summaryPartRegex = new RegExp('^' + summaryHeader + '\\d+(\\.(\\d+)):');
 
 // ==========================================
 // Runs at 5 AM Time
@@ -26,25 +26,25 @@ var summaryPartRegex = new RegExp('^' + summaryHeader + '\\d+(\\.(\\d+)):');
 // 3. If it has been "warningDay" number days since prompt was updated, send warning
 // ==========================================
 function checkDaysProgress() {
-  var searchDate = new Date();
+  const searchDate = new Date();
   changeDate(searchDate, -1);
-  var scriptInfo = getSheetInformation('ScriptInfo');
-  var scriptLength = scriptInfo.data.length - 1;
-  var currParticipantIdx = scriptInfo.index.CurrentParticipantEmail;
-  var currEmail = scriptInfo.data[scriptLength][currParticipantIdx];
+  const scriptInfo = getSheetInformation('ScriptInfo');
+  const scriptLength = scriptInfo.data.length - 1;
+  const currParticipantIdx = scriptInfo.index.CurrentParticipantEmail;
+  const currEmail = scriptInfo.data[scriptLength][currParticipantIdx];
 
   if (!writingCalendar) {
     writingCalendar = CalendarApp.getCalendarById(calendarId);
   }
 
-  var events = writingCalendar.getEventsForDay(searchDate);
-  var promptId = scriptInfo.data[scriptLength][scriptInfo.index.PromptID]
-  var lastDateIdx = scriptInfo.index.LastDate;
-  var lastDate = scriptInfo.data[scriptLength][lastDateIdx]
-  var currentNumber = scriptInfo.data[scriptLength][scriptInfo.index.CurrentNumber]
-  var promptPrefix = getTitlePrefix(promptId, currentNumber);
-  var promptEvent, currEvent, currEventTitle;
-  var participantInfo, partEmailIdx, submissionInfo, finaleSections = [], summaryTitle;
+  const events = writingCalendar.getEventsForDay(searchDate);
+  const promptId = scriptInfo.data[scriptLength][scriptInfo.index.PromptID]
+  const lastDateIdx = scriptInfo.index.LastDate;
+  const lastDate = scriptInfo.data[scriptLength][lastDateIdx]
+  const currentNumber = scriptInfo.data[scriptLength][scriptInfo.index.CurrentNumber]
+  const promptPrefix = getTitlePrefix(promptId, currentNumber);
+  let promptEvent, currEvent, currEventTitle;
+  let participantInfo, partEmailIdx, submissionInfo, finaleSections = [], summaryTitle;
 
   for (var i = 0; i < events.length; i++) {
     currEvent = events[i];
@@ -54,12 +54,11 @@ function checkDaysProgress() {
       // If 8 - 9 days late, send out email that it will be switched to next person
       // If 10 days late, switch to next person
       promptEvent = currEvent;
-      var startTime = promptEvent.getStartTime();
-      var endTime = promptEvent.getEndTime();
+      const startTime = promptEvent.getStartTime();
+      let endTime = promptEvent.getEndTime();
 
       if (!promptEvent.isAllDayEvent()) {
         console.log('Moving out event');
-        var daysSince = getDayDifference(lastDate, new Date());
         // const isReadyForLLM = true;
         const isReadyForLLM = isLLM(currEmail) && daysSince >= warningDay;
         if (isReadyForLLM) {
@@ -116,18 +115,20 @@ function checkDaysProgress() {
 
           promptEvent.setDescription(newDescription);
         } else if (daysSince >= moveDay) {
+        const daysSince = getDayDifference(lastDate, new Date());
+        if (daysSince >= moveDay) {
           if (!participantInfo) {
             participantInfo = getSheetInformation('Participants');
             partEmailIdx = participantInfo.index.Email;
             submissionInfo = getSheetInformation('Submission');
           }
 
-          var partEmailIdx = participantInfo.index.Email;
-          var currNumberTotalIdx = scriptInfo.index.CurrentNumberTotal;
-          var currentNumberTotal = scriptInfo.data[scriptLength][currNumberTotalIdx] + 1;
-          var nextParticipantRow = calculateNextParticipant(participantInfo, currentNumberTotal, startTime);
+          const partEmailIdx = participantInfo.index.Email;
+          const currNumberTotalIdx = scriptInfo.index.CurrentNumberTotal;
+          const currentNumberTotal = scriptInfo.data[scriptLength][currNumberTotalIdx] + 1;
+          const nextParticipantRow = calculateNextParticipant(participantInfo, currentNumberTotal, startTime);
           endTime = getEndTime(startTime);
-          var nextGuest = nextParticipantRow[partEmailIdx];
+          const nextGuest = nextParticipantRow[partEmailIdx];
           promptEvent.removeGuest(getEmailOnly(currEmail));
           promptEvent.addGuest(getEmailOnly(nextGuest));
 
@@ -140,17 +141,17 @@ function checkDaysProgress() {
           console.log(`Giving event to ${nextGuest} and updated total to ${currentNumberTotal}`);
 
           // Now update the last ParticipantEmail on Submission page
-          var lastSubmissionIdx = submissionInfo.data.length;
-          var participantEmailIdx = submissionInfo.index.ParticipantEmail + 1;
-          var newParticipantRange = submissionInfo.sheet
+          const lastSubmissionIdx = submissionInfo.data.length;
+          const participantEmailIdx = submissionInfo.index.ParticipantEmail + 1;
+          const newParticipantRange = submissionInfo.sheet
             .getRange(lastSubmissionIdx, participantEmailIdx, 1, 1);
 
-          var newNote = newParticipantRange.getNotes();
+          const newNote = newParticipantRange.getNotes();
           newNote[0][0] += (noteDivider + new Date().toLocaleString() + ' overwrote:\n' + currEmail + '\n');
           newParticipantRange.setNotes(newNote);
           newParticipantRange.setValues([[nextGuest]]);
         } else if (daysSince >= warningDay) {
-          var sendEmail = myEmail;
+          let sendEmail = myEmail;
           if (currEmail !== sendEmail) {
             sendEmail += (',' + currEmail)
           }
@@ -186,7 +187,7 @@ function checkDaysProgress() {
         });
       }
     } else if (currEventTitle.indexOf(summaryHeader) === 0) {
-      var matches = currEventTitle.match(summaryPartRegex);
+      const matches = currEventTitle.match(summaryPartRegex);
       if (matches) {
         summaryTitle = summaryTitle || currEventTitle.replace(matches[1], '');
         console.log(`Found matches for summary ${summaryTitle}`);
@@ -205,15 +206,15 @@ function checkDaysProgress() {
       partEmailIdx = participantInfo.index.Email;
     }
 
-    var allParts = [];
-    for (var i = 1; i < participantInfo.data.length; i++) {
+    const allParts = [];
+    for (let i = 1; i < participantInfo.data.length; i++) {
       allParts.push(participantInfo.data[i][partEmailIdx]);
     }
 
-    var shortenedString = summaryTitle.substring(0, 200);
-    var lastIndex = summaryTitle.lastIndexOf(' ');
+    let shortenedString = summaryTitle.substring(0, 200);
+    const lastIndex = summaryTitle.lastIndexOf(' ');
     shortenedString = shortenedString.substring(0, lastIndex - 2);
-    var allSections = finaleSections.join(noteDivider);
+    const allSections = finaleSections.join(noteDivider);
     const additionalEmails = scriptInfo.data[scriptLength][scriptInfo.index.AdditionalEmails];
     const to = allParts.join(',') + (additionalEmails ? ',' + additionalEmails : '');
     console.log(`Sending email of overview to ${to}`);
@@ -229,9 +230,9 @@ function checkDaysProgress() {
 
     // Now add it to google docs
     console.log(`Adding to google docs`);
-    var doc = DocumentApp.openById(docID);
-    var body = doc.getBody();
-    var header = body.appendParagraph(summaryTitle);
+    const doc = DocumentApp.openById(docID);
+    const body = doc.getBody();
+    const header = body.appendParagraph(summaryTitle);
     header.setHeading(DocumentApp.ParagraphHeading.HEADING1);
     body.appendParagraph(new Date().toString());
     body.appendParagraph('\n' + cleanHtmlFromDescription(allSections));
@@ -260,44 +261,44 @@ function runOnChange() {
   }
 
   // Calculate latest event
-  var scriptInfo = getSheetInformation('ScriptInfo');
-  var promptIdIdx = scriptInfo.index.PromptID;
-  var currNumberIdx = scriptInfo.index.CurrentNumber;
-  var defaultRoundIdx = scriptInfo.index.defaultRounds;
-  var currParticipantIdx = scriptInfo.index.CurrentParticipantEmail;
-  var scriptLength = scriptInfo.data.length - 1;
-  var promptId = scriptInfo.data[scriptLength][promptIdIdx];
-  var currentNumber = (scriptInfo.data[scriptLength][currNumberIdx] || 0);
-  var latestEventPrefix = getTitlePrefix(promptId, currentNumber);
-  var lastEvent = false;
-  var newToken = false;
+  const scriptInfo = getSheetInformation('ScriptInfo');
+  const promptIdIdx = scriptInfo.index.PromptID;
+  const currNumberIdx = scriptInfo.index.CurrentNumber;
+  const defaultRoundIdx = scriptInfo.index.defaultRounds;
+  const currParticipantIdx = scriptInfo.index.CurrentParticipantEmail;
+  const scriptLength = scriptInfo.data.length - 1;
+  const promptId = scriptInfo.data[scriptLength][promptIdIdx];
+  const currentNumber = (scriptInfo.data[scriptLength][currNumberIdx] || 0);
+  const latestEventPrefix = getTitlePrefix(promptId, currentNumber);
+  let lastEvent = false;
+  let newToken = false;
 
   // Get submission information
-  var submissionInfo = getSheetInformation('Submission', true);
-  var emailIdx = submissionInfo.index.ParticipantEmail;
-  var subPromptId = submissionInfo.index.PromptID;
-  var subCurrNumIdx = submissionInfo.index.CurrentNumber;
-  var eventIdIdx = submissionInfo.index.EventName;
-  var calendarEventIdx = submissionInfo.index.CalendarEventId;
-  var inNumberIdx = submissionInfo.index.InNumbers;
-  var textIdx = submissionInfo.index.Text;
-  var wordsIdx = submissionInfo.index.Words;
-  var charIdx = submissionInfo.index.Characters;
-  var createdDateIdx = submissionInfo.index.CreatedDate;
-  var editedDateIdx = submissionInfo.index.EditedDate;
-  var submissionInfoNeedsUpdating = false;
-  var lastSubmissionIdx = submissionInfo.data.length;
-  var totalCharacters = 0;
-  var totalSubmissions = 0;
+  const submissionInfo = getSheetInformation('Submission', true);
+  const emailIdx = submissionInfo.index.ParticipantEmail;
+  const subPromptId = submissionInfo.index.PromptID;
+  const subCurrNumIdx = submissionInfo.index.CurrentNumber;
+  const eventIdIdx = submissionInfo.index.EventName;
+  const calendarEventIdx = submissionInfo.index.CalendarEventId;
+  const inNumberIdx = submissionInfo.index.InNumbers;
+  const textIdx = submissionInfo.index.Text;
+  const wordsIdx = submissionInfo.index.Words;
+  const charIdx = submissionInfo.index.Characters;
+  const createdDateIdx = submissionInfo.index.CreatedDate;
+  const editedDateIdx = submissionInfo.index.EditedDate;
+  let submissionInfoNeedsUpdating = false;
+  let lastSubmissionIdx = submissionInfo.data.length;
+  let totalCharacters = 0;
+  let totalSubmissions = 0;
 
-  var eventToFullTextArray = {}; // links ID with array of text
+  const eventToFullTextArray = {}; // links ID with array of text
   processSubmissions();
 
-  var updatedEventIdToTextArray = {}; // links ID with array of text, but only for updated ones
+  const updatedEventIdToTextArray = {}; // links ID with array of text, but only for updated ones
   getEvents(calendarId);
 
-  var currArray;
-  for (var calId in updatedEventIdToTextArray) {
+  let currArray;
+  for (const calId in updatedEventIdToTextArray) {
     if (updatedEventIdToTextArray.hasOwnProperty(calId)) {
       currArray = updatedEventIdToTextArray[calId];
       writingCalendar.getEventById(calId)
@@ -311,50 +312,52 @@ function runOnChange() {
     submissionInfo.range.setNotes(submissionInfo.note);
   }
 
+  // get next day
+  let nextStartTime = new Date();
+
+
   // Handle cases when new section has been added
   // Or if new creative writing is being created
   const isNewCreativeWriting = submissionInfo.data.length <= 1;
   if (lastEvent || isNewCreativeWriting) {
     const message = isNewCreativeWriting ? 'Starting new creative writing thread' : 'Last Event Updating';
     console.log(message);
-    var currNumberTotalIdx = scriptInfo.index.CurrentNumberTotal;
-    var newCurrNumberTotal = (scriptInfo.data[scriptLength][currNumberTotalIdx] || 0) + 1;
+    const currNumberTotalIdx = scriptInfo.index.CurrentNumberTotal;
+    const newCurrNumberTotal = (scriptInfo.data[scriptLength][currNumberTotalIdx] || 0) + 1;
     scriptInfo.data[scriptLength][currNumberTotalIdx] = newCurrNumberTotal;
     scriptInfo.data[scriptLength][scriptInfo.index.LastDate] = new Date();
 
-    // get next day
-    let nextStartTime = new Date();
-
-    if (nextStartTime.getDate() < lateEventTime.getDate()) {
+    const lastEventDate = lastEvent.getEndTime();
+    if (nextStartTime.getDate() < lastEventDate.getDate()) {
       nextStartTime = lastEventDate;
     }
 
     changeDate(nextStartTime, 1);
 
     // Add new row to submissionsheet
-    var newNumber = currentNumber + 1;
+    const newNumber = currentNumber + 1;
     scriptInfo.data[scriptLength][currNumberIdx] = newNumber;
 
     // Figure out next guest
-    var participantInfo = getSheetInformation('Participants');
-    var partEmailIdx = participantInfo.index.Email;
-    var numberParticipants = participantInfo.data.length - 1;
-    var nextParticipantRow = calculateNextParticipant(participantInfo, newCurrNumberTotal, nextStartTime);
-    var guest = nextParticipantRow[partEmailIdx];
+    const participantInfo = getSheetInformation('Participants');
+    const partEmailIdx = participantInfo.index.Email;
+    const numberParticipants = participantInfo.data.length - 1;
+    const nextParticipantRow = calculateNextParticipant(participantInfo, newCurrNumberTotal, nextStartTime);
+    const guest = nextParticipantRow[partEmailIdx];
 
     scriptInfo.data[scriptLength][currParticipantIdx] = guest;
 
-    var title, text, currentText;
-    var currRoundIdx = scriptInfo.index.currentRounds;
-    var currentRound = scriptInfo.data[scriptLength][currRoundIdx];
+    let title, text, currentText;
+    const currRoundIdx = scriptInfo.index.currentRounds;
+    const currentRound = scriptInfo.data[scriptLength][currRoundIdx];
     if (isNewCreativeWriting || (newNumber > (numberParticipants * currentRound + 1))) {
       // Set new currenRound and promptId
-      var oldPromptId = scriptInfo.data[scriptLength][promptIdIdx];
-      var promptInfo = getSheetInformation('Prompts');
-      var numberPrompts = promptInfo.data.length - 1;
-      var dateIdx = promptInfo.index.Date;
-      var promptToUse = 1;
-      var newPrompt = promptInfo.data[promptToUse];
+      const oldPromptId = scriptInfo.data[scriptLength][promptIdIdx];
+      const promptInfo = getSheetInformation('Prompts');
+      const numberPrompts = promptInfo.data.length - 1;
+      const dateIdx = promptInfo.index.Date;
+      let promptToUse = 1;
+      let newPrompt = promptInfo.data[promptToUse];
       while (newPrompt[dateIdx]) {
         promptToUse = Math.ceil(Math.random() * numberPrompts);
         newPrompt = promptInfo.data[promptToUse];
@@ -378,7 +381,7 @@ function runOnChange() {
         createOverviewEvent(lastEvent, participantInfo);
       }
     } else {
-      var newPrefix = getTitlePrefix(promptId, newNumber);
+      const newPrefix = getTitlePrefix(promptId, newNumber);
       scriptInfo.data[scriptLength][currNumberIdx] = newNumber;
       title = lastEvent.getTitle().replace(new RegExp('^' + latestEventPrefix), newPrefix);
       currentText = getEmailUser(guest)
@@ -393,13 +396,13 @@ function runOnChange() {
 
     // If text is longer than (charLimit - maximum length - graceLimit), then remove one section
     // Only need to calculate for events that have text (ie: not new prompts)
-    var inNumbers = '';
-    var textLength = text.length;
+    let inNumbers = '';
+    let textLength = text.length;
     if (textLength) {
-      var avgChars = scriptInfo.data[scriptLength][avgCharIdx];
-      var charLimitWithGrace = charLimit - avgChars - graceLimit;
+      const avgChars = scriptInfo.data[scriptLength][avgCharIdx];
+      const charLimitWithGrace = charLimit - avgChars - graceLimit;
       console.log('Current text length: %s', textLength);
-      var firstSectionRegexp = new RegExp('^[\\s\\S]*?' + divider + '+?\\s*')
+      const firstSectionRegexp = new RegExp('^[\\s\\S]*?' + divider + '+?\\s*')
       inNumbers = submissionInfo.titlePrefixToRow[latestEventPrefix][inNumberIdx] +
         latestEventPrefix.replace(':', '') + ', ';
 
@@ -441,9 +444,9 @@ function runOnChange() {
    * Add overview event
    */
   function createOverviewEvent(lastEvent, participantInfo) {
-    var currIndex = 1;
-    var totalCharCount = 0;
-    var originalTitle = lastEvent.getTitle();
+    let currIndex = 1;
+    let totalCharCount = 0;
+    const originalTitle = lastEvent.getTitle();
 
     function getNewTitle() {
       return originalTitle.replace(new RegExp('^' + latestEventPrefix), summaryHeader + oldPromptId + '.' + currIndex + ': ');
@@ -456,17 +459,17 @@ function runOnChange() {
       partEmailIdx = participantInfo.index.Email;
     }
 
-    var allParticipants = [];
-    for (var i = 1; i < participantInfo.data.length; i++) {
+    const allParticipants = [];
+    for (let i = 1; i < participantInfo.data.length; i++) {
       allParticipants.push(participantInfo.data[i][partEmailIdx]);
     }
 
     // Get all parts
-    var overviewTitle = getNewTitle();
-    var allParts = [];
-    var currText;
-    var sectionDates = [];
-    for (var j = 1; j < submissionInfo.data.length; j++) {
+    let overviewTitle = getNewTitle();
+    const allParts = [];
+    let currText;
+    const sectionDates = [];
+    for (let j = 1; j < submissionInfo.data.length; j++) {
       if (oldPromptId !== submissionInfo.data[j][subPromptId]) {
         continue;
       }
@@ -476,8 +479,8 @@ function runOnChange() {
       sectionDates.push(submissionInfo.data[j][createdDateIdx], submissionInfo.data[j][editedDateIdx]);
       if (totalCharCount > (charLimit - graceLimit)) {
         console.log('Adding Overview Part: %s (%s)', overviewTitle, currIndex);
-        var startDateText = currIndex === 1 ? 'Started on: ' + sectionDates[0].toDateString() + noteDivider : '';
-        var endDateText = j >= submissionInfo.data.length - 2 ? 'Finished on: ' + sectionDates[sectionDates.length - 1].toDateString() + noteDivider : '';
+        const startDateText = currIndex === 1 ? 'Started on: ' + sectionDates[0].toDateString() + noteDivider : '';
+        const endDateText = j >= submissionInfo.data.length - 2 ? 'Finished on: ' + sectionDates[sectionDates.length - 1].toDateString() + noteDivider : '';
         createEventAndNewRow({
           title: overviewTitle,
           text: startDateText + allParts.join(noteDivider) + endDateText,
@@ -496,8 +499,8 @@ function runOnChange() {
 
     if (allParts.length) {
       console.log('Adding Overview Final: %s (%s)', overviewTitle, currIndex);
-      var startDateText = currIndex === 1 ? 'Started on: ' + sectionDates[0].toDateString() + noteDivider : '';
-      var endDateText = 'Finished on: ' + sectionDates[sectionDates.length - 1].toDateString() + noteDivider;
+      const startDateText = currIndex === 1 ? 'Started on: ' + sectionDates[0].toDateString() + noteDivider : '';
+      const endDateText = 'Finished on: ' + sectionDates[sectionDates.length - 1].toDateString() + noteDivider;
       createEventAndNewRow({
         title: overviewTitle,
         text: allParts.join(noteDivider) + endDateText,
@@ -514,13 +517,13 @@ function runOnChange() {
   function processSubmissions() {
     submissionInfo.eventNameToRow = {};
     submissionInfo.titlePrefixToRow = {};
-    var calendarId, currSub, inNumbers, iterPrefix, iterDescription, iterCalId, iterRow;
-    for (var i = 1; i < submissionInfo.data.length; i++) {
+    let calendarId, currSub, inNumbers, iterPrefix, iterDescription, iterCalId, iterRow;
+    for (let i = 1; i < submissionInfo.data.length; i++) {
       currSub = submissionInfo.data[i];
 
       submissionInfo.eventNameToRow[currSub[eventIdIdx]] = i;
 
-      var titlePrefix = getTitlePrefix(currSub[subPromptId], currSub[subCurrNumIdx]);
+      const titlePrefix = getTitlePrefix(currSub[subPromptId], currSub[subCurrNumIdx]);
       submissionInfo.titlePrefixToRow[titlePrefix] = currSub;
 
       // Add to characters and count of non-empty boxes so we can calculate average character count
@@ -541,7 +544,7 @@ function runOnChange() {
         };
       }
 
-      for (var j = 0; j < inNumbers.length; j++) {
+      for (let j = 0; j < inNumbers.length; j++) {
         iterPrefix = inNumbers[j];
         if (iterPrefix) {
           // Add all event's text to event
@@ -566,12 +569,12 @@ function runOnChange() {
    * Skips events that have summaryHeader in the title
    */
   function getEvents(changedCalId, fullSync) {
-    var options = {
+    const options = {
       maxResults: 30,
     };
 
-    var syncIdx = scriptInfo.index.SyncToken;
-    var syncToken = scriptInfo.data[scriptLength][syncIdx];
+    const syncIdx = scriptInfo.index.SyncToken;
+    const syncToken = scriptInfo.data[scriptLength][syncIdx];
     if (syncToken && !fullSync) {
       options.syncToken = syncToken;
     } else {
@@ -579,8 +582,8 @@ function runOnChange() {
     }
 
     // Retrieve events one page at a time.
-    var events;
-    var pageToken;
+    let events;
+    let pageToken;
     do {
       try {
         options.pageToken = pageToken;
@@ -600,8 +603,8 @@ function runOnChange() {
       }
 
       if (events.items && events.items.length > 0) {
-        for (var i = 0; i < events.items.length; i++) {
-          var event = events.items[i];
+        for (let i = 0; i < events.items.length; i++) {
+          const event = events.items[i];
           if (event.status === 'cancelled') {
             console.log('Event id %s was cancelled.', event.id);
           } else if (event.summary.indexOf(summaryHeader) !== 0) {
@@ -630,9 +633,9 @@ function runOnChange() {
   */
   function updateEventIfChanged(eventId, eventTitle, eventDescription) {
     // Check to see if description changed
-    var currIdx = submissionInfo.eventNameToRow[eventTitle];
-    var currRow = submissionInfo.data[currIdx];
-    var dividerRegex = new RegExp('\\s*' + divider + '+?\\s*');
+    const currIdx = submissionInfo.eventNameToRow[eventTitle];
+    const currRow = submissionInfo.data[currIdx];
+    const dividerRegex = new RegExp('\\s*' + divider + '+?\\s*');
 
     if (!eventDescription || eventDescription.length < prefixCharLength) {
       return;
@@ -641,12 +644,12 @@ function runOnChange() {
     // Check every section of current eventTitle,
     // update submissionInfo and related calendar events as necessary
     // If last event, set it as lastEvent and send email
-    var isChanged = false;
-    var calendarSectionsNew = eventDescription.split(dividerRegex);
-    var calendarSectionsOld = eventToFullTextArray[eventId];
+    let isChanged = false;
+    const calendarSectionsNew = eventDescription.split(dividerRegex);
+    const calendarSectionsOld = eventToFullTextArray[eventId];
     console.log(calendarSectionsOld);
 
-    var currSectionNew, currSectionOld, currSectionIdx, currSectionRow;
+    let currSectionNew, currSectionOld, currSectionIdx, currSectionRow;
 
     // Recursively update description for all affected calendar events
     function updateAllCalendarForRow(inNumbers, idxFromEnd) {
@@ -657,7 +660,7 @@ function runOnChange() {
         console.log('updateAllCalendarForRow Done');
         return;
       } else if (idxFromEnd) {
-        var inNumberRow = submissionInfo.titlePrefixToRow[inNumbers[idxFromEnd - 1]];
+        const inNumberRow = submissionInfo.titlePrefixToRow[inNumbers[idxFromEnd - 1]];
         calID = inNumberRow[calendarEventIdx];
       } else {
         idxFromEnd = 0;
@@ -667,8 +670,8 @@ function runOnChange() {
         updatedEventIdToTextArray[calID] = eventToFullTextArray[calID].descArray;
       }
 
-      var updatedDescArray = updatedEventIdToTextArray[calID];
-      var idxToUpdate = updatedDescArray.length - idxFromEnd - 1;
+      const updatedDescArray = updatedEventIdToTextArray[calID];
+      const idxToUpdate = updatedDescArray.length - idxFromEnd - 1;
       updatedDescArray[idxToUpdate] = currSectionNew;
 
       console.log('idxToUpdate: %s', idxToUpdate);
@@ -676,8 +679,8 @@ function runOnChange() {
       updateAllCalendarForRow(inNumbers, ++idxFromEnd);
     }
 
-    var totalWordsWrote = 0;
-    for (var i = 0; i < calendarSectionsNew.length; i++) {
+    let totalWordsWrote = 0;
+    for (let i = 0; i < calendarSectionsNew.length; i++) {
       console.log('calendarSectionsNew i: %s', i);
       currSectionNew = cleanHtmlFromDescription(calendarSectionsNew[i]);
       currSectionOld = calendarSectionsOld.descArray[i].trim();
@@ -714,7 +717,7 @@ function runOnChange() {
     if (isChanged && eventTitle.indexOf(latestEventPrefix) === 0) {
       lastEvent = writingCalendar.getEventById(eventId);
 
-      var currWordsWrote = getWordCount(calendarSectionsNew[calendarSectionsNew.length - 1]);
+      const currWordsWrote = getWordCount(calendarSectionsNew[calendarSectionsNew.length - 1]);
       if (!currWordsWrote || currWordsWrote < prefixCharLength) {
         console.log('Nothing added to section');
         lastEvent = undefined;
@@ -741,22 +744,17 @@ function runOnChange() {
    * Creates new writing event
    */
   function createEventAndNewRow(config) {
-    var title = config.title; // calendar title
-    var text = config.text; // calendar description
-    var currentText = config.currentText // if there's prefix that should always be added
-    var startDate = config.startDate; // calendar start date
-    var guests = config.guests; // calendar attendees
-    var isAllDay = config.isAllDay; // will not create new row
-    var inNumbers = config.inNumbers; // not needed if isAllDay
-    var addNewRow = config.addNewRow; // not needed if isAllDay
+    const title = config.title; // calendar title
+    const text = config.text; // calendar description
+    const currentText = config.currentText // if there's prefix that should always be added
+    const startDate = config.startDate; // calendar start date
+    const guests = config.guests; // calendar attendees
+    const isAllDay = config.isAllDay; // will not create new row
+    const inNumbers = config.inNumbers; // not needed if isAllDay
+    const addNewRow = config.addNewRow; // not needed if isAllDay
 
-    // Remove API guests
-    if (isLLM(guest)) {
-      guests = calendarId;
-    }
-
-    var event;
-    var eventOptions = {
+    let event;
+    const eventOptions = {
       description: text,
       location: writingSpreadsheetUrl,
       guests: getEmailOnly(guests),
@@ -765,7 +763,7 @@ function runOnChange() {
     if (isAllDay) {
       event = writingCalendar.createAllDayEvent(title, startDate, eventOptions);
     } else {
-      var endDate = getEndTime(startDate);
+      const endDate = getEndTime(startDate);
       event = writingCalendar.createEvent(title, startDate, endDate, eventOptions);
     }
 
@@ -774,8 +772,8 @@ function runOnChange() {
     if (addNewRow) {
       // Now add this new row to "Submission" spreadsheet
       // Get range by row, column, row length, column length
-      var newRow = [];
-      for (var i = 0; i < submissionInfo.data[0].length;) newRow[i++] = '';
+      const newRow = [];
+      for (let i = 0; i < submissionInfo.data[0].length;) newRow[i++] = '';
 
       newRow[submissionInfo.index.ParticipantEmail] = guests;
       newRow[subPromptId] = scriptInfo.data[scriptLength][promptIdIdx];
@@ -788,7 +786,7 @@ function runOnChange() {
       newRow[wordsIdx] = 0;
       newRow[charIdx] = 0;
       lastSubmissionIdx++;
-      var cells = submissionInfo.sheet.getRange(lastSubmissionIdx, 1, 1, newRow.length);
+      const cells = submissionInfo.sheet.getRange(lastSubmissionIdx, 1, 1, newRow.length);
       cells.setValues([newRow])
     }
 
@@ -810,14 +808,14 @@ function getEmailOnly(emails) {
 }
 
 // Get sheet information - sheet, data, and index
-var activeSpreadsheet;
+let activeSpreadsheet;
 
 function getSheetInformation(sheetName, includeNote) {
   if (!activeSpreadsheet) {
     activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   }
 
-  var result = {
+  const result = {
     sheet: activeSpreadsheet.getSheetByName(sheetName)
   }
   result.range = result.sheet.getDataRange();
@@ -834,10 +832,10 @@ function getSheetInformation(sheetName, includeNote) {
 // Create hash with column name keys pointing to column index
 // For greater flexibility (columns can be moved around)
 function indexSheet(sheetData) {
-  var result = {},
+  const result = {},
     length = sheetData[0].length;
 
-  for (var i = 0; i < length; i++) {
+  for (let i = 0; i < length; i++) {
     result[sheetData[0][i]] = i;
   }
 
@@ -853,7 +851,7 @@ function getTitlePrefix(promptId, currentNumber) {
 }
 
 function getWordCount(text) {
-  var matches = text.match(/\b(\w+)\b/g) || '';
+  const matches = text.match(/\b(\w+)\b/g) || '';
   return matches.length;
 }
 
@@ -865,7 +863,7 @@ function getWordCount(text) {
  * @return {Date} The new date.
  */
 function getRelativeDate(daysOffset, hour) {
-  var date = new Date();
+  const date = new Date();
   date.setDate(date.getDate() + daysOffset);
   date.setHours(hour);
   date.setMinutes(0);
@@ -875,13 +873,13 @@ function getRelativeDate(daysOffset, hour) {
 }
 
 function getEndTime(startTime) {
-  var newDate = new Date(startTime);
+  const newDate = new Date(startTime);
   newDate.setHours(startTime.getHours() + lengthEvent);
   return newDate;
 }
 
 function getDayDifference(day1, day2) {
-  var millisecondsPerDay = 24 * 60 * 60 * 1000;
+  const millisecondsPerDay = 24 * 60 * 60 * 1000;
   return Math.abs((day2 - day1) / millisecondsPerDay);
 }
 
@@ -891,9 +889,9 @@ function cleanHtmlFromDescription(text) {
 
 // Calculate next participant and update dateObj to that person's ideal time
 function calculateNextParticipant(participantInfo, currNumberTotal, dateObj) {
-  var numberParticipants = participantInfo.data.length - 1;
-  var nextParticipantIdx = currNumberTotal % numberParticipants || numberParticipants;
-  var nextParticipantRow = participantInfo.data[nextParticipantIdx];
+  const numberParticipants = participantInfo.data.length - 1;
+  const nextParticipantIdx = currNumberTotal % numberParticipants || numberParticipants;
+  const nextParticipantRow = participantInfo.data[nextParticipantIdx];
 
   // Set correct time for nextStartTime
   dateObj.setHours(nextParticipantRow[participantInfo.index.BestTimeET]);
