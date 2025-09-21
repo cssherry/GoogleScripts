@@ -22,12 +22,14 @@ function sendSummaryEmail(includeNotes = true, emails = GLOBALS_VARIABLES.summar
   const descriptionIdx = dataIdx.Note;
 
   // Number feeding, poo, pee, sleep
-  const dailyNums = {
-    feed: 0,
-    poo: 0,
-    pee: 0,
-    sleep: 0,
-  }
+  const dailyNumsForAll = GLOBALS_VARIABLES.childrenName.map((_) => {
+    return {
+      feed: 0,
+      poo: 0,
+      pee: 0,
+      sleep: 0,
+    }
+  });
 
   data.forEach((dataRow, idx) => {
     if (idx === 0) return;
@@ -45,19 +47,21 @@ function sendSummaryEmail(includeNotes = true, emails = GLOBALS_VARIABLES.summar
         });
       }
 
+      const dailyNum =  dailyNumsForAll.filter((_, idx) => description.includes(GLOBALS_VARIABLES.childrenName[idx]))[0];
+
       // Add to feed count
-      if (action === 'Famly.Daycare:MealRegistration' || action === 'Feed') {
-        dailyNums.feed += 1;
+      if (action === 'Famly.Daycare:MealRegistration' || action === 'Feed' || action === 'ac_food') {
+        dailyNum.feed += 1;
       }
 
       // Add to poo and pee count
-      if (description === 'Ishaan: Nappy Change - Wet') {
-        dailyNums.pee += 1;
+      if (description.includes('Nappy Change - Wet') || description.includes(' wet')) {
+        dailyNum.pee += 1;
       }
 
-      else if (description === 'Ishaan: Nappy Change - BM') {
-        dailyNums.poo += 1;
-        dailyNums.pee += 1;
+      else if (description.includes('Nappy Change - BM') || description.includes(' bm')) {
+        dailyNum.poo += 1;
+        dailyNum.pee += 1;
       }
 
 
@@ -65,34 +69,37 @@ function sendSummaryEmail(includeNotes = true, emails = GLOBALS_VARIABLES.summar
         let isLogged = false;
         if (description.match(/\bpoo\b/i)) {
           isLogged = true;
-          dailyNums.poo += 1
+          dailyNum.poo += 1
         }
 
         if (description.match(/\bpee\b/i)) {
           isLogged = true;
-          dailyNums.pee += 1
+          dailyNum.pee += 1
         }
 
         if (!isLogged) {
-          dailyNums.pee += 1;
+          dailyNum.pee += 1;
         }
       }
 
 
       // Add to sleep
       if (dataRow[sleepTimeIdx]) {
-        dailyNums.sleep += dataRow[sleepTimeIdx];
+        dailyNum.sleep += dataRow[sleepTimeIdx];
       }
     }
   });
 
-  dailyNums.sleep = (dailyNums.sleep / 60).toFixed(2);
+  dailyNum.sleep = (dailyNum.sleep / 60).toFixed(2);
 
   let currDaySummary = `Average Values for ${summaryDate}:\n`;
 
-  for (let dailyItem in dailyNums) {
-    currDaySummary += `${dailyItem}: ${dailyNums[dailyItem]}\n`;
-  }
+  GLOBALS_VARIABLES.childrenName.forEach((name, idx) => {
+    currDaySummary += `\n${name.toUpperCase()}:\n`
+    for (let dailyItem in dailyNumsForAll[idx]) {
+      currDaySummary += `${dailyItem}: ${dailyNumsSanjay[dailyItem]}\n`;
+    }
+  });
 
   currDaySummary += lineSeparators;
 
@@ -112,11 +119,12 @@ function sendSummaryEmail(includeNotes = true, emails = GLOBALS_VARIABLES.summar
       includeNotes: false,
     });
 
-  const weeklyText = includeSummary ? ' & Weekly' : '';
+  // const weeklyText = includeSummary ? ' & Weekly' : '';
+  const weeklyText = '';
   MailApp.sendEmail({
     to: emails.join(','),
     subject: `[Famly] Daily${weeklyText} Summary ${summaryDateFormatted}`,
-    body: summaryText + currDaySummary + currDayText,
+    body: currDaySummary + currDayText,
   });
 }
 

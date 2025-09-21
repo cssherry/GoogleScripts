@@ -366,7 +366,7 @@ function parseAsNestEvent(event) {
   let eventTitle;
   const eventDetails = event.details_blob
   if (event.action_type === 'ac_potty') {
-    eventTitle = `Potty ${eventDetails.potty} (${eventDetails.potty_type})`;
+    eventTitle = `Potty ${eventDetails.potty} (${eventDetails.potty_type} - ${eventDetails.potty_extras.join(' , ')})`;
   } else if (event.action_type === 'ac_food') {
     const amount = event.details_blob.amount;
     eventTitle = `Meal type: ${event.details_blob.food_meal_type} (Amount - ${amount ? 'Most' : 'All'} - ${amount})`
@@ -1407,6 +1407,14 @@ function appendRows(sheet, newData, attachmentIdx) {
 // SHEET CUSTOM FUNCTION
 // Based on https://stackoverflow.com/a/16086964
 // https://github.com/darkskyapp/tz-lookup-oss/ -> https://github.com/darkskyapp/tz-lookup-oss/blob/master/tz.js from 8f09dc19104a006fa386ad86a69d26781ce31637
+/**
+ * Converts local date/time to ET
+ * @param {date} sheetDate The local date
+ * @param {number} latitude
+ * @param {number} longitude
+ * @return {date} The value in millimeters.
+ * @customfunction
+ */
 function getTimezoneTime(sheetDate, lat, long) {
   if (sheetDate instanceof Array) {
     const result = [];
