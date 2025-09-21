@@ -59,6 +59,7 @@ function checkDaysProgress() {
 
       if (!promptEvent.isAllDayEvent()) {
         console.log('Moving out event');
+        const daysSince = getDayDifference(lastDate, new Date());
         // const isReadyForLLM = true;
         const isReadyForLLM = isLLM(currEmail) && daysSince >= warningDay;
         if (isReadyForLLM) {
@@ -115,15 +116,12 @@ function checkDaysProgress() {
 
           promptEvent.setDescription(newDescription);
         } else if (daysSince >= moveDay) {
-        const daysSince = getDayDifference(lastDate, new Date());
-        if (daysSince >= moveDay) {
           if (!participantInfo) {
             participantInfo = getSheetInformation('Participants');
             partEmailIdx = participantInfo.index.Email;
             submissionInfo = getSheetInformation('Submission');
           }
 
-          const partEmailIdx = participantInfo.index.Email;
           const currNumberTotalIdx = scriptInfo.index.CurrentNumberTotal;
           const currentNumberTotal = scriptInfo.data[scriptLength][currNumberTotalIdx] + 1;
           const nextParticipantRow = calculateNextParticipant(participantInfo, currentNumberTotal, startTime);
@@ -454,11 +452,6 @@ function runOnChange() {
 
     // Get all participants
     // If it's the finale -- give it 1 day to be updated, then send it out to everyone!
-    if (!participantInfo) {
-      participantInfo = getSheetInformation('Participants');
-      partEmailIdx = participantInfo.index.Email;
-    }
-
     const allParticipants = [];
     for (let i = 1; i < participantInfo.data.length; i++) {
       allParticipants.push(participantInfo.data[i][partEmailIdx]);
@@ -466,7 +459,7 @@ function runOnChange() {
 
     // Get all parts
     let overviewTitle = getNewTitle();
-    const allParts = [];
+    let allParts = [];
     let currText;
     const sectionDates = [];
     for (let j = 1; j < submissionInfo.data.length; j++) {
@@ -499,7 +492,6 @@ function runOnChange() {
 
     if (allParts.length) {
       console.log('Adding Overview Final: %s (%s)', overviewTitle, currIndex);
-      const startDateText = currIndex === 1 ? 'Started on: ' + sectionDates[0].toDateString() + noteDivider : '';
       const endDateText = 'Finished on: ' + sectionDates[sectionDates.length - 1].toDateString() + noteDivider;
       createEventAndNewRow({
         title: overviewTitle,
@@ -654,7 +646,7 @@ function runOnChange() {
     // Recursively update description for all affected calendar events
     function updateAllCalendarForRow(inNumbers, idxFromEnd) {
       console.log('updateAllCalendarForRow for %s, %s', inNumbers.toString(), idxFromEnd);
-      var calID = currSectionRow[calendarEventIdx];
+      let calID = currSectionRow[calendarEventIdx];
 
       if (idxFromEnd && idxFromEnd > inNumbers.length) {
         console.log('updateAllCalendarForRow Done');
