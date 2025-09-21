@@ -346,7 +346,7 @@ function runOnChange() {
 
     scriptInfo.data[scriptLength][currParticipantIdx] = guest;
 
-    let title, text, currentText;
+    let title, text, currentText, inNumbers = '';
     const currRoundIdx = scriptInfo.index.currentRounds;
     const currentRound = scriptInfo.data[scriptLength][currRoundIdx];
     if (isNewCreativeWriting || (newNumber > (numberParticipants * currentRound + 1))) {
@@ -385,36 +385,35 @@ function runOnChange() {
       currentText = getEmailUser(guest)
       text = lastEvent.getDescription() + noteDivider + currentText + ':\n';
       console.log('New Section: %s', title);
+
+      // If text is longer than (charLimit - maximum length - graceLimit), then remove one section
+      // Only need to calculate for events that have text (ie: not new prompts)
+      let textLength = text.length;
+      if (textLength) {
+        const avgChars = scriptInfo.data[scriptLength][avgCharIdx];
+        const charLimitWithGrace = charLimit - avgChars - graceLimit;
+        console.log('Current text length: %s', textLength);
+        const firstSectionRegexp = new RegExp('^[\\s\\S]*?' + divider + '+?\\s*')
+        inNumbers = submissionInfo.titlePrefixToRow[latestEventPrefix][inNumberIdx] +
+          latestEventPrefix.replace(':', '') + ', ';
+
+        while (textLength >= charLimitWithGrace) {
+          text = text.replace(firstSectionRegexp, '');
+          inNumbers = inNumbers.replace(/[0-9\.]+,\s*/, '');
+          textLength = text.length;
+          console.log('Trim Description: %s', text);
+          console.log('Trim InNumbers: %s', inNumbers);
+          console.log('New text length: %s', textLength);
+        }
+
+        console.log('InNumbers: %s', inNumbers);
+      }
     }
 
     const avgCharIdx = scriptInfo.index.AverageCharacters;
     const averageChar = Math.round(totalCharacters / totalSubmissions);
     console.log(`Update ScriptInfo:\nNew Token ${newToken}\nNew Average Characters: ${averageChar} (${totalCharacters} / ${totalSubmissions})`);
     scriptInfo.data[scriptLength][avgCharIdx] = averageChar;
-
-    // If text is longer than (charLimit - maximum length - graceLimit), then remove one section
-    // Only need to calculate for events that have text (ie: not new prompts)
-    let inNumbers = '';
-    let textLength = text.length;
-    if (textLength) {
-      const avgChars = scriptInfo.data[scriptLength][avgCharIdx];
-      const charLimitWithGrace = charLimit - avgChars - graceLimit;
-      console.log('Current text length: %s', textLength);
-      const firstSectionRegexp = new RegExp('^[\\s\\S]*?' + divider + '+?\\s*')
-      inNumbers = submissionInfo.titlePrefixToRow[latestEventPrefix][inNumberIdx] +
-        latestEventPrefix.replace(':', '') + ', ';
-
-      while (textLength >= charLimitWithGrace) {
-        text = text.replace(firstSectionRegexp, '');
-        inNumbers = inNumbers.replace(/[0-9\.]+,\s*/, '');
-        textLength = text.length;
-        console.log('Trim Description: %s', text);
-        console.log('Trim InNumbers: %s', inNumbers);
-        console.log('New text length: %s', textLength);
-      }
-
-      console.log('InNumbers: %s', inNumbers);
-    }
 
     createEventAndNewRow({
       title,
