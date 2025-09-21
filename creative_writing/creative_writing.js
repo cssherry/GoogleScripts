@@ -68,8 +68,8 @@ function checkDaysProgress() {
             partEmailIdx = participantInfo.index.Email;
           }
 
-          var allParts = [];
-          for (var i = 1; i < participantInfo.data.length; i++) {
+          const allParts = [];
+          for (let i = 1; i < participantInfo.data.length; i++) {
             const email = participantInfo.data[i][partEmailIdx];
             if (!isLLM(email)) {
               allParts.push(email);
@@ -77,8 +77,8 @@ function checkDaysProgress() {
           }
 
           const currDescription = promptEvent.getDescription().trim();
-          var currRoundIdx = scriptInfo.index.currentRounds;
-          var currentRound = scriptInfo.data[scriptLength][currRoundIdx];
+          const currRoundIdx = scriptInfo.index.currentRounds;
+          const currentRound = scriptInfo.data[scriptLength][currRoundIdx];
           const numParticipants = allParts.length;
           const llmResult = runLLM(currEventTitle, currDescription, currentNumber, currentRound * numParticipants);
           const results = getResultFromLLM(llmResult);
@@ -349,6 +349,7 @@ function runOnChange() {
     let title, text, currentText, inNumbers = '';
     const currRoundIdx = scriptInfo.index.currentRounds;
     const currentRound = scriptInfo.data[scriptLength][currRoundIdx];
+    const avgCharIdx = scriptInfo.index.AverageCharacters;
     if (isNewCreativeWriting || (newNumber > (numberParticipants * currentRound + 1))) {
       // Set new currenRound and promptId
       const promptInfo = getSheetInformation('Prompts');
@@ -410,7 +411,6 @@ function runOnChange() {
       }
     }
 
-    const avgCharIdx = scriptInfo.index.AverageCharacters;
     const averageChar = Math.round(totalCharacters / totalSubmissions);
     console.log(`Update ScriptInfo:\nNew Token ${newToken}\nNew Average Characters: ${averageChar} (${totalCharacters} / ${totalSubmissions})`);
     scriptInfo.data[scriptLength][avgCharIdx] = averageChar;
